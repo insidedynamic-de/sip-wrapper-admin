@@ -1,0 +1,164 @@
+{
+  "app": { "title": "InsideDynamic Wrapper - Admin" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "config": "Konfiguration",
+    "security": "Sicherheit",
+    "logs": "Logs",
+    "profile": "Profil"
+  },
+  "auth": { "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort" },
+  "button": {
+    "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
+    "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
+    "activate": "Aktivieren", "import": "Importieren", "export": "Exportieren",
+    "apply_reload": "Anwenden & Neu laden", "block": "Blockieren", "allow": "Erlauben",
+    "refresh": "Aktualisieren", "check_now": "Jetzt pr\u00fcfen & blockieren", "save_defaults": "Defaults speichern"
+  },
+  "status": {
+    "online": "Online", "offline": "Offline", "registered": "Registriert",
+    "not_registered": "Nicht registriert", "success": "Erfolgreich", "error": "Fehler",
+    "loading": "Laden...", "checking": "Pr\u00fcfen...", "connected": "Verbunden",
+    "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert",
+    "access_denied": "Zugriff verweigert"
+  },
+  "section": {
+    "users": "Benutzer", "sip_users": "SIP-Benutzer", "acl_users": "ACL-Benutzer",
+    "gateways": "Gateways", "routes": "Routen", "settings": "Einstellungen",
+    "outbound_routing": "Ausgehende Routen", "inbound_routing": "Eingehende Routen",
+    "user_routing": "Benutzer-Routen", "default_routes": "Standard-Routen",
+    "user_outbound_routes": "Benutzer-Ausgangsrouten"
+  },
+  "field": {
+    "extension": "Nebenstelle", "ip_address": "IP-Adresse", "user_agent": "User-Agent",
+    "contact": "Kontakt", "pattern": "Muster", "destination": "Ziel",
+    "did": "DID/Rufnummer", "domain": "Domain", "external_ip": "Externe IP",
+    "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
+    "register": "Registrieren", "caller_id": "Anrufer-ID", "name": "Name",
+    "type": "Typ", "actions": "Aktionen", "user": "Benutzer", "gateway": "Gateway",
+    "comment": "Kommentar"
+  },
+  "dashboard": {
+    "gateway_status": "Gateway-Status", "user_registrations": "Benutzer-Registrierungen",
+    "active_calls": "Aktive Anrufe", "call_logs": "Anrufverlauf",
+    "no_call_logs": "Keine Anrufe aufgezeichnet", "environment": "Umgebungsvariablen",
+    "no_gateways": "Keine Gateways konfiguriert", "no_users_registered": "Keine Benutzer registriert",
+    "no_logs": "Keine Logs", "call_stats": "Anrufstatistik",
+    "total_in": "Gesamt Eingehend", "total_out": "Gesamt Ausgehend", "failed": "fehlgeschlagen"
+  },
+  "calls": {
+    "call_flow": "Verbindung", "direction": "Richtung", "from": "Von",
+    "to": "Zu", "duration": "Dauer", "result": "Ergebnis", "time": "Zeit"
+  },
+  "config": {
+    "default_gateway": "Standard-Gateway", "default_extension": "Standard-Nebenstelle",
+    "no_routes": "Keine Routen konfiguriert", "apply_changes": "\u00c4nderungen anwenden",
+    "restart_required": "Neustart erforderlich", "connection_error": "Verbindungsfehler zum Server",
+    "outbound_calls_via": "Alle ausgehenden Anrufe gehen \u00fcber dieses Gateway",
+    "inbound_default": "Eingehende Anrufe ohne spezifische Route gehen hierhin",
+    "caller_id_desc": "Feste Anrufer-ID f\u00fcr alle ausgehenden Anrufe (optional)",
+    "country_code_desc": "L\u00e4ndervorwahl f\u00fcr Rufnummern-Normalisierung (z.B. 49 f\u00fcr Deutschland)",
+    "import_export": "Konfiguration Import / Export",
+    "export_config": "Konfiguration exportieren", "export_desc": "Aktuelle Konfiguration als JSON-Datei herunterladen",
+    "export_json": "JSON exportieren", "import_config": "Konfiguration importieren",
+    "import_desc": "JSON-Konfigurationsdatei hochladen um aktuelle Konfiguration zu ersetzen",
+    "import_json": "JSON importieren", "import_env": "Aus Umgebungsvariablen importieren",
+    "import_confirm_title": "Konfiguration importieren?",
+    "import_confirm_text": "Dies \u00fcberschreibt die aktuelle Konfiguration. Diese Aktion kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
+    "import_overwrite": "\u00dcberschreiben"
+  },
+  "profile": {
+    "change_password": "Passwort \u00e4ndern", "current_password": "Aktuelles Passwort",
+    "new_password": "Neues Passwort", "confirm_password": "Passwort best\u00e4tigen",
+    "passwords_not_match": "Passw\u00f6rter stimmen nicht \u00fcberein",
+    "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema"
+  },
+  "theme": {
+    "light": "Hell", "dark": "Dunkel", "auto": "Auto",
+    "default": "Standard", "ocean": "Ozean", "forest": "Wald", "sunset": "Sonnenuntergang"
+  },
+  "company": {
+    "company_info": "Firmeninformationen", "company_name": "Firmenname",
+    "address": "Adresse", "zip_code": "PLZ", "city": "Stadt", "country": "Land"
+  },
+  "invoice": {
+    "invoice_info": "Rechnungsadresse", "same_as_company": "Wie Firmenadresse",
+    "invoice_name": "Rechnungsempf\u00e4nger", "invoice_address": "Rechnungsadresse",
+    "invoice_email": "Rechnungs-E-Mail", "invoice_email_hint": "Rechnungen werden an diese Adresse gesendet"
+  },
+  "license": {
+    "license_info": "Lizenzinformationen", "license_key": "Lizenzschl\u00fcssel",
+    "client_name": "Kundenname", "version": "Version",
+    "update_license": "Lizenz aktualisieren", "activate_license": "Lizenz aktivieren",
+    "license": "Lizenz", "client": "Kunde", "licensed": "Lizenziert",
+    "expires": "L\u00e4uft ab", "trial_mode": "Testversion", "days_remaining": "Tage verbleibend",
+    "connections": "Verbindungen", "trial_expired_title": "Testversion abgelaufen",
+    "trial_expired_text": "Ihre Testversion ist abgelaufen. Bitte geben Sie einen Lizenzschl\u00fcssel ein, um die Anwendung weiter zu nutzen."
+  },
+  "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
+  "logs": {
+    "filter": "Filter", "search": "Logs durchsuchen...", "level": "Level",
+    "lines": "Zeilen", "entries": "Eintr\u00e4ge", "sources": "Quellen",
+    "no_logs": "Keine Logs verf\u00fcgbar", "esl_failed": "ESL-Verbindung fehlgeschlagen",
+    "saved": "Gespeichert", "failed_to_load": "Logs konnten nicht geladen werden",
+    "server_not_running": "l\u00e4uft nicht", "debug_dump": "Debug-Ausgabe",
+    "esl_events": "ESL-Ereignisse", "esl_connected": "Verbunden",
+    "esl_disconnected": "Getrennt", "events_buffer": "Ereignis-Puffer"
+  },
+  "security": {
+    "blacklist": "Blacklist", "whitelist": "Whitelist", "auto_blacklist": "Auto-Blacklist",
+    "fail2ban": "Fail2Ban", "blocked": "Blockiert", "allowed": "Erlaubt",
+    "whitelist_mode": "Whitelist-Modus", "enable_whitelist": "Whitelist-Modus aktivieren",
+    "whitelist_desc": "Wenn aktiviert, k\u00f6nnen nur IPs aus der Whitelist registrieren. Alle anderen IPs werden blockiert.",
+    "blocked_ips": "Blockierte IPs", "allowed_ips": "Erlaubte IPs",
+    "block_ip": "IP blockieren", "allow_ip": "IP erlauben",
+    "auto_blacklist_title": "Auto-Blacklist (Fail2Ban-\u00e4hnlich)",
+    "enable_auto_blacklist": "Auto-Blacklist aktivieren",
+    "auto_blacklist_desc": "IPs automatisch blockieren nach zu vielen fehlgeschlagenen Registrierungsversuchen.",
+    "max_attempts": "Max. Versuche", "block_after_n": "Nach N fehlgeschlagenen Versuchen blockieren",
+    "time_window": "Zeitfenster (Sekunden)", "count_in_time": "Versuche innerhalb dieser Zeit z\u00e4hlen",
+    "block_duration": "Sperrdauer (Sekunden)", "permanent": "0 = permanent",
+    "save_auto_blacklist": "Auto-Blacklist-Einstellungen speichern",
+    "failed_attempts": "Fehlgeschlagene Versuche",
+    "fail2ban_integration": "Fail2Ban-Integration (Firewall-Ebene)",
+    "enable_fail2ban": "Fail2Ban-Integration aktivieren",
+    "fail2ban_desc": "Wenn eine IP wiederholt blockiert wird, zu Fail2Ban hinzuf\u00fcgen f\u00fcr Firewall-Blocking (iptables).",
+    "threshold": "Schwellwert (Blockierungen)", "add_after_n": "Nach N Blockierungen zu Fail2Ban hinzuf\u00fcgen",
+    "jail_name": "Jail-Name", "jail_for_sip": "Fail2Ban-Jail f\u00fcr SIP-Blocking",
+    "save_fail2ban": "Fail2Ban-Einstellungen speichern", "refresh_status": "Status aktualisieren",
+    "ip_or_cidr": "IP-Adresse oder CIDR", "comment_optional": "Kommentar (optional)"
+  },
+  "gateway": {
+    "sip_gateways": "SIP-Gateways / Provider", "add_gateway": "Gateway hinzuf\u00fcgen",
+    "auth_username": "Auth-Benutzername (optional)", "auth_username_hint": "F\u00fcr 3CX und einige PBX-Systeme"
+  },
+  "route": {
+    "add_route": "Route hinzuf\u00fcgen", "inbound_routes": "Eingehende Routen (DID)",
+    "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
+    "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzuf\u00fcgen"
+  },
+  "modal": {
+    "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",
+    "add_acl_user": "ACL-Benutzer hinzuf\u00fcgen", "edit_acl_user": "ACL-Benutzer bearbeiten",
+    "add_gateway": "Gateway hinzuf\u00fcgen", "edit_gateway": "Gateway bearbeiten",
+    "notification": "Benachrichtigung", "block_ip_address": "IP-Adresse blockieren",
+    "allow_ip_address": "IP-Adresse erlauben", "multiple_ips_hint": "Mehrere IPs getrennt durch |",
+    "select": "-- Ausw\u00e4hlen --"
+  },
+  "validation": {
+    "required": "Pflichtfeld",
+    "invalid_ip": "Muss eine g\u00fcltige IP-Adresse sein (z.B. 192.168.1.1)",
+    "invalid_username": "Nur Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche",
+    "invalid_extension": "Nur Ziffern, *, #, +",
+    "min_length": "Mindestens {{min}} Zeichen",
+    "leave_empty_keep": "Leer lassen um aktuelles Passwort zu behalten"
+  },
+  "system": {
+    "system_settings": "Systemeinstellungen", "server": "Server",
+    "fs_domain": "FS-Domain", "external_sip_ip": "Externe SIP-IP",
+    "internal_sip_port": "Interner SIP-Port", "external_sip_port": "Externer SIP-Port",
+    "codec_prefs": "Codec-Pr\u00e4ferenzen", "default_country": "Standard-L\u00e4ndercode",
+    "outbound_caller_id": "Ausgehende Anrufer-ID", "save_settings": "Einstellungen speichern",
+    "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen"
+  }
+}
