@@ -14,7 +14,6 @@ import AltRouteIcon from '@mui/icons-material/AltRoute';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
-import BadgeIcon from '@mui/icons-material/Badge';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
@@ -33,7 +32,6 @@ const navItems = [
   { key: '/routes',        icon: <AltRouteIcon />,  label: 'section.routes' },
   { key: '/monitoring',    icon: <MonitorHeartIcon />, label: 'nav.monitoring' },
   { key: '/logs',          icon: <TerminalIcon />,  label: 'nav.logs' },
-  { key: '/license',       icon: <BadgeIcon />,     label: 'nav.license_billing' },
   { key: '/profile',       icon: <SettingsIcon />,  label: 'nav.profile' },
 ];
 

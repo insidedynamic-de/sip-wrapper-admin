@@ -7,7 +7,8 @@
     "logs": "Logs",
     "profile": "Profil",
     "monitoring": "Monitoring",
-    "license_billing": "Lizenz / Abrechnung"
+    "license_billing": "Lizenz / Abrechnung",
+    "billing": "Abrechnung"
   },
   "auth": {
     "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort", "host": "Server-Adresse",
@@ -102,6 +103,7 @@
     "change_password": "Passwort \u00e4ndern", "current_password": "Aktuelles Passwort",
     "new_password": "Neues Passwort", "confirm_password": "Passwort best\u00e4tigen",
     "passwords_not_match": "Passw\u00f6rter stimmen nicht \u00fcberein",
+    "settings": "Einstellungen",
     "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Auto-Logout aktivieren",
     "auto_logout_timeout": "Timeout (Sekunden)",
@@ -231,7 +233,8 @@
     "drag_hint": "Vom Punkt zum Punkt ziehen um Route zu erstellen \u2022 Linie klicken zum L\u00f6schen",
     "type_inbound": "Eingehend",
     "type_outbound": "Ausgehend",
-    "error_duplicate": "Diese Route existiert bereits (gleiche Nebenstelle, Gateway und Richtung)"
+    "error_duplicate": "Diese Route existiert bereits (gleiche Nebenstelle, Gateway und Richtung)",
+    "error_license_limit": "Lizenzlimit erreicht. Deaktivieren Sie andere Routen oder erwerben Sie zus\u00e4tzliche Lizenzen."
   },
   "modal": {
     "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",

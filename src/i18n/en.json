@@ -7,7 +7,8 @@
     "logs": "Logs",
     "profile": "Profile",
     "monitoring": "Monitoring",
-    "license_billing": "License / Billing"
+    "license_billing": "License / Billing",
+    "billing": "Billing"
   },
   "auth": {
     "login": "Login", "logout": "Logout", "username": "Username", "password": "Password", "host": "Server Host",
@@ -102,6 +103,7 @@
     "change_password": "Change Password", "current_password": "Current Password",
     "new_password": "New Password", "confirm_password": "Confirm Password",
     "passwords_not_match": "Passwords do not match",
+    "settings": "Settings",
     "appearance": "Appearance", "theme_mode": "Theme Mode", "color_theme": "Color Theme",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Enable Auto-Logout",
     "auto_logout_timeout": "Timeout (seconds)",
@@ -231,7 +233,8 @@
     "drag_hint": "Drag from handle to handle to create a route \u2022 Click edge to delete",
     "type_inbound": "Inbound",
     "type_outbound": "Outbound",
-    "error_duplicate": "This route already exists (same extension, gateway and direction)"
+    "error_duplicate": "This route already exists (same extension, gateway and direction)",
+    "error_license_limit": "License limit reached. Disable other routes or purchase additional licenses."
   },
   "modal": {
     "add_user": "Add User", "edit_user": "Edit User",

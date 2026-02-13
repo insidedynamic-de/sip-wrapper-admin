@@ -41,6 +41,7 @@ export default function RoutesPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [defaults, setDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
+  const [maxConnections, setMaxConnections] = useState(0);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -50,14 +51,15 @@ export default function RoutesPage() {
   const [initialForm, setInitialForm] = useState({ extension: '', gateway: '', direction: 'inbound' as 'inbound' | 'outbound', description: '' });
   const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
-  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' });
   const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
 
   const load = useCallback(async () => {
-    const [r, g, gs, e, u, reg] = await Promise.all([
+    const [r, g, gs, e, u, reg, lic] = await Promise.all([
       api.get('/routes'), api.get('/gateways'), api.get('/gateways/status'),
       api.get('/extensions'), api.get('/users'), api.get('/registrations'),
+      api.get('/license'),
     ]);
     setRoutes(r.data);
     setGateways(g.data || []);
@@ -66,6 +68,7 @@ export default function RoutesPage() {
     setUsers(u.data || []);
     setRegistrations(reg.data || []);
     if (r.data?.defaults) setDefaults(r.data.defaults);
+    if (lic.data) setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -122,6 +125,9 @@ export default function RoutesPage() {
     return rows;
   }, [routes, extensions, users]);
 
+  // Count only enabled routes for license limit check
+  const enabledCount = extRoutes.filter((r) => r.enabled).length;
+
   const gwOptions = gateways.map((g) => ({
     label: g.description ? `${g.name} \u2014 ${g.description}` : g.name,
     value: g.name,
@@ -175,6 +181,11 @@ export default function RoutesPage() {
       const dirChanged = editRoute && editRoute.direction !== form.direction;
       const extChanged = editRoute && editRoute.extension !== form.extension;
 
+      // License limit check: for new routes, if at/over limit → create as deactivated
+      const isNew = !editRoute || dirChanged || extChanged;
+      const overLimit = maxConnections > 0 && enabledCount >= maxConnections;
+      const forceDisabled = isNew && !editRoute && overLimit;
+
       // If direction or extension changed, delete old route first then create new
       if (editRoute && (dirChanged || extChanged)) {
         if (editRoute.direction === 'inbound') {
@@ -207,22 +218,27 @@ export default function RoutesPage() {
           });
         }
       } else {
-        // New route
+        // New route — deactivate if over license limit
+        const enabled = !forceDisabled;
         if (form.direction === 'inbound') {
           await api.post('/routes/inbound', {
-            gateway: form.gateway, extension: form.extension, description: form.description, enabled: true,
+            gateway: form.gateway, extension: form.extension, description: form.description, enabled,
           });
         } else {
           const user = users.find((u) => u.extension === form.extension);
           if (user) {
             await api.post('/routes/user', {
-              username: user.username, gateway: form.gateway, description: form.description, enabled: true,
+              username: user.username, gateway: form.gateway, description: form.description, enabled,
             });
           }
         }
       }
       setDialogOpen(false);
-      setToast({ open: true, message: t('status.success'), severity: 'success' });
+      if (forceDisabled) {
+        setToast({ open: true, message: t('route.error_license_limit'), severity: 'warning' });
+      } else {
+        setToast({ open: true, message: t('status.success'), severity: 'success' });
+      }
       load();
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
@@ -251,8 +267,13 @@ export default function RoutesPage() {
   // ── Toggle enabled ──
 
   const toggleEnabled = async (r: ExtensionRoute) => {
+    const newEnabled = !r.enabled;
+    // Block enabling if at license limit
+    if (newEnabled && maxConnections > 0 && enabledCount >= maxConnections) {
+      setToast({ open: true, message: t('route.error_license_limit'), severity: 'error' });
+      return;
+    }
     try {
-      const newEnabled = !r.enabled;
       if (r.direction === 'inbound') {
         await api.put(`/routes/inbound/${r.gateway}`, { enabled: newEnabled });
       } else {

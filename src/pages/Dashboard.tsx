@@ -175,7 +175,9 @@ export default function Dashboard() {
   const [liveCalls, setLiveCalls] = useState<ActiveCall[]>([]);
   const liveRef = useRef<ActiveCall[]>([]);
   const demoTotalRef = useRef(0);
+  const demoFailedRef = useRef(0);
   const [demoTotalToday, setDemoTotalToday] = useState(0);
+  const [demoFailedToday, setDemoFailedToday] = useState(0);
   const demo = isDemoMode();
 
   // Valid extensions for demo calls: registered SIP users + ACL users
@@ -193,7 +195,9 @@ export default function Dashboard() {
     liveRef.current = [...calls];
     setLiveCalls([...calls]);
     demoTotalRef.current = 0;
+    demoFailedRef.current = 0;
     setDemoTotalToday(0);
+    setDemoFailedToday(0);
   }, [calls]);
 
   // Every-second tick: durations + state transitions + add/remove calls
@@ -260,7 +264,10 @@ export default function Dashboard() {
       // Save ended calls to demo store call logs
       if (demo && endedCalls.length > 0) {
         demoTotalRef.current += endedCalls.length;
+        const endedFailed = endedCalls.filter((c) => c.state !== 'active').length;
+        demoFailedRef.current += endedFailed;
         setDemoTotalToday(demoTotalRef.current);
+        setDemoFailedToday(demoFailedRef.current);
         saveEndedCalls(endedCalls);
       }
     }, 1000);
@@ -340,7 +347,9 @@ export default function Dashboard() {
   };
   const gwRegistered = gateways.filter((g) => g.state === 'REGED' && isGwEnabled(g.name)).length;
   const extActive = extensions.filter((e) => e.enabled !== false).length;
-  const failedCalls = callLogs.filter((c) => c.result === 'failed' || c.result === 'missed').length;
+  const failedCallsBase = callLogs.filter((c) => c.result === 'failed' || c.result === 'missed').length;
+  const liveTotalCalls = callLogs.length + demoTotalToday;
+  const liveFailedCalls = failedCallsBase + demoFailedToday;
 
   // Dismiss button overlay styles (appears on hover)
   const dismissSx = {
@@ -479,12 +488,12 @@ export default function Dashboard() {
             <IconButton className="dash-x" size="small" onClick={() => hideCard('total_calls')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
             <Card sx={{ minWidth: 180 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PhoneMissedIcon color={failedCalls > 0 ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
+                <PhoneMissedIcon color={liveFailedCalls > 0 ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">
-                    {callLogs.length}
-                    <Typography component="span" variant="h5" color={failedCalls > 0 ? 'error.main' : 'text.secondary'}>
-                      /{failedCalls}
+                    {liveTotalCalls}
+                    <Typography component="span" variant="h5" color={liveFailedCalls > 0 ? 'error.main' : 'text.secondary'}>
+                      /{liveFailedCalls}
                     </Typography>
                   </Typography>
                   <Typography color="text.secondary" variant="body2">

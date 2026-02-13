@@ -1,5 +1,5 @@
 /**
- * @file Profile — User profile: appearance, auto-logout, password
+ * @file Profile — User profile with tabs: Settings (appearance, auto-logout, password) and Billing
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useState, useCallback } from 'react';
@@ -13,12 +13,17 @@ import Grid from '@mui/material/Grid2';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode, TimeFormat, DateFormat } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
 import PageActions from '../components/PageActions';
+import { TabView } from '../components/TabView';
+import type { TabItemConfig } from '../components/TabView';
+import BillingTab from './BillingTab';
 import i18n from '../i18n';
 
 interface Props {
@@ -111,10 +116,9 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
     if (a) await a();
   };
 
-  return (
+  // Settings tab content (existing profile content)
+  const settingsContent = (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.profile')}</Typography>
-
       {/* Appearance */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ px: 4, py: 3 }}>
@@ -221,6 +225,18 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
           <Button variant="contained" sx={{ mt: 2 }} onClick={changePassword}>{t('button.save')}</Button>
         </CardContent>
       </Card>
+    </Box>
+  );
+
+  const tabs: TabItemConfig[] = [
+    { id: 'settings', label: t('profile.settings'), icon: <SettingsIcon />, content: settingsContent },
+    { id: 'billing',  label: t('nav.billing'),      icon: <ReceiptLongIcon />, content: <BillingTab /> },
+  ];
+
+  return (
+    <Box>
+      <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.profile')}</Typography>
+      <TabView tabs={tabs} storageKey="sip-wrapper-tab-order-profile" sortable />
 
       <ConfirmDialog open={confirmSave.open} variant="save"
         title={t('confirm.save_title')} message={t('confirm.save_message')}

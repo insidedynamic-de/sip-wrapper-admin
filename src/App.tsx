@@ -12,7 +12,6 @@ import Configuration from './pages/Configuration';
 import RoutesPage from './pages/Routes';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
-import License from './pages/License';
 import Monitoring from './pages/Monitoring';
 import NotFound from './pages/NotFound';
 
@@ -64,7 +63,7 @@ export default function App() {
             <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Navigate to="/configuration" replace />} />
-            <Route path="/license" element={<License />} />
+            <Route path="/license" element={<Navigate to="/configuration" replace />} />
             <Route
               path="/profile"
               element={
