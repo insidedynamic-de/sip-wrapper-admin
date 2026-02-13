@@ -172,7 +172,9 @@
     "add_route": "Add Route", "edit_route": "Edit Route", "view_route": "View Route",
     "inbound_routes": "Inbound Routes (DID)",
     "add_inbound": "Add Inbound Route", "did_number": "DID / Phone Number",
-    "dest_type": "Destination Type", "add_user_route": "Add User Route"
+    "dest_type": "Destination Type", "add_user_route": "Add User Route",
+    "view_table": "Table View", "view_graph": "Graph View",
+    "default_route": "Default", "override_route": "Override"
   },
   "modal": {
     "add_user": "Add User", "edit_user": "Edit User",

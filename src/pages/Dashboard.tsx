@@ -87,7 +87,7 @@ export default function Dashboard() {
       const cur = liveRef.current;
       if (!demo && cur.length === 0) return;
 
-      let updated = cur.map((c) => {
+      const raw: (ActiveCall | null)[] = cur.map((c) => {
         // Tick duration for active calls
         const dur = c.state === 'active' ? tickDuration(c.duration) : c.duration;
 
@@ -103,43 +103,37 @@ export default function Dashboard() {
           if (c.state === 'active') {
             const parts = dur.split(':').map(Number);
             const totalSec = (parts[0] || 0) * 60 + (parts[1] || 0);
-            if (totalSec > 30 && Math.random() < 0.04) {
-              return null; // call ended
-            }
-            if (totalSec > 120 && Math.random() < 0.1) {
-              return null; // longer calls more likely to end
-            }
+            if (totalSec > 30 && Math.random() < 0.04) return null;
+            if (totalSec > 120 && Math.random() < 0.1) return null;
           }
           // Missed/failed ringing
           if (c.state === 'ringing') {
             const parts = c.duration.split(':').map(Number);
             const ringTime = (parts[0] || 0) * 60 + (parts[1] || 0);
-            if (ringTime > 20 && Math.random() < 0.08) {
-              return null; // unanswered
-            }
+            if (ringTime > 20 && Math.random() < 0.08) return null;
           }
         }
         return { ...c, duration: dur };
       });
 
       // Remove ended calls (nulls)
-      const ended = updated.filter((c) => c === null).length;
-      updated = updated.filter((c): c is ActiveCall => c !== null);
+      const ended = raw.filter((c) => c === null).length;
+      let alive = raw.filter((c): c is ActiveCall => c !== null);
 
       // In demo: add new calls randomly (every ~6-10s on average)
-      if (demo && Math.random() < 0.12 && updated.length < 8) {
-        updated.push(createDemoCall());
+      if (demo && Math.random() < 0.12 && alive.length < 8) {
+        alive.push(createDemoCall());
       }
 
       // Tick ringing durations too (so we know how long they've been ringing)
-      updated = updated.map((c) =>
+      alive = alive.map((c) =>
         c.state === 'ringing' || c.state === 'early'
           ? { ...c, duration: tickDuration(c.duration) }
           : c,
       );
 
-      liveRef.current = updated;
-      setLiveCalls([...updated]);
+      liveRef.current = alive;
+      setLiveCalls([...alive]);
 
       if (ended > 0) {
         demoTotalRef.current += ended;

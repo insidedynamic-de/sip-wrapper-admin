@@ -172,7 +172,9 @@
     "add_route": "Route hinzuf\u00fcgen", "edit_route": "Route bearbeiten", "view_route": "Route anzeigen",
     "inbound_routes": "Eingehende Routen (DID)",
     "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
-    "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzuf\u00fcgen"
+    "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzufügen",
+    "view_table": "Tabellenansicht", "view_graph": "Graphansicht",
+    "default_route": "Standard", "override_route": "Überschreibung"
   },
   "modal": {
     "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",

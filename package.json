@@ -16,6 +16,7 @@
     "@emotion/styled": "^11.13.5",
     "@mui/icons-material": "^6.3.0",
     "@mui/material": "^6.3.0",
+    "@xyflow/react": "^12.10.0",
     "axios": "^1.7.9",
     "i18next": "^24.2.1",
     "react": "^19.0.0",

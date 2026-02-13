@@ -19,6 +19,7 @@ All dependencies use **MIT-compatible licenses** to avoid open-source copyleft o
 | @dnd-kit/core | 6.3.1 | MIT | 2026-02 | https://github.com/clauderic/dnd-kit |
 | @dnd-kit/sortable | 10.0.0 | MIT | 2026-02 | https://github.com/clauderic/dnd-kit |
 | @dnd-kit/modifiers | 9.0.0 | MIT | 2026-02 | https://github.com/clauderic/dnd-kit |
+| @xyflow/react | 12.10.0 | MIT | 2026-02 | https://github.com/xyflow/xyflow |
 
 ## Dev Dependencies
 
