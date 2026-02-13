@@ -206,7 +206,7 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Card sx={{ width: 420, p: 2 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
             SIP Wrapper
           </Typography>

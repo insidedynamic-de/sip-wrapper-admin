@@ -133,9 +133,11 @@ export default function Extensions() {
         rows={extensions}
         getKey={(ext) => ext.extension}
         columns={[
-          { header: t('field.extension'), field: 'extension' },
-          { header: t('extension.description'), field: 'description' },
+          { id: 'extension', header: t('field.extension'), field: 'extension' },
+          { id: 'description', header: t('extension.description'), field: 'description' },
         ]}
+        columnOrderKey="extensions-columns"
+        searchable
         getEnabled={(ext) => ext.enabled !== false}
         onToggle={(ext) => toggleEnabled(ext)}
         onView={openView}

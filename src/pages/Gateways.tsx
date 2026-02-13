@@ -130,11 +130,13 @@ export default function Gateways() {
         rows={gateways}
         getKey={(gw) => gw.name}
         columns={[
-          { header: t('field.name'), field: 'name' },
-          { header: t('field.type'), render: (gw) => <Chip size="small" label={gw.type} /> },
-          { header: t('field.host'), render: (gw) => `${gw.host}:${gw.port}` },
-          { header: t('field.transport'), field: 'transport' },
+          { id: 'name', header: t('field.name'), field: 'name' },
+          { id: 'type', header: t('field.type'), render: (gw) => <Chip size="small" label={gw.type} />, searchText: (gw) => gw.type },
+          { id: 'host', header: t('field.host'), render: (gw) => `${gw.host}:${gw.port}`, searchText: (gw) => `${gw.host}:${gw.port}` },
+          { id: 'transport', header: t('field.transport'), field: 'transport' },
         ]}
+        columnOrderKey="gateways-columns"
+        searchable
         getStatus={(gw) => {
           const st = gwStatuses.find((s) => s.name === gw.name);
           return st

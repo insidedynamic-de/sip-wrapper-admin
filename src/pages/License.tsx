@@ -125,6 +125,7 @@ export default function License() {
   const doSaveCompany = async () => {
     try {
       await api.put('/company', company);
+      await api.post('/config/apply');
       showToast(t('status.success'), true);
     } catch { showToast(t('status.error'), false); }
   };
@@ -133,6 +134,7 @@ export default function License() {
   const doSaveInvoice = async () => {
     try {
       await api.put('/invoice', invoice);
+      await api.post('/config/apply');
       showToast(t('status.success'), true);
     } catch { showToast(t('status.error'), false); }
   };
@@ -177,7 +179,7 @@ export default function License() {
 
       {/* License Key Activation */}
       <Card sx={{ mt: 3, mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('license.activate_license')}</Typography>
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
             <TextField
@@ -197,7 +199,7 @@ export default function License() {
 
       {/* Company Info */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('company.company_info')}</Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -230,14 +232,14 @@ export default function License() {
             </Grid>
           </Grid>
           <Button variant="contained" startIcon={<SaveIcon />} sx={{ mt: 2 }} onClick={saveCompany}>
-            {t('button.save')}
+            {t('button.save_reload')}
           </Button>
         </CardContent>
       </Card>
 
       {/* Invoice Info */}
       <Card>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('invoice.invoice_info')}</Typography>
           <FormControlLabel
             control={
@@ -267,7 +269,7 @@ export default function License() {
             </Grid>
           )}
           <Button variant="contained" startIcon={<SaveIcon />} sx={{ mt: 2 }} onClick={saveInvoice}>
-            {t('button.save')}
+            {t('button.save_reload')}
           </Button>
         </CardContent>
       </Card>

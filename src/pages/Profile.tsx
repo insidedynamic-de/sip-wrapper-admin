@@ -112,7 +112,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
 
       {/* Appearance */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('profile.appearance')}</Typography>
 
           {/* Theme Mode */}
@@ -154,7 +154,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
 
       {/* Auto-Logout */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('profile.auto_logout')}</Typography>
           <FormControlLabel
             control={<Switch checked={local.autoLogout} onChange={(e) => updateLocal({ autoLogout: e.target.checked })} />}
@@ -182,7 +182,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
 
       {/* Password */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('profile.change_password')}</Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 4 }}>

@@ -7,7 +7,6 @@ import {
 import SaveIcon from '@mui/icons-material/Save';
 import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
-import SyncIcon from '@mui/icons-material/Sync';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -27,22 +26,13 @@ export default function Settings() {
   const doSave = async () => {
     try {
       await api.put('/settings', settings);
+      await api.post('/config/apply');
       setToast({ open: true, message: t('status.success'), severity: 'success' });
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
     }
   };
   const save = () => setConfirmSave({ open: true, action: doSave });
-
-  const doApplyConfig = async () => {
-    try {
-      const res = await api.post('/config/apply');
-      setToast({ open: true, message: res.data?.message || t('status.success'), severity: res.data?.success ? 'success' : 'error' });
-    } catch {
-      setToast({ open: true, message: t('status.error'), severity: 'error' });
-    }
-  };
-  const applyConfig = () => setConfirmSave({ open: true, action: doApplyConfig });
 
   const handleConfirmSave = async () => {
     const a = confirmSave.action;
@@ -85,7 +75,7 @@ export default function Settings() {
       <Typography variant="h5" sx={{ mb: 3 }}>{t('system.system_settings')}</Typography>
 
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('system.server')}</Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 4 }}>
@@ -119,22 +109,13 @@ export default function Settings() {
             </Grid>
           </Grid>
           <Box sx={{ mt: 2 }}>
-            <Button variant="contained" startIcon={<SaveIcon />} onClick={save}>{t('system.save_settings')}</Button>
+            <Button variant="contained" startIcon={<SaveIcon />} onClick={save}>{t('button.save_reload')}</Button>
           </Box>
         </CardContent>
       </Card>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>{t('config.apply_changes')}</Typography>
-          <Button variant="contained" color="warning" startIcon={<SyncIcon />} onClick={applyConfig}>
-            {t('button.apply_reload')}
-          </Button>
-        </CardContent>
-      </Card>
-
       <Card>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('config.import_export')}</Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportConfig}>

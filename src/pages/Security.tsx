@@ -91,6 +91,7 @@ export default function Security() {
         api.put('/security/auto-blacklist', autoBlacklist),
         api.put('/security/fail2ban', fail2ban),
       ]);
+      await api.post('/config/apply');
       showToast(true);
     } catch { showToast(false); }
   };
@@ -108,7 +109,7 @@ export default function Security() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('nav.security')}</Typography>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveSecuritySettings}>{t('button.save_changes')}</Button>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveSecuritySettings}>{t('button.save_reload')}</Button>
       </Box>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
@@ -121,7 +122,7 @@ export default function Security() {
       {/* Blacklist */}
       {tab === 0 && (
         <Card>
-          <CardContent>
+          <CardContent sx={{ px: 4, py: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Typography variant="h6">{t('security.blocked_ips')}</Typography>
               <Button startIcon={<AddIcon />} onClick={() => openDialog('blacklist')}>{t('security.block_ip')}</Button>
@@ -161,7 +162,7 @@ export default function Security() {
       {/* Whitelist */}
       {tab === 1 && (
         <Card>
-          <CardContent>
+          <CardContent sx={{ px: 4, py: 3 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
               <Box>
                 <Typography variant="h6">{t('security.allowed_ips')}</Typography>
@@ -209,7 +210,7 @@ export default function Security() {
       {/* Auto-Blacklist */}
       {tab === 2 && (
         <Card>
-          <CardContent>
+          <CardContent sx={{ px: 4, py: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>{t('security.auto_blacklist_title')}</Typography>
             <FormControlLabel
               control={<Switch checked={autoBlacklist.enabled} onChange={(e) => setAutoBlacklist({ ...autoBlacklist, enabled: e.target.checked })} />}
@@ -234,7 +235,7 @@ export default function Security() {
       {/* Fail2Ban */}
       {tab === 3 && (
         <Card>
-          <CardContent>
+          <CardContent sx={{ px: 4, py: 3 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>{t('security.fail2ban_integration')}</Typography>
             <FormControlLabel
               control={<Switch checked={fail2ban.enabled} onChange={(e) => setFail2ban({ ...fail2ban, enabled: e.target.checked })} />}

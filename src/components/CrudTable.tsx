@@ -1,26 +1,44 @@
 /**
- * @file CrudTable — Reusable generic table with status, enabled toggle, and actions
+ * @file CrudTable — Reusable generic table with status, enabled toggle, actions,
+ *       draggable column reordering, and search filtering
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
+import { useState, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Card, CardContent, Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, Typography, Chip, Switch, IconButton,
+  Box, Card, CardContent, Table, TableBody, TableCell, TableContainer,
+  TableHead, TableRow, Typography, Chip, Switch, IconButton, TextField,
+  InputAdornment,
 } from '@mui/material';
 import type { ChipProps } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
+import {
+  DndContext, closestCenter,
+  PointerSensor, TouchSensor,
+  useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers';
+import SortableHeaderCell from './SortableHeaderCell';
+import { useColumnOrder } from '../hooks/useColumnOrder';
 
 /** A single data column definition */
 export interface CrudColumn<T> {
+  /** Unique ID for column ordering — falls back to index if omitted */
+  id?: string;
   /** Header label (already translated by caller) */
   header: string;
   /** Key of T for simple text rendering */
   field?: keyof T;
   /** Custom cell renderer — takes priority over field */
   render?: (row: T, index: number) => ReactNode;
+  /** Text extractor for search filtering (needed for custom render columns) */
+  searchText?: (row: T) => string;
   /** Optional fixed width */
   width?: number | string;
   /** Horizontal alignment — defaults to 'left' */
@@ -77,6 +95,21 @@ export interface CrudTableProps<T> {
   size?: 'small' | 'medium';
   stickyHeader?: boolean;
   maxHeight?: number;
+
+  // ── Column reordering ──
+  /** localStorage key for persisting column order. Enables drag-to-reorder when set. */
+  columnOrderKey?: string;
+
+  // ── Search ──
+  /** Show a search field above the table */
+  searchable?: boolean;
+}
+
+/** Extract text value from a row for a given column (for search) */
+function colText<T>(col: CrudColumn<T>, row: T): string {
+  if (col.searchText) return col.searchText(row);
+  if (col.field) return String((row as Record<string, unknown>)[col.field as string] ?? '');
+  return '';
 }
 
 export default function CrudTable<T>({
@@ -97,42 +130,110 @@ export default function CrudTable<T>({
   size = 'small',
   stickyHeader,
   maxHeight,
+  columnOrderKey,
+  searchable,
 }: CrudTableProps<T>) {
   const { t } = useTranslation();
   const hasActions = !!(onView || onEdit || onDelete);
   const shouldDim = dimDisabled ?? !!getEnabled;
+  const [search, setSearch] = useState('');
+
+  // Column IDs (stable per render)
+  const columnIds = useMemo(
+    () => columns.map((col, i) => col.id || `col-${i}`),
+    [columns],
+  );
+
+  const { order, moveColumn } = useColumnOrder(columnIds, columnOrderKey);
+
+  // Build ordered columns based on persisted order
+  const orderedColumns = useMemo(() => {
+    if (!columnOrderKey) return columns;
+    const colMap = new Map(columns.map((col, i) => [col.id || `col-${i}`, col]));
+    return order
+      .map((id) => colMap.get(id))
+      .filter(Boolean) as CrudColumn<T>[];
+  }, [columns, order, columnOrderKey]);
+
+  // DnD sensors (same config as TabView)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const fromIndex = order.indexOf(String(active.id));
+      const toIndex = order.indexOf(String(over.id));
+      moveColumn(fromIndex, toIndex);
+    }
+  };
+
+  // Filter rows by search text
+  const filteredRows = useMemo(() => {
+    if (!searchable || !search.trim()) return rows;
+    const q = search.toLowerCase();
+    return rows.filter((row) =>
+      orderedColumns.some((col) => colText(col, row).toLowerCase().includes(q)),
+    );
+  }, [rows, search, searchable, orderedColumns]);
 
   const totalCols =
-    columns.length +
+    orderedColumns.length +
     (getStatus ? 1 : 0) +
     (getEnabled ? 1 : 0) +
     (hasActions ? 1 : 0);
+
+  // Header row content
+  const headerCells = columnOrderKey ? (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToHorizontalAxis]}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={order} strategy={horizontalListSortingStrategy}>
+        {orderedColumns.map((col, i) => (
+          <SortableHeaderCell
+            key={col.id || `col-${i}`}
+            id={col.id || `col-${i}`}
+            label={col.header}
+            width={col.width}
+            align={col.align}
+          />
+        ))}
+      </SortableContext>
+    </DndContext>
+  ) : (
+    orderedColumns.map((col, i) => (
+      <TableCell key={i} sx={col.width ? { width: col.width } : undefined} align={col.align}>
+        {col.header}
+      </TableCell>
+    ))
+  );
 
   const table = (
     <TableContainer sx={maxHeight ? { maxHeight } : undefined}>
       <Table size={size} stickyHeader={stickyHeader}>
         <TableHead>
           <TableRow>
-            {columns.map((col, i) => (
-              <TableCell key={i} sx={col.width ? { width: col.width } : undefined} align={col.align}>
-                {col.header}
-              </TableCell>
-            ))}
+            {headerCells}
             {getStatus && <TableCell>{statusHeader || t('field.status')}</TableCell>}
             {getEnabled && <TableCell>{enabledHeader || t('status.enabled')}</TableCell>}
             {hasActions && <TableCell align="right">{t('field.actions')}</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
-          {rows.map((row, i) => {
+          {filteredRows.map((row, i) => {
             const enabled = getEnabled ? getEnabled(row) : true;
             return (
               <TableRow
                 key={getKey(row, i)}
                 sx={shouldDim && !enabled ? { opacity: 0.5 } : undefined}
               >
-                {columns.map((col, ci) => (
-                  <TableCell key={ci} align={col.align}>
+                {orderedColumns.map((col, ci) => (
+                  <TableCell key={col.id || ci} align={col.align}>
                     {col.render ? col.render(row, i) : String((row as Record<string, unknown>)[col.field as string] ?? '')}
                   </TableCell>
                 ))}
@@ -178,7 +279,7 @@ export default function CrudTable<T>({
               </TableRow>
             );
           })}
-          {rows.length === 0 && emptyMessage && (
+          {filteredRows.length === 0 && emptyMessage && (
             <TableRow>
               <TableCell colSpan={totalCols} align="center" sx={{ py: 4 }}>
                 <Typography color="text.secondary">{emptyMessage}</Typography>
@@ -190,11 +291,40 @@ export default function CrudTable<T>({
     </TableContainer>
   );
 
-  if (!withCard) return table;
+  const searchBar = searchable ? (
+    <Box sx={{ px: 2, pt: 2, pb: 1 }}>
+      <TextField
+        size="small"
+        fullWidth
+        placeholder={t('table.search')}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" color="action" />
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+    </Box>
+  ) : null;
+
+  if (!withCard) {
+    return (
+      <>
+        {searchBar}
+        {table}
+      </>
+    );
+  }
 
   return (
     <Card>
       <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+        {searchBar}
         {table}
       </CardContent>
     </Card>

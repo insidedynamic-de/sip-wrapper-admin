@@ -296,24 +296,30 @@ export default function Users() {
         rows={mergedRows}
         getKey={(r) => `${r.type}-${r.extension}`}
         columns={[
-          { header: t('field.extension'), field: 'extension', width: 90 },
+          { id: 'extension', header: t('field.extension'), field: 'extension', width: 90 },
           {
+            id: 'user',
             header: t('field.user'),
             render: (row) => (
               <Typography variant="body2" noWrap>
                 {formatUser(row)}
               </Typography>
             ),
+            searchText: (row) => formatUser(row),
           },
           {
+            id: 'caller_id',
             header: t('field.caller_id'),
             render: (row) => row.caller_id ? (
               <Typography variant="body2" color="text.secondary" noWrap sx={{ fontFamily: 'monospace', fontSize: 13 }}>
                 {row.caller_id}
               </Typography>
             ) : null,
+            searchText: (row) => row.caller_id,
           },
         ]}
+        columnOrderKey="users-columns"
+        searchable
         getStatus={(row) => {
           if (row.type === 'acl') {
             return { label: `ACL ${row.ip}`, color: 'info' };

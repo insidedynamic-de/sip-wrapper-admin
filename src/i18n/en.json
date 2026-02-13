@@ -19,9 +19,10 @@
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "close": "Close",
     "reload": "Reload", "add": "Add", "edit": "Edit", "apply": "Apply",
     "activate": "Activate", "import": "Import", "export": "Export",
-    "apply_reload": "Apply & Reload", "block": "Block", "allow": "Allow",
+    "apply_reload": "Apply & Reload", "save_reload": "Save & Reload",
+    "block": "Block", "allow": "Allow",
     "refresh": "Refresh", "check_now": "Check & Block Now", "save_defaults": "Save Defaults",
-    "save_changes": "Save Changes"
+    "save_changes": "Save Changes", "test_connection": "Test Connection"
   },
   "status": {
     "online": "Online", "offline": "Offline", "registered": "Registered",
@@ -29,7 +30,8 @@
     "loading": "Loading...", "checking": "Checking...", "connected": "Connected",
     "disconnected": "Disconnected", "enabled": "Enabled", "disabled": "Disabled", "deactivated": "Deactivated",
     "access_denied": "Access Denied",
-    "connection_ok": "Connection OK"
+    "connection_ok": "Connection OK",
+    "connection_failed": "Connection failed"
   },
   "section": {
     "users": "Users", "sip_users": "SIP Users", "acl_users": "ACL Users",
@@ -70,7 +72,7 @@
   "config": {
     "default_gateway": "Default Gateway", "default_extension": "Default Extension",
     "no_routes": "No routes configured", "apply_changes": "Apply Changes",
-    "apply_confirm_message": "This will reload the FreeSWITCH configuration. Active calls may be affected. Continue?",
+    "apply_confirm_message": "This will reload the server configuration. Active calls may be affected. Continue?",
     "restart_required": "Restart Required", "connection_error": "Connection error to server",
     "outbound_calls_via": "All outbound calls go through this gateway",
     "inbound_default": "Inbound calls without specific route go here",
@@ -226,14 +228,18 @@
   },
   "system": {
     "system_settings": "System Settings", "server": "Server",
-    "fs_domain": "FS Domain", "fs_domain_desc": "FreeSWITCH SIP domain (e.g. sip.example.com)",
+    "fs_domain": "SIP Domain", "fs_domain_desc": "SIP domain for this server (e.g. sip.example.com)",
     "external_sip_ip": "External SIP IP", "external_sip_ip_desc": "Public IP address for SIP signaling (NAT traversal)",
     "internal_sip_port": "Internal SIP Port", "internal_port_desc": "Local users (default: 5060)",
     "external_sip_port": "External SIP Port", "external_port_desc": "Provider / trunk (default: 5080)",
     "codec_prefs": "Codec Preferences", "codec_prefs_desc": "Select audio/video codecs. Order determines negotiation priority.",
     "default_country": "Default Country Code",
     "outbound_caller_id": "Outbound Caller ID", "save_settings": "Save Settings",
-    "esl_settings": "ESL Connection", "esl_password": "Password", "esl_test": "Test Connection"
+    "esl_settings": "ESL Connection", "esl_password": "Password", "esl_test": "Test Connection",
+    "server_desc": "Server connection and SIP configuration settings.",
+    "domain_ip": "Domain & IP",
+    "ports": "Ports",
+    "country_caller": "Country & Caller ID"
   },
   "countdown": {
     "logout_in": "Logout in {{seconds}}s",
@@ -252,6 +258,9 @@
     "move_left": "Move left",
     "move_right": "Move right",
     "drag_to_reorder": "Drag to reorder"
+  },
+  "table": {
+    "search": "Search..."
   },
   "demo": {
     "title": "Demo Mode",

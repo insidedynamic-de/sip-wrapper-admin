@@ -411,7 +411,7 @@ export default function Dashboard() {
         <Box sx={{ ...hoverWrapSx, mb: 3 }}>
           <IconButton className="dash-x" size="small" onClick={() => hideCard('gateway_status')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
           <Card>
-            <CardContent>
+            <CardContent sx={{ px: 4, py: 3 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>{t('dashboard.gateway_status')}</Typography>
               {gateways.length === 0 ? (
                 <Typography color="text.secondary">{t('dashboard.no_gateways')}</Typography>
@@ -459,7 +459,7 @@ export default function Dashboard() {
         <Box sx={{ ...hoverWrapSx, mb: 3 }}>
           <IconButton className="dash-x" size="small" onClick={() => hideCard('registrations')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
           <Card>
-            <CardContent>
+            <CardContent sx={{ px: 4, py: 3 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>{t('dashboard.user_registrations')}</Typography>
               {registrations.length === 0 ? (
                 <Typography color="text.secondary">{t('dashboard.no_users_registered')}</Typography>
@@ -495,7 +495,7 @@ export default function Dashboard() {
         <Box sx={hoverWrapSx}>
           <IconButton className="dash-x" size="small" onClick={() => hideCard('live_calls')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
           <Card>
-            <CardContent>
+            <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                 <Typography variant="h6">{t('dashboard.active_calls')}</Typography>
                 <Chip size="small" label={liveCalls.length} color={liveCalls.length > 0 ? 'success' : 'default'} />

@@ -66,6 +66,7 @@ export default function RoutesPage() {
   const doSaveDefaults = async () => {
     try {
       await api.put('/routes/defaults', defaults);
+      await api.post('/config/apply');
       setToast({ open: true, message: t('status.success'), severity: 'success' });
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
@@ -258,12 +259,12 @@ export default function RoutesPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('section.routes')}</Typography>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_defaults')}</Button>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_reload')}</Button>
       </Box>
 
       {/* Defaults */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('section.default_routes')}</Typography>
           <Grid container spacing={2} alignItems="center">
             <Grid size={{ xs: 12, md: 3 }}>
@@ -293,7 +294,7 @@ export default function RoutesPage() {
 
       {/* Inbound Routes — with graph/table toggle inside */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">{t('section.inbound_routing')}</Typography>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -322,9 +323,11 @@ export default function RoutesPage() {
               rows={routes?.inbound || []}
               getKey={(r, i) => `inbound-${i}`}
               columns={[
-                { header: t('field.gateway'), field: 'gateway' },
-                { header: t('field.extension'), field: 'extension' },
+                { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
+                { id: 'extension', header: t('field.extension'), field: 'extension' },
               ]}
+              columnOrderKey="routes-inbound-columns"
+              searchable
               getEnabled={(r) => r.enabled !== false}
               onToggle={(r) => toggleInbound(r.gateway, r.enabled === false)}
               onView={openViewInbound}
@@ -341,7 +344,7 @@ export default function RoutesPage() {
 
       {/* Outbound Routes — table only (pattern-based, no graph) */}
       <Card sx={{ mb: 3 }}>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
             <Typography variant="h6">{t('section.outbound_routing')}</Typography>
             <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('outbound')}>
@@ -352,9 +355,11 @@ export default function RoutesPage() {
             rows={outboundRows}
             getKey={(r) => `outbound-${r._index}`}
             columns={[
-              { header: t('field.pattern'), field: 'pattern' },
-              { header: t('field.gateway'), field: 'gateway' },
+              { id: 'pattern', header: t('field.pattern'), field: 'pattern' },
+              { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
             ]}
+            columnOrderKey="routes-outbound-columns"
+            searchable
             getEnabled={(r) => r.enabled !== false}
             onToggle={(r) => toggleOutbound(r._index, r.enabled === false)}
             onView={openViewOutbound}
@@ -368,7 +373,7 @@ export default function RoutesPage() {
 
       {/* User Routes — with graph/table toggle inside */}
       <Card>
-        <CardContent>
+        <CardContent sx={{ px: 4, py: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">{t('section.user_routing')}</Typography>
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
@@ -397,9 +402,11 @@ export default function RoutesPage() {
               rows={routes?.user_routes || []}
               getKey={(r, i) => `user-${i}`}
               columns={[
-                { header: t('field.user'), field: 'username' },
-                { header: t('field.gateway'), field: 'gateway' },
+                { id: 'user', header: t('field.user'), field: 'username' },
+                { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
               ]}
+              columnOrderKey="routes-user-columns"
+              searchable
               getEnabled={(r) => r.enabled !== false}
               onToggle={(r) => toggleUserRoute(r.username, r.enabled === false)}
               onView={openViewUser}

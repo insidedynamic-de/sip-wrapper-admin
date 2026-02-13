@@ -19,9 +19,10 @@
     "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
     "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
     "activate": "Aktivieren", "import": "Importieren", "export": "Exportieren",
-    "apply_reload": "Anwenden & Neu laden", "block": "Blockieren", "allow": "Erlauben",
+    "apply_reload": "Anwenden & Neu laden", "save_reload": "Speichern & Neu laden",
+    "block": "Blockieren", "allow": "Erlauben",
     "refresh": "Aktualisieren", "check_now": "Jetzt pr\u00fcfen & blockieren", "save_defaults": "Defaults speichern",
-    "save_changes": "\u00c4nderungen speichern"
+    "save_changes": "\u00c4nderungen speichern", "test_connection": "Verbindung testen"
   },
   "status": {
     "online": "Online", "offline": "Offline", "registered": "Registriert",
@@ -29,7 +30,8 @@
     "loading": "Laden...", "checking": "Pr\u00fcfen...", "connected": "Verbunden",
     "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert", "deactivated": "Deaktiviert",
     "access_denied": "Zugriff verweigert",
-    "connection_ok": "Verbindung OK"
+    "connection_ok": "Verbindung OK",
+    "connection_failed": "Verbindung fehlgeschlagen"
   },
   "section": {
     "users": "Benutzer", "sip_users": "SIP-Benutzer", "acl_users": "ACL-Benutzer",
@@ -70,7 +72,7 @@
   "config": {
     "default_gateway": "Standard-Gateway", "default_extension": "Standard-Nebenstelle",
     "no_routes": "Keine Routen konfiguriert", "apply_changes": "\u00c4nderungen anwenden",
-    "apply_confirm_message": "Die FreeSWITCH-Konfiguration wird neu geladen. Aktive Anrufe k\u00f6nnen betroffen sein. Fortfahren?",
+    "apply_confirm_message": "Die Server-Konfiguration wird neu geladen. Aktive Anrufe k\u00f6nnen betroffen sein. Fortfahren?",
     "restart_required": "Neustart erforderlich", "connection_error": "Verbindungsfehler zum Server",
     "outbound_calls_via": "Alle ausgehenden Anrufe gehen \u00fcber dieses Gateway",
     "inbound_default": "Eingehende Anrufe ohne spezifische Route gehen hierhin",
@@ -226,14 +228,18 @@
   },
   "system": {
     "system_settings": "Systemeinstellungen", "server": "Server",
-    "fs_domain": "FS-Domain", "fs_domain_desc": "FreeSWITCH SIP-Domain (z.B. sip.example.com)",
+    "fs_domain": "SIP-Domain", "fs_domain_desc": "SIP-Domain dieses Servers (z.B. sip.example.com)",
     "external_sip_ip": "Externe SIP-IP", "external_sip_ip_desc": "Öffentliche IP-Adresse für SIP-Signalisierung (NAT-Traversal)",
     "internal_sip_port": "Interner SIP-Port", "internal_port_desc": "Lokale Benutzer (Standard: 5060)",
     "external_sip_port": "Externer SIP-Port", "external_port_desc": "Provider / Trunk (Standard: 5080)",
     "codec_prefs": "Codec-Präferenzen", "codec_prefs_desc": "Audio-/Video-Codecs auswählen. Reihenfolge bestimmt Verhandlungspriorität.",
     "default_country": "Standard-Ländercode",
     "outbound_caller_id": "Ausgehende Anrufer-ID", "save_settings": "Einstellungen speichern",
-    "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen"
+    "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen",
+    "server_desc": "Server-Verbindung und SIP-Konfigurationseinstellungen.",
+    "domain_ip": "Domain & IP",
+    "ports": "Ports",
+    "country_caller": "Ländercode & Anrufer-ID"
   },
   "countdown": {
     "logout_in": "Logout in {{seconds}}s",
@@ -252,6 +258,9 @@
     "move_left": "Nach links",
     "move_right": "Nach rechts",
     "drag_to_reorder": "Ziehen zum Umordnen"
+  },
+  "table": {
+    "search": "Suchen..."
   },
   "demo": {
     "title": "Demo-Modus",
