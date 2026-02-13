@@ -1,19 +1,18 @@
 /**
- * @file Users — SIP and ACL user management with CRUD
+ * @file Users — Unified NB (Extension) + User management (SIP & ACL)
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Tabs, Tab, Button,
-  TextField, Snackbar, Alert, Switch, FormControlLabel,
+  Box, Typography, Button, TextField, Snackbar, Alert,
+  Switch, FormControlLabel, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
-import SearchableSelect from '../components/SearchableSelect';
 import type { User, AclUser, Registration, Extension } from '../api/types';
 
 function extractError(err: unknown): string {
@@ -33,28 +32,41 @@ function extractError(err: unknown): string {
   return String(err);
 }
 
+/** Merged NB + User row for unified table */
+interface MergedRow {
+  extension: string;
+  type: 'sip' | 'acl';
+  username: string;
+  description: string;
+  caller_id: string;
+  ip: string;
+  enabled: boolean;
+}
+
 export default function Users() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState(0);
   const [users, setUsers] = useState<User[]>([]);
   const [aclUsers, setAclUsers] = useState<AclUser[]>([]);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState(false);
-  const [editUser, setEditUser] = useState<User | AclUser | null>(null);
-  const defaultUserForm = { username: '', password: '', extension: '', caller_id: '', ip: '', enabled: true };
-  const [form, setForm] = useState(defaultUserForm);
-  const [initialForm, setInitialForm] = useState(defaultUserForm);
+  const [editRow, setEditRow] = useState<MergedRow | null>(null);
+
+  const defaultForm = { extension: '', type: 'sip' as 'sip' | 'acl', username: '', password: '', description: '', caller_id: '', ip: '', enabled: true };
+  const [form, setForm] = useState(defaultForm);
+  const [initialForm, setInitialForm] = useState(defaultForm);
   const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string }>({ open: false, name: '' });
   const [confirmSave, setConfirmSave] = useState(false);
 
   const load = useCallback(async () => {
-    const [u, a, r, e] = await Promise.all([api.get('/users'), api.get('/acl-users'), api.get('/registrations'), api.get('/extensions')]);
+    const [u, a, r, e] = await Promise.all([
+      api.get('/users'), api.get('/acl-users'), api.get('/registrations'), api.get('/extensions'),
+    ]);
     setUsers(u.data || []);
     setAclUsers(a.data || []);
     setRegistrations(r.data || []);
@@ -63,58 +75,87 @@ export default function Users() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Build unified list: merge SIP users + ACL users with their extensions
+  const extMap = new Map(extensions.map((e) => [e.extension, e]));
+
+  const mergedRows: MergedRow[] = [
+    ...users.map((u): MergedRow => {
+      const ext = extMap.get(u.extension);
+      return {
+        extension: u.extension,
+        type: 'sip',
+        username: u.username,
+        description: ext?.description || '',
+        caller_id: u.caller_id || '',
+        ip: '',
+        enabled: u.enabled !== false,
+      };
+    }),
+    ...aclUsers.map((u): MergedRow => {
+      const ext = extMap.get(u.extension);
+      return {
+        extension: u.extension,
+        type: 'acl',
+        username: u.username,
+        description: ext?.description || '',
+        caller_id: u.caller_id || '',
+        ip: u.ip,
+        enabled: ext?.enabled !== false,
+      };
+    }),
+  ].sort((a, b) => a.extension.localeCompare(b.extension, undefined, { numeric: true }));
+
+  // All used extension numbers (for duplicate check)
+  const usedExtensions = new Set(mergedRows.map((r) => r.extension));
+
+  // ── Open dialogs ──
+
   const openAdd = () => {
-    setEditUser(null);
+    setEditRow(null);
     setViewMode(false);
-    const fresh = { ...defaultUserForm };
+    const fresh = { ...defaultForm };
     setForm(fresh);
     setInitialForm(fresh);
     setErrors({});
     setDialogOpen(true);
   };
 
-  const openView = (u: User | AclUser) => {
-    setEditUser(u);
+  const openView = (row: MergedRow) => {
+    setEditRow(row);
     setViewMode(true);
-    const editForm = {
-      username: u.username, password: '', extension: u.extension,
-      caller_id: u.caller_id || '', ip: 'ip' in u ? u.ip : '',
-      enabled: 'enabled' in u ? u.enabled !== false : true,
-    };
-    setForm(editForm);
-    setInitialForm(editForm);
+    const f = { extension: row.extension, type: row.type, username: row.username, password: '', description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled };
+    setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
   };
 
-  const openEdit = (u: User | AclUser) => {
-    setEditUser(u);
+  const openEdit = (row: MergedRow) => {
+    setEditRow(row);
     setViewMode(false);
-    const editForm = {
-      username: u.username, password: '', extension: u.extension,
-      caller_id: u.caller_id || '', ip: 'ip' in u ? u.ip : '',
-      enabled: 'enabled' in u ? u.enabled !== false : true,
-    };
-    setForm(editForm);
-    setInitialForm(editForm);
+    const f = { extension: row.extension, type: row.type, username: row.username, password: '', description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled };
+    setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
   };
+
+  // ── Validation ──
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
+    if (!form.extension.trim()) e.extension = t('validation.required');
+    else if (!/^\d+$/.test(form.extension)) e.extension = t('extension.digits_only');
+    else if (usedExtensions.has(form.extension) && (!editRow || form.extension !== editRow.extension)) e.extension = t('extension.already_exists');
     if (!form.username.trim()) e.username = t('validation.required');
     else if (!/^[a-zA-Z0-9._-]+$/.test(form.username)) e.username = t('validation.invalid_username');
-    if (tab === 0) {
-      if (!editUser && !form.password) e.password = t('validation.required');
+    else if (editRow && form.username !== editRow.username && mergedRows.some((r) => r.username === form.username)) e.username = t('validation.username_taken');
+    if (form.type === 'sip') {
+      if (!editRow && !form.password) e.password = t('validation.required');
       else if (form.password && form.password.length < 4) e.password = t('validation.min_length', { min: 4 });
     }
-    if (tab === 1) {
+    if (form.type === 'acl') {
       if (!form.ip.trim()) e.ip = t('validation.required');
       else if (!/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(form.ip)) e.ip = t('validation.invalid_ip');
     }
-    if (!form.extension.trim()) e.extension = t('validation.required');
-    else if (!/^[0-9*#+]+$/.test(form.extension)) e.extension = t('validation.invalid_extension');
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -124,19 +165,59 @@ export default function Users() {
     setConfirmSave(true);
   };
 
+  // ── Save ──
+
   const doSave = async () => {
     setConfirmSave(false);
     try {
-      if (tab === 0) {
-        const data: Record<string, unknown> = { username: form.username, extension: form.extension, caller_id: form.caller_id, enabled: form.enabled };
-        if (form.password) data.password = form.password;
-        if (editUser) await api.put(`/users/${editUser.username}`, data);
-        else { data.password = form.password; await api.post('/users', data); }
+      const extData = { extension: form.extension, description: form.description, enabled: form.enabled };
+
+      if (editRow) {
+        const extChanged = form.extension !== editRow.extension;
+        const userChanged = form.username !== editRow.username;
+
+        // Handle extension change: create new, then delete old
+        if (extChanged) {
+          await api.post('/extensions', extData);
+        } else {
+          await api.put(`/extensions/${form.extension}`, extData);
+        }
+
+        // Handle user update (or recreate if username changed)
+        if (form.type === 'sip') {
+          const userData: Record<string, unknown> = { username: form.username, extension: form.extension, caller_id: form.caller_id, enabled: form.enabled };
+          if (form.password) userData.password = form.password;
+          if (userChanged) {
+            await api.post('/users', { ...userData, password: form.password || 'temp1234' });
+            await api.delete(`/users/${editRow.username}`);
+          } else {
+            await api.put(`/users/${editRow.username}`, userData);
+          }
+        } else {
+          const aclData = { username: form.username, ip: form.ip, extension: form.extension, caller_id: form.caller_id };
+          if (userChanged) {
+            await api.post('/acl-users', aclData);
+            await api.delete(`/acl-users/${editRow.username}`);
+          } else {
+            await api.put(`/acl-users/${editRow.username}`, aclData);
+          }
+        }
+
+        // Clean up old extension after user is moved
+        if (extChanged) {
+          await api.delete(`/extensions/${editRow.extension}`);
+        }
       } else {
-        const data = { username: form.username, ip: form.ip, extension: form.extension, caller_id: form.caller_id };
-        if (editUser) await api.put(`/acl-users/${editUser.username}`, data);
-        else await api.post('/acl-users', data);
+        // Create extension first
+        await api.post('/extensions', extData);
+        // Create user
+        if (form.type === 'sip') {
+          await api.post('/users', { username: form.username, password: form.password, extension: form.extension, caller_id: form.caller_id, enabled: form.enabled });
+        } else {
+          await api.post('/acl-users', { username: form.username, ip: form.ip, extension: form.extension, caller_id: form.caller_id });
+        }
       }
+
       setDialogOpen(false);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
       load();
@@ -145,25 +226,42 @@ export default function Users() {
     }
   };
 
-  const toggleEnabled = async (u: User) => {
+  // ── Toggle enabled ──
+
+  const toggleEnabled = async (row: MergedRow) => {
     try {
-      await api.put(`/users/${u.username}`, { enabled: !u.enabled });
+      const newEnabled = !row.enabled;
+      await api.put(`/extensions/${row.extension}`, { enabled: newEnabled });
+      if (row.type === 'sip') {
+        await api.put(`/users/${row.username}`, { enabled: newEnabled });
+      }
       load();
     } catch (err) {
       setToast({ open: true, message: extractError(err), severity: 'error' });
     }
   };
 
-  const requestDelete = (username: string) => {
-    setConfirmDelete({ open: true, name: username });
+  // ── Delete ──
+
+  const requestDelete = (row: MergedRow) => {
+    const label = `${row.extension} — ${row.username}`;
+    setConfirmDelete({ open: true, name: label });
   };
 
   const doDelete = async () => {
-    const username = confirmDelete.name;
+    const label = confirmDelete.name;
     setConfirmDelete({ open: false, name: '' });
+    // Parse extension from label "1001 — alice"
+    const ext = label.split(' — ')[0];
+    const row = mergedRows.find((r) => r.extension === ext);
+    if (!row) return;
     try {
-      if (tab === 0) await api.delete(`/users/${username}`);
-      else await api.delete(`/acl-users/${username}`);
+      if (row.type === 'sip') {
+        await api.delete(`/users/${row.username}`);
+      } else {
+        await api.delete(`/acl-users/${row.username}`);
+      }
+      await api.delete(`/extensions/${row.extension}`);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
       load();
     } catch (err) {
@@ -171,10 +269,20 @@ export default function Users() {
     }
   };
 
+  // ── Dialog title ──
+
   const dialogTitle = () => {
-    if (viewMode) return tab === 0 ? t('modal.view_user') : t('modal.view_acl_user');
-    if (editUser) return tab === 0 ? t('modal.edit_user') : t('modal.edit_acl_user');
-    return tab === 0 ? t('modal.add_user') : t('modal.add_acl_user');
+    if (viewMode) return t('modal.view_user');
+    if (editRow) return t('modal.edit_user');
+    return t('modal.add_user');
+  };
+
+  // ── User display: "username (description)" or "username [ACL]" ──
+  const formatUser = (row: MergedRow) => {
+    let text = row.username;
+    if (row.description) text += ` (${row.description})`;
+    if (row.type === 'acl') text += ' [ACL]';
+    return text;
   };
 
   return (
@@ -184,46 +292,43 @@ export default function Users() {
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>{t('button.add')}</Button>
       </Box>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-        <Tab label={t('section.sip_users')} />
-        <Tab label={t('section.acl_users')} />
-      </Tabs>
-
-      {tab === 0 ? (
-        <CrudTable<User>
-          rows={users}
-          getKey={(u) => u.username}
-          columns={[
-            { header: t('field.user'), field: 'username' },
-            { header: t('field.extension'), field: 'extension' },
-            { header: t('field.caller_id'), field: 'caller_id' },
-          ]}
-          getStatus={(u) => {
-            const isReg = registrations.some((r) => r.user === u.username);
-            return isReg
-              ? { label: t('status.registered'), color: 'success' }
-              : { label: t('status.not_registered'), color: 'error' };
-          }}
-          getEnabled={(u) => u.enabled !== false}
-          onToggle={(u) => toggleEnabled(u)}
-          onView={(u) => openView(u)}
-          onEdit={(u) => openEdit(u)}
-          onDelete={(u) => requestDelete(u.username)}
-        />
-      ) : (
-        <CrudTable<AclUser>
-          rows={aclUsers}
-          getKey={(u) => u.username}
-          columns={[
-            { header: t('field.user'), field: 'username' },
-            { header: t('field.ip_address'), field: 'ip' },
-            { header: t('field.extension'), field: 'extension' },
-          ]}
-          onView={(u) => openView(u)}
-          onEdit={(u) => openEdit(u)}
-          onDelete={(u) => requestDelete(u.username)}
-        />
-      )}
+      <CrudTable<MergedRow>
+        rows={mergedRows}
+        getKey={(r) => `${r.type}-${r.extension}`}
+        columns={[
+          { header: t('field.extension'), field: 'extension', width: 90 },
+          {
+            header: t('field.user'),
+            render: (row) => (
+              <Typography variant="body2" noWrap>
+                {formatUser(row)}
+              </Typography>
+            ),
+          },
+          {
+            header: t('field.caller_id'),
+            render: (row) => row.caller_id ? (
+              <Typography variant="body2" color="text.secondary" noWrap sx={{ fontFamily: 'monospace', fontSize: 13 }}>
+                {row.caller_id}
+              </Typography>
+            ) : null,
+          },
+        ]}
+        getStatus={(row) => {
+          if (row.type === 'acl') {
+            return { label: `ACL ${row.ip}`, color: 'info' };
+          }
+          const isReg = registrations.some((r) => r.user === row.username);
+          return isReg
+            ? { label: t('status.registered'), color: 'success' }
+            : { label: t('status.not_registered'), color: 'error' };
+        }}
+        getEnabled={(r) => r.enabled}
+        onToggle={toggleEnabled}
+        onView={openView}
+        onEdit={openEdit}
+        onDelete={requestDelete}
+      />
 
       <FormDialog
         open={dialogOpen}
@@ -233,36 +338,74 @@ export default function Users() {
         onClose={() => setDialogOpen(false)}
         onSave={requestSave}
       >
+        <TextField
+          label={t('field.extension')}
+          value={form.extension}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, '');
+            setForm({ ...form, extension: val });
+          }}
+          disabled={viewMode || (!!editRow && editRow.enabled)}
+          error={!!errors.extension}
+          helperText={errors.extension || t('extension.digits_hint')}
+          placeholder="1001"
+        />
+
+        {/* Type selector: SIP or ACL — only when adding */}
+        {!editRow && !viewMode && (
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+              {t('field.type')}
+            </Typography>
+            <ToggleButtonGroup
+              value={form.type}
+              exclusive
+              onChange={(_, v) => v && setForm({ ...form, type: v })}
+              size="small"
+              fullWidth
+            >
+              <ToggleButton value="sip">SIP</ToggleButton>
+              <ToggleButton value="acl">ACL</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
+        {editRow && (
+          <TextField label={t('field.type')} value={form.type.toUpperCase()} disabled />
+        )}
+
         <TextField label={t('field.user')} value={form.username}
           onChange={(e) => setForm({ ...form, username: e.target.value })}
-          disabled={viewMode || !!editUser} error={!!errors.username} helperText={errors.username} />
-        {tab === 0 && (
+          disabled={viewMode || (!!editRow && editRow.enabled)} error={!!errors.username} helperText={errors.username} />
+
+        {form.type === 'sip' && (
           <TextField label={t('auth.password')} type="password" value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             disabled={viewMode}
-            error={!!errors.password} helperText={errors.password || (editUser ? t('validation.leave_empty_keep') : '')} />
+            error={!!errors.password} helperText={errors.password || (editRow ? t('validation.leave_empty_keep') : '')} />
         )}
-        {tab === 1 && (
+
+        {form.type === 'acl' && (
           <TextField label={t('field.ip_address')} value={form.ip}
             onChange={(e) => setForm({ ...form, ip: e.target.value })}
             disabled={viewMode}
             error={!!errors.ip} helperText={errors.ip} placeholder="192.168.1.1" />
         )}
-        <SearchableSelect
-          options={extensions.filter((e) => e.enabled !== false).map((e) => ({ label: `${e.extension} — ${e.description}`, value: e.extension }))}
-          value={form.extension}
-          onChange={(v) => setForm({ ...form, extension: v })}
-          label={t('field.extension')}
+
+        <TextField
+          label={t('extension.description')}
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
           disabled={viewMode}
         />
+
         <TextField label={t('field.caller_id')} value={form.caller_id}
-          onChange={(e) => setForm({ ...form, caller_id: e.target.value })} disabled={viewMode} />
-        {tab === 0 && (
-          <FormControlLabel
-            control={<Switch checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} color="success" disabled={viewMode} />}
-            label={form.enabled ? t('status.enabled') : t('status.disabled')}
-          />
-        )}
+          onChange={(e) => setForm({ ...form, caller_id: e.target.value })} disabled={viewMode}
+          helperText={t('config.caller_id_desc')} />
+
+        <FormControlLabel
+          control={<Switch checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} color="success" disabled={viewMode} />}
+          label={form.enabled ? t('status.enabled') : t('status.disabled')}
+        />
       </FormDialog>
 
       <ConfirmDialog open={confirmSave} variant="save"

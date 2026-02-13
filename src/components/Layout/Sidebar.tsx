@@ -11,7 +11,6 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
-import ShieldIcon from '@mui/icons-material/Shield';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -22,6 +21,7 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { savePreferences } from '../../store/preferences';
 import type { ThemeMode } from '../../store/preferences';
 import { clearApiKey } from '../../store/keyStore';
+import api from '../../api/client';
 import LogoutCountdown from '../LogoutCountdown';
 
 const DRAWER_WIDTH = 240;
@@ -30,7 +30,6 @@ const navItems = [
   { key: '/',              icon: <DashboardIcon />, label: 'nav.dashboard' },
   { key: '/configuration', icon: <TuneIcon />,      label: 'nav.config' },
   { key: '/routes',        icon: <AltRouteIcon />,  label: 'section.routes' },
-  { key: '/security',      icon: <ShieldIcon />,    label: 'nav.security' },
   { key: '/logs',          icon: <TerminalIcon />,  label: 'nav.logs' },
   { key: '/license',       icon: <BadgeIcon />,     label: 'nav.license_billing' },
   { key: '/profile',       icon: <SettingsIcon />,  label: 'nav.profile' },
@@ -56,6 +55,8 @@ export default function Sidebar({ themeMode, setThemeMode }: Props) {
   };
 
   const handleLogout = () => {
+    // Clear session on server, then local cleanup
+    api.post('/auth/logout').catch(() => {});
     clearApiKey();
     navigate('/login');
   };

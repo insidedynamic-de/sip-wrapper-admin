@@ -3,6 +3,7 @@
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Chip, Button, Tabs, Tab,
@@ -36,9 +37,31 @@ function formatDuration(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+const LOG_TAB_IDS = ['system', 'calls', 'security'];
+
+function tabFromHash(hash: string): number {
+  if (!hash) return 0;
+  const h = hash.replace(/^#/, '').toLowerCase();
+  const idx = LOG_TAB_IDS.indexOf(h);
+  return idx >= 0 ? idx : 0;
+}
+
 export default function Logs() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [tab, setTab] = useState(tabFromHash(location.hash));
+
+  // Sync tab when URL hash changes externally
+  useEffect(() => {
+    const idx = tabFromHash(location.hash);
+    if (idx !== tab) setTab(idx);
+  }, [location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleTabChange = (_: unknown, v: number) => {
+    setTab(v);
+    navigate({ hash: LOG_TAB_IDS[v] }, { replace: true });
+  };
 
   // System logs (ESL)
   const [events, setEvents] = useState<ESLEvent[]>([]);
@@ -121,7 +144,7 @@ export default function Logs() {
 
       <Tabs
         value={tab}
-        onChange={(_, v) => setTab(v)}
+        onChange={handleTabChange}
         sx={{ mb: 3, borderBottom: 1, borderColor: 'divider' }}
       >
         <Tab icon={<TerminalIcon />} iconPosition="start" label={t('logs.tab_system')} />

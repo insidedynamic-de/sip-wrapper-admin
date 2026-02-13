@@ -8,7 +8,13 @@
     "profile": "Profil",
     "license_billing": "Lizenz / Abrechnung"
   },
-  "auth": { "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort", "host": "Server-Adresse" },
+  "auth": {
+    "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort", "host": "Server-Adresse",
+    "session_conflict_title": "Aktive Sitzung erkannt",
+    "session_conflict_message": "Eine andere Sitzung ist bereits aktiv (IP: {{ip}}, seit {{time}}). Möchten Sie die bestehende Sitzung beenden und sich anmelden?",
+    "force_login": "Anmeldung erzwingen",
+    "session_kicked": "Vorherige Sitzung beendet"
+  },
   "button": {
     "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
     "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
@@ -64,6 +70,7 @@
   "config": {
     "default_gateway": "Standard-Gateway", "default_extension": "Standard-Nebenstelle",
     "no_routes": "Keine Routen konfiguriert", "apply_changes": "\u00c4nderungen anwenden",
+    "apply_confirm_message": "Die FreeSWITCH-Konfiguration wird neu geladen. Aktive Anrufe k\u00f6nnen betroffen sein. Fortfahren?",
     "restart_required": "Neustart erforderlich", "connection_error": "Verbindungsfehler zum Server",
     "outbound_calls_via": "Alle ausgehenden Anrufe gehen \u00fcber dieses Gateway",
     "inbound_default": "Eingehende Anrufe ohne spezifische Route gehen hierhin",
@@ -153,7 +160,8 @@
     "threshold": "Schwellwert (Blockierungen)", "add_after_n": "Nach N Blockierungen zu Fail2Ban hinzuf\u00fcgen",
     "jail_name": "Jail-Name", "jail_for_sip": "Fail2Ban-Jail f\u00fcr SIP-Blocking",
     "save_fail2ban": "Fail2Ban-Einstellungen speichern", "refresh_status": "Status aktualisieren",
-    "ip_or_cidr": "IP-Adresse oder CIDR", "comment_optional": "Kommentar (optional)"
+    "ip_or_cidr": "IP-Adresse oder CIDR", "comment_optional": "Kommentar (optional)",
+    "local_protected": "Localhost (geschützt — kann nicht entfernt werden)"
   },
   "extension": {
     "extensions": "Nebenstellen",
@@ -162,7 +170,8 @@
     "view_extension": "Nebenstelle anzeigen",
     "description": "Beschreibung",
     "digits_only": "Nur Ziffern erlaubt",
-    "digits_hint": "Nur Ziffern (z.B. 1001)"
+    "digits_hint": "Nur Ziffern (z.B. 1001)",
+    "already_exists": "Nebenstelle existiert bereits"
   },
   "gateway": {
     "sip_gateways": "SIP-Gateways / Provider", "add_gateway": "Gateway hinzuf\u00fcgen",
@@ -174,7 +183,8 @@
     "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
     "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzufügen",
     "view_table": "Tabellenansicht", "view_graph": "Graphansicht",
-    "default_route": "Standard", "override_route": "Überschreibung"
+    "default_route": "Standard", "override_route": "\u00dcberschreibung",
+    "drag_hint": "Vom Punkt zum Punkt ziehen um Route zu erstellen \u2022 Linie klicken zum L\u00f6schen"
   },
   "modal": {
     "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",
@@ -209,15 +219,19 @@
     "invalid_extension": "Nur Ziffern, *, #, +",
     "min_length": "Mindestens {{min}} Zeichen",
     "leave_empty_keep": "Leer lassen um aktuelles Passwort zu behalten",
+    "username_taken": "Benutzername existiert bereits",
     "host_protocol": "Muss mit http:// oder https:// beginnen",
     "host_invalid": "Muss eine gültige Domain, IP-Adresse oder localhost sein",
     "api_key_required": "API-Schlüssel ist erforderlich"
   },
   "system": {
     "system_settings": "Systemeinstellungen", "server": "Server",
-    "fs_domain": "FS-Domain", "external_sip_ip": "Externe SIP-IP",
-    "internal_sip_port": "Interner SIP-Port", "external_sip_port": "Externer SIP-Port",
-    "codec_prefs": "Codec-Pr\u00e4ferenzen", "default_country": "Standard-L\u00e4ndercode",
+    "fs_domain": "FS-Domain", "fs_domain_desc": "FreeSWITCH SIP-Domain (z.B. sip.example.com)",
+    "external_sip_ip": "Externe SIP-IP", "external_sip_ip_desc": "Öffentliche IP-Adresse für SIP-Signalisierung (NAT-Traversal)",
+    "internal_sip_port": "Interner SIP-Port", "internal_port_desc": "Lokale Benutzer (Standard: 5060)",
+    "external_sip_port": "Externer SIP-Port", "external_port_desc": "Provider / Trunk (Standard: 5080)",
+    "codec_prefs": "Codec-Präferenzen", "codec_prefs_desc": "Audio-/Video-Codecs auswählen. Reihenfolge bestimmt Verhandlungspriorität.",
+    "default_country": "Standard-Ländercode",
     "outbound_caller_id": "Ausgehende Anrufer-ID", "save_settings": "Einstellungen speichern",
     "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen"
   },

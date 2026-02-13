@@ -8,7 +8,13 @@
     "profile": "Profile",
     "license_billing": "License / Billing"
   },
-  "auth": { "login": "Login", "logout": "Logout", "username": "Username", "password": "Password", "host": "Server Host" },
+  "auth": {
+    "login": "Login", "logout": "Logout", "username": "Username", "password": "Password", "host": "Server Host",
+    "session_conflict_title": "Active Session Detected",
+    "session_conflict_message": "Another session is already active (IP: {{ip}}, since {{time}}). Do you want to terminate the existing session and log in?",
+    "force_login": "Force Login",
+    "session_kicked": "Previous session terminated"
+  },
   "button": {
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "close": "Close",
     "reload": "Reload", "add": "Add", "edit": "Edit", "apply": "Apply",
@@ -64,6 +70,7 @@
   "config": {
     "default_gateway": "Default Gateway", "default_extension": "Default Extension",
     "no_routes": "No routes configured", "apply_changes": "Apply Changes",
+    "apply_confirm_message": "This will reload the FreeSWITCH configuration. Active calls may be affected. Continue?",
     "restart_required": "Restart Required", "connection_error": "Connection error to server",
     "outbound_calls_via": "All outbound calls go through this gateway",
     "inbound_default": "Inbound calls without specific route go here",
@@ -153,7 +160,8 @@
     "threshold": "Threshold (blocked count)", "add_after_n": "Add to Fail2Ban after N blocks",
     "jail_name": "Jail Name", "jail_for_sip": "Fail2Ban jail for SIP blocking",
     "save_fail2ban": "Save Fail2Ban Settings", "refresh_status": "Refresh Status",
-    "ip_or_cidr": "IP Address or CIDR", "comment_optional": "Comment (optional)"
+    "ip_or_cidr": "IP Address or CIDR", "comment_optional": "Comment (optional)",
+    "local_protected": "Localhost (protected — cannot be removed)"
   },
   "extension": {
     "extensions": "Extensions",
@@ -162,7 +170,8 @@
     "view_extension": "View Extension",
     "description": "Description",
     "digits_only": "Only digits allowed",
-    "digits_hint": "Only digits (e.g. 1001)"
+    "digits_hint": "Only digits (e.g. 1001)",
+    "already_exists": "Extension already exists"
   },
   "gateway": {
     "sip_gateways": "SIP Gateways / Providers", "add_gateway": "Add Gateway",
@@ -174,7 +183,8 @@
     "add_inbound": "Add Inbound Route", "did_number": "DID / Phone Number",
     "dest_type": "Destination Type", "add_user_route": "Add User Route",
     "view_table": "Table View", "view_graph": "Graph View",
-    "default_route": "Default", "override_route": "Override"
+    "default_route": "Default", "override_route": "Override",
+    "drag_hint": "Drag from handle to handle to create a route \u2022 Click edge to delete"
   },
   "modal": {
     "add_user": "Add User", "edit_user": "Edit User",
@@ -209,15 +219,19 @@
     "invalid_extension": "Only digits, *, #, +",
     "min_length": "Minimum {{min}} characters",
     "leave_empty_keep": "Leave empty to keep current password",
+    "username_taken": "Username already exists",
     "host_protocol": "Must start with http:// or https://",
     "host_invalid": "Must be a valid domain, IP address, or localhost",
     "api_key_required": "API Key is required"
   },
   "system": {
     "system_settings": "System Settings", "server": "Server",
-    "fs_domain": "FS Domain", "external_sip_ip": "External SIP IP",
-    "internal_sip_port": "Internal SIP Port", "external_sip_port": "External SIP Port",
-    "codec_prefs": "Codec Preferences", "default_country": "Default Country Code",
+    "fs_domain": "FS Domain", "fs_domain_desc": "FreeSWITCH SIP domain (e.g. sip.example.com)",
+    "external_sip_ip": "External SIP IP", "external_sip_ip_desc": "Public IP address for SIP signaling (NAT traversal)",
+    "internal_sip_port": "Internal SIP Port", "internal_port_desc": "Local users (default: 5060)",
+    "external_sip_port": "External SIP Port", "external_port_desc": "Provider / trunk (default: 5080)",
+    "codec_prefs": "Codec Preferences", "codec_prefs_desc": "Select audio/video codecs. Order determines negotiation priority.",
+    "default_country": "Default Country Code",
     "outbound_caller_id": "Outbound Caller ID", "save_settings": "Save Settings",
     "esl_settings": "ESL Connection", "esl_password": "Password", "esl_test": "Test Connection"
   },

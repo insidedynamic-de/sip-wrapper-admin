@@ -1,3 +1,7 @@
+/**
+ * @file RoutesPage — Routing configuration with per-section graph/table toggle
+ * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -20,7 +24,11 @@ type OutboundWithIndex = OutboundRoute & { _index: number };
 
 export default function RoutesPage() {
   const { t } = useTranslation();
-  const [pageView, setPageView] = useState<'table' | 'graph'>('table');
+
+  // Per-section view mode (graph or table)
+  const [inboundView, setInboundView] = useState<'table' | 'graph'>('table');
+  const [userView, setUserView] = useState<'table' | 'graph'>('table');
+
   const [routes, setRoutes] = useState<Route | null>(null);
   const [gateways, setGateways] = useState<Gateway[]>([]);
   const [gatewayStatuses, setGatewayStatuses] = useState<GatewayStatus[]>([]);
@@ -128,7 +136,6 @@ export default function RoutesPage() {
   const doSaveRoute = async () => {
     try {
       if (editItem) {
-        // Edit existing
         if (dialog.type === 'inbound') {
           await api.put(`/routes/inbound/${editItem.key}`, { gateway: form.gateway, extension: form.extension });
         } else if (dialog.type === 'outbound') {
@@ -137,7 +144,6 @@ export default function RoutesPage() {
           await api.put(`/routes/user/${editItem.key}`, { username: form.username, gateway: form.gateway });
         }
       } else {
-        // Add new
         if (dialog.type === 'inbound') {
           await api.post('/routes/inbound', { gateway: form.gateway, extension: form.extension, enabled: true });
         } else if (dialog.type === 'outbound') {
@@ -196,6 +202,36 @@ export default function RoutesPage() {
     if (action) await action();
   };
 
+  // ── Graph callbacks: create / delete routes via drag & drop ──
+
+  const handleGraphCreate = async (type: 'inbound' | 'user', params: Record<string, string>) => {
+    try {
+      if (type === 'inbound') {
+        await api.post('/routes/inbound', { ...params, enabled: true });
+      } else {
+        await api.post('/routes/user', { ...params, enabled: true });
+      }
+      setToast({ open: true, message: t('status.success'), severity: 'success' });
+      load();
+    } catch {
+      setToast({ open: true, message: t('status.error'), severity: 'error' });
+    }
+  };
+
+  const handleGraphDelete = async (type: 'inbound' | 'user', key: string) => {
+    try {
+      if (type === 'inbound') {
+        await api.delete(`/routes/inbound/${key}`);
+      } else {
+        await api.delete(`/routes/user/${key}`);
+      }
+      setToast({ open: true, message: t('status.success'), severity: 'success' });
+      load();
+    } catch {
+      setToast({ open: true, message: t('status.error'), severity: 'error' });
+    }
+  };
+
   const gwNames = gateways.map((g) => g.name);
   const extOptions = extensions.filter((e) => e.enabled !== false).map((e) => ({ label: `${e.extension} — ${e.description}`, value: e.extension }));
   const userOptions = users.filter((u) => u.enabled !== false).map((u) => ({ label: `${u.username} — ${u.caller_id || u.extension}`, value: u.username }));
@@ -207,151 +243,176 @@ export default function RoutesPage() {
     return t('route.add_route');
   };
 
+  // Shared graph props
+  const graphProps = {
+    gateways,
+    extensions,
+    users,
+    routes,
+    gatewayStatuses,
+    onCreateRoute: handleGraphCreate,
+    onDeleteRoute: handleGraphDelete,
+  };
+
   return (
     <Box>
-      {/* Header with view toggle */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('section.routes')}</Typography>
-        <ToggleButtonGroup
-          value={pageView}
-          exclusive
-          onChange={(_, v) => v && setPageView(v)}
-          size="small"
-        >
-          <ToggleButton value="table">
-            <Tooltip title={t('route.view_table')}><TableChartIcon /></Tooltip>
-          </ToggleButton>
-          <ToggleButton value="graph">
-            <Tooltip title={t('route.view_graph')}><AccountTreeIcon /></Tooltip>
-          </ToggleButton>
-        </ToggleButtonGroup>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_defaults')}</Button>
       </Box>
 
-      {pageView === 'graph' ? (
-        <RoutingGraph
-          gateways={gateways}
-          extensions={extensions}
-          users={users}
-          routes={routes}
-          gatewayStatuses={gatewayStatuses}
-        />
-      ) : (
-        <>
-          {/* Defaults */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2 }}>{t('section.default_routes')}</Typography>
-              <Grid container spacing={2} alignItems="center">
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <SearchableSelect
-                    options={gwNames} value={defaults.gateway}
-                    onChange={(v) => setDefaults({ ...defaults, gateway: v })}
-                    label={t('config.default_gateway')} helperText={t('config.outbound_calls_via')}
-                    allowEmpty emptyLabel="-- None --" fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <SearchableSelect
-                    options={extOptions}
-                    value={defaults.extension}
-                    onChange={(v) => setDefaults({ ...defaults, extension: v })}
-                    label={t('config.default_extension')} helperText={t('config.inbound_default')} fullWidth
-                  />
-                </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <TextField fullWidth label={t('field.caller_id')} value={defaults.caller_id}
-                    onChange={(e) => setDefaults({ ...defaults, caller_id: e.target.value })}
-                    helperText={t('config.caller_id_desc')} />
-                </Grid>
-                <Grid size={{ xs: 12, md: 3 }}>
-                  <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_defaults')}</Button>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Card>
+      {/* Defaults */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" sx={{ mb: 2 }}>{t('section.default_routes')}</Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 12, md: 3 }}>
+              <SearchableSelect
+                options={gwNames} value={defaults.gateway}
+                onChange={(v) => setDefaults({ ...defaults, gateway: v })}
+                label={t('config.default_gateway')} helperText={t('config.outbound_calls_via')}
+                allowEmpty emptyLabel="-- None --" fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <SearchableSelect
+                options={extOptions}
+                value={defaults.extension}
+                onChange={(v) => setDefaults({ ...defaults, extension: v })}
+                label={t('config.default_extension')} helperText={t('config.inbound_default')} fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField fullWidth label={t('field.caller_id')} value={defaults.caller_id}
+                onChange={(e) => setDefaults({ ...defaults, caller_id: e.target.value })}
+                helperText={t('config.caller_id_desc')} />
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
 
-          {/* Inbound Routes */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">{t('section.inbound_routing')}</Typography>
+      {/* Inbound Routes — with graph/table toggle inside */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">{t('section.inbound_routing')}</Typography>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <ToggleButtonGroup
+                value={inboundView}
+                exclusive
+                onChange={(_, v) => v && setInboundView(v)}
+                size="small"
+              >
+                <ToggleButton value="table" sx={{ px: 0.8, py: 0.3 }}>
+                  <Tooltip title={t('route.view_table')}><TableChartIcon fontSize="small" /></Tooltip>
+                </ToggleButton>
+                <ToggleButton value="graph" sx={{ px: 0.8, py: 0.3 }}>
+                  <Tooltip title={t('route.view_graph')}><AccountTreeIcon fontSize="small" /></Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+              {inboundView === 'table' && (
                 <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('inbound')}>
                   {t('route.add_inbound')}
                 </Button>
-              </Box>
-              <CrudTable<InboundRoute>
-                rows={routes?.inbound || []}
-                getKey={(r, i) => `inbound-${i}`}
-                columns={[
-                  { header: t('field.gateway'), field: 'gateway' },
-                  { header: t('field.extension'), field: 'extension' },
-                ]}
-                getEnabled={(r) => r.enabled !== false}
-                onToggle={(r) => toggleInbound(r.gateway, r.enabled === false)}
-                onView={openViewInbound}
-                onEdit={openEditInbound}
-                onDelete={(r) => requestDeleteInbound(r.gateway)}
-                dimDisabled
-                withCard={false}
-              />
-            </CardContent>
-          </Card>
+              )}
+            </Box>
+          </Box>
+          {inboundView === 'table' ? (
+            <CrudTable<InboundRoute>
+              rows={routes?.inbound || []}
+              getKey={(r, i) => `inbound-${i}`}
+              columns={[
+                { header: t('field.gateway'), field: 'gateway' },
+                { header: t('field.extension'), field: 'extension' },
+              ]}
+              getEnabled={(r) => r.enabled !== false}
+              onToggle={(r) => toggleInbound(r.gateway, r.enabled === false)}
+              onView={openViewInbound}
+              onEdit={openEditInbound}
+              onDelete={(r) => requestDeleteInbound(r.gateway)}
+              dimDisabled
+              withCard={false}
+            />
+          ) : (
+            <RoutingGraph {...graphProps} edgeFilter="inbound" height={380} />
+          )}
+        </CardContent>
+      </Card>
 
-          {/* Outbound Routes */}
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">{t('section.outbound_routing')}</Typography>
-                <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('outbound')}>
-                  {t('route.add_route')}
-                </Button>
-              </Box>
-              <CrudTable<OutboundWithIndex>
-                rows={outboundRows}
-                getKey={(r) => `outbound-${r._index}`}
-                columns={[
-                  { header: t('field.pattern'), field: 'pattern' },
-                  { header: t('field.gateway'), field: 'gateway' },
-                ]}
-                getEnabled={(r) => r.enabled !== false}
-                onToggle={(r) => toggleOutbound(r._index, r.enabled === false)}
-                onView={openViewOutbound}
-                onEdit={openEditOutbound}
-                onDelete={(r) => requestDeleteOutbound(r._index, r.pattern)}
-                dimDisabled
-                withCard={false}
-              />
-            </CardContent>
-          </Card>
+      {/* Outbound Routes — table only (pattern-based, no graph) */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+            <Typography variant="h6">{t('section.outbound_routing')}</Typography>
+            <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('outbound')}>
+              {t('route.add_route')}
+            </Button>
+          </Box>
+          <CrudTable<OutboundWithIndex>
+            rows={outboundRows}
+            getKey={(r) => `outbound-${r._index}`}
+            columns={[
+              { header: t('field.pattern'), field: 'pattern' },
+              { header: t('field.gateway'), field: 'gateway' },
+            ]}
+            getEnabled={(r) => r.enabled !== false}
+            onToggle={(r) => toggleOutbound(r._index, r.enabled === false)}
+            onView={openViewOutbound}
+            onEdit={openEditOutbound}
+            onDelete={(r) => requestDeleteOutbound(r._index, r.pattern)}
+            dimDisabled
+            withCard={false}
+          />
+        </CardContent>
+      </Card>
 
-          {/* User Routes */}
-          <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="h6">{t('section.user_routing')}</Typography>
+      {/* User Routes — with graph/table toggle inside */}
+      <Card>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">{t('section.user_routing')}</Typography>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+              <ToggleButtonGroup
+                value={userView}
+                exclusive
+                onChange={(_, v) => v && setUserView(v)}
+                size="small"
+              >
+                <ToggleButton value="table" sx={{ px: 0.8, py: 0.3 }}>
+                  <Tooltip title={t('route.view_table')}><TableChartIcon fontSize="small" /></Tooltip>
+                </ToggleButton>
+                <ToggleButton value="graph" sx={{ px: 0.8, py: 0.3 }}>
+                  <Tooltip title={t('route.view_graph')}><AccountTreeIcon fontSize="small" /></Tooltip>
+                </ToggleButton>
+              </ToggleButtonGroup>
+              {userView === 'table' && (
                 <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('user')}>
                   {t('route.add_user_route')}
                 </Button>
-              </Box>
-              <CrudTable<UserRoute>
-                rows={routes?.user_routes || []}
-                getKey={(r, i) => `user-${i}`}
-                columns={[
-                  { header: t('field.user'), field: 'username' },
-                  { header: t('field.gateway'), field: 'gateway' },
-                ]}
-                getEnabled={(r) => r.enabled !== false}
-                onToggle={(r) => toggleUserRoute(r.username, r.enabled === false)}
-                onView={openViewUser}
-                onEdit={openEditUser}
-                onDelete={(r) => requestDeleteUser(r.username)}
-                dimDisabled
-                withCard={false}
-              />
-            </CardContent>
-          </Card>
-        </>
-      )}
+              )}
+            </Box>
+          </Box>
+          {userView === 'table' ? (
+            <CrudTable<UserRoute>
+              rows={routes?.user_routes || []}
+              getKey={(r, i) => `user-${i}`}
+              columns={[
+                { header: t('field.user'), field: 'username' },
+                { header: t('field.gateway'), field: 'gateway' },
+              ]}
+              getEnabled={(r) => r.enabled !== false}
+              onToggle={(r) => toggleUserRoute(r.username, r.enabled === false)}
+              onView={openViewUser}
+              onEdit={openEditUser}
+              onDelete={(r) => requestDeleteUser(r.username)}
+              dimDisabled
+              withCard={false}
+            />
+          ) : (
+            <RoutingGraph {...graphProps} edgeFilter="user" height={380} />
+          )}
+        </CardContent>
+      </Card>
 
       {/* Route Dialog (Add / Edit / View) */}
       <FormDialog

@@ -1,5 +1,5 @@
 /**
- * @file ExtUserNode — Custom React Flow node for merged Extension + User
+ * @file ExtUserNode — Custom React Flow node for merged Extension + User with interactive styling
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { memo } from 'react';
@@ -17,7 +17,7 @@ function ExtUserNodeComponent({ data }: NodeProps) {
   return (
     <Box
       sx={{
-        minWidth: 160,
+        minWidth: 170,
         border: 2,
         borderColor: d.isDefault ? 'primary.main' : 'divider',
         borderRadius: 2,
@@ -25,20 +25,38 @@ function ExtUserNodeComponent({ data }: NodeProps) {
         p: 1.5,
         opacity: d.enabled ? 1 : 0.45,
         position: 'relative',
+        transition: 'box-shadow 0.2s, border-color 0.2s',
+        cursor: 'grab',
+        '&:hover': {
+          boxShadow: 4,
+          borderColor: d.hasUser ? 'info.light' : 'action.selected',
+        },
       }}
     >
-      {/* Handles */}
+      {/* Handles — larger for easier drag-to-connect */}
       <Handle
         type="target"
         position={Position.Right}
         id="target-right"
-        style={{ background: '#1976d2', width: 8, height: 8 }}
+        style={{
+          background: '#1976d2',
+          width: 12,
+          height: 12,
+          border: '2px solid #fff',
+          right: -6,
+        }}
       />
       <Handle
         type="source"
         position={Position.Left}
         id="source-left"
-        style={{ background: '#ed6c02', width: 8, height: 8 }}
+        style={{
+          background: '#ed6c02',
+          width: 12,
+          height: 12,
+          border: '2px solid #fff',
+          left: -6,
+        }}
       />
 
       {/* Header */}

@@ -42,6 +42,12 @@ export interface ExtUserNodeData {
   [key: string]: unknown;
 }
 
+export interface RouteEdgeData {
+  routeType: 'inbound' | 'user' | 'default';
+  routeKey: string;
+  [key: string]: unknown;
+}
+
 export function useRoutingNodes({ gateways, extensions, users, routes, gatewayStatuses }: Params) {
   return useMemo(() => {
     const nodes: Node[] = [];
@@ -86,24 +92,14 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
     });
 
     // ── Extension/User nodes (right column) ──
-    // Merge: find user for each extension
+    // Show ALL enabled extensions so user can create new routes via drag & drop
     const userByExt = new Map<string, User>();
     for (const u of users) {
       if (u.enabled !== false) userByExt.set(u.extension, u);
     }
 
-    // Filter to extensions that are relevant (have routes or users)
-    const inboundExtSet = new Set(routes.inbound.map((r) => r.extension));
-    const defaultExt = defaults.extension;
-    const relevantExts = extensions.filter((e) =>
-      inboundExtSet.has(e.extension) ||
-      userByExt.has(e.extension) ||
-      e.extension === defaultExt,
-    );
-
-    // Sort: enabled first, then by extension number
-    const enabledExts = relevantExts.filter((e) => e.enabled !== false);
-    const disabledExts = relevantExts.filter((e) => e.enabled === false);
+    const enabledExts = extensions.filter((e) => e.enabled !== false);
+    const disabledExts = extensions.filter((e) => e.enabled === false);
     const sortedExts = [...enabledExts, ...disabledExts];
 
     sortedExts.forEach((ext, i) => {
@@ -115,7 +111,7 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
         callerId: user?.caller_id || '',
         hasUser: !!user,
         enabled: ext.enabled !== false,
-        isDefault: ext.extension === defaultExt,
+        isDefault: ext.extension === defaults.extension,
       };
       nodes.push({
         id: `ext-${ext.extension}`,
@@ -132,12 +128,14 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
       const gwNodeId = `gw-${ib.gateway}`;
       const extNodeId = `ext-${ib.extension}`;
       const disabled = ib.enabled === false;
+      const edgeData: RouteEdgeData = { routeType: 'inbound', routeKey: ib.gateway };
       edges.push({
         id: `inbound-${ib.gateway}-${ib.extension}`,
         source: gwNodeId,
         target: extNodeId,
         sourceHandle: 'source-right',
         targetHandle: 'target-right',
+        data: edgeData,
         style: {
           stroke: disabled ? '#9e9e9e' : '#1976d2',
           strokeWidth: disabled ? 1 : 2,
@@ -160,12 +158,14 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
       const extNodeId = `ext-${user.extension}`;
       const gwNodeId = `gw-${ur.gateway}`;
       const disabled = ur.enabled === false;
+      const edgeData: RouteEdgeData = { routeType: 'user', routeKey: ur.username };
       edges.push({
         id: `user-route-${ur.username}-${ur.gateway}`,
         source: extNodeId,
         target: gwNodeId,
         sourceHandle: 'source-left',
         targetHandle: 'target-left',
+        data: edgeData,
         style: {
           stroke: disabled ? '#9e9e9e' : '#ed6c02',
           strokeWidth: disabled ? 1 : 2,
@@ -189,12 +189,14 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
 
         const extNodeId = `ext-${ext.extension}`;
         const gwNodeId = `gw-${defaults.gateway}`;
+        const edgeData: RouteEdgeData = { routeType: 'default', routeKey: '' };
         edges.push({
           id: `default-out-${ext.extension}`,
           source: extNodeId,
           target: gwNodeId,
           sourceHandle: 'source-left',
           targetHandle: 'target-left',
+          data: edgeData,
           style: {
             stroke: '#2e7d32',
             strokeWidth: 1.5,

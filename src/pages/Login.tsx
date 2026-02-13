@@ -19,6 +19,7 @@ import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
 import FormDialog from '../components/FormDialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import { saveApiKey } from '../store/keyStore';
 import i18n from '../i18n';
 
@@ -44,6 +45,7 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(initPrefs.demoMode);
+  const [sessionConflict, setSessionConflict] = useState<{ open: boolean; ip: string; time: string }>({ open: false, ip: '', time: '' });
 
   // Snapshot of initial values when settings dialog opens (for revert on cancel)
   const snapshot = useRef({ themeMode, colorTheme, language: i18n.language, demoMode });
@@ -104,16 +106,63 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
     }
   };
 
+  /** Complete login after all checks pass */
+  const completeLogin = async () => {
+    await saveApiKey(apiKey);
+    setToast({ open: true, message: t('status.connection_ok'), severity: 'success' });
+    setTimeout(() => navigate('/'), 800);
+  };
+
+  /** Try to acquire a session; show conflict dialog if one is active */
+  const trySessionLogin = async (force: boolean) => {
+    try {
+      await api.post('/auth/login', { force }, { headers: { 'X-API-Key': apiKey } });
+      await completeLogin();
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { status?: number; data?: { active_session?: boolean; ip?: string; logged_in_at?: string } } };
+      if (axiosErr?.response?.status === 409 && axiosErr.response.data?.active_session) {
+        const d = axiosErr.response.data;
+        const time = d.logged_in_at ? new Date(d.logged_in_at).toLocaleString() : '—';
+        setSessionConflict({ open: true, ip: d.ip || '—', time });
+      } else {
+        // Unexpected error during session login — still allow entry
+        await completeLogin();
+      }
+    }
+  };
+
+  const handleForceLogin = async () => {
+    setSessionConflict({ open: false, ip: '', time: '' });
+    await trySessionLogin(true);
+  };
+
   const handleLogin = async () => {
     setError('');
     setHostError('');
     setApiKeyError('');
 
-    // Demo mode: skip validation and real auth
+    // Demo mode: skip host validation but still check session
     const prefs = loadPreferences();
     if (prefs.demoMode) {
-      setDemoAdapter(true); // Ensure adapter is active (e.g. after logout)
+      setDemoAdapter(true);
       await saveApiKey(apiKey.trim() || DEMO_API_KEY);
+      // Check for active session in demo mode too
+      try {
+        const res = await api.post('/auth/login', { force: false });
+        if (res.data?.success) {
+          setToast({ open: true, message: t('demo.login_success'), severity: 'success' });
+          setTimeout(() => navigate('/'), 800);
+          return;
+        }
+      } catch (err: unknown) {
+        const axiosErr = err as { response?: { status?: number; data?: { active_session?: boolean; ip?: string; logged_in_at?: string } } };
+        if (axiosErr?.response?.status === 409 && axiosErr.response.data?.active_session) {
+          const d = axiosErr.response.data;
+          const time = d.logged_in_at ? new Date(d.logged_in_at).toLocaleString() : '—';
+          setSessionConflict({ open: true, ip: d.ip || '—', time });
+          return;
+        }
+      }
       setToast({ open: true, message: t('demo.login_success'), severity: 'success' });
       setTimeout(() => navigate('/'), 800);
       return;
@@ -137,9 +186,8 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
     try {
       const res = await api.get('/health', { headers: { 'X-API-Key': apiKey } });
       if (res.data.status === 'ok') {
-        await saveApiKey(apiKey);
-        setToast({ open: true, message: t('status.connection_ok'), severity: 'success' });
-        setTimeout(() => navigate('/'), 800);
+        // Health OK — now check for active session
+        await trySessionLogin(false);
       }
     } catch (err: unknown) {
       const axiosErr = err as { response?: { status?: number; data?: { detail?: string; message?: string } } };
@@ -282,6 +330,18 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
           </Typography>
         </Box>
       </FormDialog>
+
+      {/* Session conflict dialog */}
+      <ConfirmDialog
+        open={sessionConflict.open}
+        variant="save"
+        title={t('auth.session_conflict_title')}
+        message={t('auth.session_conflict_message', { ip: sessionConflict.ip, time: sessionConflict.time })}
+        confirmLabel={t('auth.force_login')}
+        cancelLabel={t('button.cancel')}
+        onConfirm={handleForceLogin}
+        onCancel={() => setSessionConflict({ open: false, ip: '', time: '' })}
+      />
 
       <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
         <Alert severity={toast.severity}>{toast.message}</Alert>

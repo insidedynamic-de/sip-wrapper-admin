@@ -7,10 +7,15 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SaveIcon from '@mui/icons-material/Save';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
+import LockIcon from '@mui/icons-material/Lock';
 import type { BlacklistEntry, WhitelistEntry } from '../api/types';
+
+/** Protected whitelist entry — always present, cannot be deleted or edited */
+const PROTECTED_WHITELIST_IP = '127.0.0.1';
 
 export default function Security() {
   const { t } = useTranslation();
@@ -69,20 +74,27 @@ export default function Security() {
   const handleConfirmSave = async () => { const a = confirmSave.action; setConfirmSave({ open: false, action: null }); if (a) await a(); };
   const handleConfirmDelete = async () => { const a = confirmDelete.action; setConfirmDelete({ open: false, name: '', action: null }); if (a) await a(); };
 
+  // Ensure protected entry always exists in the displayed whitelist
+  const protectedEntry: WhitelistEntry = { ip: PROTECTED_WHITELIST_IP, comment: t('security.local_protected') };
+  const displayWhitelist = whitelist.some((e) => e.ip === PROTECTED_WHITELIST_IP)
+    ? whitelist
+    : [protectedEntry, ...whitelist];
+
   const toggleWhitelist = async () => {
     await api.put('/security/whitelist/toggle', { enabled: !whitelistEnabled });
     setWhitelistEnabled(!whitelistEnabled);
   };
 
-  const doSaveAutoBlacklist = async () => {
-    try { await api.put('/security/auto-blacklist', autoBlacklist); showToast(true); } catch { showToast(false); }
+  const doSaveSecuritySettings = async () => {
+    try {
+      await Promise.all([
+        api.put('/security/auto-blacklist', autoBlacklist),
+        api.put('/security/fail2ban', fail2ban),
+      ]);
+      showToast(true);
+    } catch { showToast(false); }
   };
-  const saveAutoBlacklist = () => setConfirmSave({ open: true, action: doSaveAutoBlacklist });
-
-  const doSaveFail2ban = async () => {
-    try { await api.put('/security/fail2ban', fail2ban); showToast(true); } catch { showToast(false); }
-  };
-  const saveFail2ban = () => setConfirmSave({ open: true, action: doSaveFail2ban });
+  const saveSecuritySettings = () => setConfirmSave({ open: true, action: doSaveSecuritySettings });
 
   const openDialog = (type: 'blacklist' | 'whitelist') => {
     setDialogType(type);
@@ -94,7 +106,10 @@ export default function Security() {
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.security')}</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">{t('nav.security')}</Typography>
+        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveSecuritySettings}>{t('button.save_changes')}</Button>
+      </Box>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
         <Tab label={t('security.blacklist')} />
@@ -167,15 +182,23 @@ export default function Security() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {whitelist.map((e) => (
-                    <TableRow key={e.ip}>
-                      <TableCell>{e.ip}</TableCell>
-                      <TableCell>{e.comment}</TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small" color="error" onClick={() => requestRemoveWhitelist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {displayWhitelist.map((e) => {
+                    const isProtected = e.ip === PROTECTED_WHITELIST_IP;
+                    return (
+                      <TableRow key={e.ip} sx={isProtected ? { bgcolor: 'action.hover' } : undefined}>
+                        <TableCell>
+                          {isProtected && <LockIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle', color: 'text.secondary' }} />}
+                          {e.ip}
+                        </TableCell>
+                        <TableCell>{e.comment}</TableCell>
+                        <TableCell align="right">
+                          {!isProtected && (
+                            <IconButton size="small" color="error" onClick={() => requestRemoveWhitelist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </TableContainer>
@@ -204,7 +227,6 @@ export default function Security() {
                 onChange={(e) => setAutoBlacklist({ ...autoBlacklist, block_duration: parseInt(e.target.value) || 0 })}
                 helperText={t('security.permanent')} sx={{ width: 200 }} />
             </Box>
-            <Button variant="contained" onClick={saveAutoBlacklist}>{t('security.save_auto_blacklist')}</Button>
           </CardContent>
         </Card>
       )}
@@ -227,7 +249,6 @@ export default function Security() {
                 onChange={(e) => setFail2ban({ ...fail2ban, jail_name: e.target.value })}
                 helperText={t('security.jail_for_sip')} sx={{ width: 250 }} />
             </Box>
-            <Button variant="contained" onClick={saveFail2ban}>{t('security.save_fail2ban')}</Button>
           </CardContent>
         </Card>
       )}

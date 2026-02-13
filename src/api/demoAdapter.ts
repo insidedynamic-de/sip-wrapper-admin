@@ -283,6 +283,10 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   {
     const m = matchPath('/security/whitelist/:ip', url);
     if (m && method === 'delete') {
+      // Protect localhost entry from deletion
+      if (m.ip === '127.0.0.1') {
+        return mock({ success: false, detail: 'Protected entry cannot be deleted' }, config, 403);
+      }
       store.security.whitelist.entries = store.security.whitelist.entries.filter((e) => e.ip !== m.ip);
       saveDemoStore(store);
       return mock(ok(), config);
@@ -383,6 +387,26 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   }
   if (url === '/invoice' && method === 'put') {
     store.invoice = { ...store.invoice, ...body } as never;
+    saveDemoStore(store);
+    return mock(ok(), config);
+  }
+
+  // ── Auth / Session ──
+  if (url === '/auth/login' && method === 'post') {
+    if (store.session?.active && !body.force) {
+      return mock({
+        active_session: true,
+        ip: store.session.ip,
+        logged_in_at: store.session.logged_in_at,
+      }, config, 409);
+    }
+    // Create new session (force or no existing session)
+    store.session = { active: true, ip: '127.0.0.1', logged_in_at: new Date().toISOString() };
+    saveDemoStore(store);
+    return mock({ success: true, message: 'Logged in' }, config);
+  }
+  if (url === '/auth/logout' && method === 'post') {
+    store.session = null;
     saveDemoStore(store);
     return mock(ok(), config);
   }

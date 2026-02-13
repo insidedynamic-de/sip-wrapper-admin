@@ -1,4 +1,5 @@
-import { useState, type ReactElement } from 'react';
+import { useState, useEffect, type ReactElement } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   DndContext, closestCenter,
   PointerSensor, TouchSensor,
@@ -25,12 +26,29 @@ export interface TabViewProps {
   defaultTab?: string;
 }
 
+/** Resolve initial tab from URL hash fragment (e.g. #settings → 'settings') */
+function tabFromHash(hash: string, tabIds: string[]): string | undefined {
+  if (!hash) return undefined;
+  const h = hash.replace(/^#/, '').toLowerCase();
+  return tabIds.find((id) => id.toLowerCase() === h);
+}
+
 export default function TabView({
   tabs, storageKey, sortable = true, defaultTab,
 }: TabViewProps) {
   const tabIds = tabs.map((t) => t.id);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { order, moveTab, moveLeft, moveRight } = useTabOrder(tabIds, storageKey);
-  const [activeTab, setActiveTab] = useState(defaultTab || order[0]);
+  const [activeTab, setActiveTab] = useState(
+    tabFromHash(location.hash, tabIds) || defaultTab || order[0],
+  );
+
+  // Sync tab when URL hash changes externally
+  useEffect(() => {
+    const matched = tabFromHash(location.hash, tabIds);
+    if (matched && matched !== activeTab) setActiveTab(matched);
+  }, [location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -82,7 +100,10 @@ export default function TabView({
                 sortable={sortable}
                 onMoveLeft={() => moveLeft(i)}
                 onMoveRight={() => moveRight(i)}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  navigate({ hash: tab.id }, { replace: true });
+                }}
               />
             ))}
           </Box>

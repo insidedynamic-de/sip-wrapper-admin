@@ -62,6 +62,11 @@ export interface DemoStore {
     invoice_address: string;
     invoice_email: string;
   };
+  session: {
+    active: boolean;
+    ip: string;
+    logged_in_at: string;
+  } | null;
 }
 
 const SEED_DATA: DemoStore = {
@@ -159,6 +164,7 @@ const SEED_DATA: DemoStore = {
     whitelist: {
       enabled: false,
       entries: [
+        { ip: '127.0.0.1', comment: 'Localhost (protected)' },
         { ip: '192.168.1.0/24', comment: 'Office LAN' },
         { ip: '10.0.0.0/8', comment: 'Internal network' },
         { ip: '172.16.0.0/12', comment: 'VPN clients' },
@@ -258,6 +264,12 @@ const SEED_DATA: DemoStore = {
     invoice_name: 'Demo Ltd',
     invoice_address: 'Musterstrasse 1, 12345 Musterstadt',
     invoice_email: 'billing@demo-ltd.de',
+  },
+  // Pre-seed with an active session to demonstrate the conflict dialog
+  session: {
+    active: true,
+    ip: '192.168.1.42',
+    logged_in_at: new Date(Date.now() - 3600000).toISOString(),
   },
 };
 

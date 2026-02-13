@@ -1,10 +1,11 @@
 /**
- * @file MainLayout — Main app layout with sidebar and content area
+ * @file MainLayout — Main app layout with sidebar, content area, and global Apply button
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import ApplyChangesButton from '../ApplyChangesButton';
 
 const DRAWER_WIDTH = 240;
 
@@ -29,8 +30,13 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
           width: { sm: `calc(100% - ${DRAWER_WIDTH}px)` },
           bgcolor: 'background.default',
           minHeight: '100vh',
+          position: 'relative',
         }}
       >
+        {/* Global Apply Changes button — top-right */}
+        <Box sx={{ position: 'absolute', top: 24, right: 24 }}>
+          <ApplyChangesButton />
+        </Box>
         <Outlet />
       </Box>
     </Box>

@@ -10,7 +10,6 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Configuration from './pages/Configuration';
 import RoutesPage from './pages/Routes';
-import Security from './pages/Security';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
 import License from './pages/License';
@@ -60,9 +59,9 @@ export default function App() {
             <Route path="/users" element={<Navigate to="/configuration" replace />} />
             <Route path="/gateways" element={<Navigate to="/configuration" replace />} />
             <Route path="/routes" element={<RoutesPage />} />
-            <Route path="/security" element={<Security />} />
+            <Route path="/security" element={<Navigate to="/configuration" replace />} />
             <Route path="/logs" element={<Logs />} />
-            <Route path="/settings" element={<Navigate to="/profile" replace />} />
+            <Route path="/settings" element={<Navigate to="/configuration" replace />} />
             <Route path="/license" element={<License />} />
             <Route
               path="/profile"
