@@ -1,0 +1,301 @@
+/**
+ * @file demoData — Seed data and localStorage CRUD helpers for demo mode
+ * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ */
+import type {
+  User, AclUser, Gateway, GatewayStatus, Registration, ActiveCall,
+  InboundRoute, OutboundRoute, UserRoute, RouteDefaults,
+  BlacklistEntry, WhitelistEntry, ESLEvent, ESLStatus,
+  CallLog, SecurityLog, Extension,
+} from './types';
+
+const DEMO_STORAGE_KEY = 'sip-wrapper-demo-data';
+
+export interface DemoStore {
+  extensions: Extension[];
+  users: User[];
+  aclUsers: AclUser[];
+  gateways: Gateway[];
+  gatewayStatuses: GatewayStatus[];
+  registrations: Registration[];
+  activeCalls: ActiveCall[];
+  routes: {
+    defaults: RouteDefaults;
+    inbound: InboundRoute[];
+    outbound: OutboundRoute[];
+    user_routes: UserRoute[];
+  };
+  security: {
+    blacklist: BlacklistEntry[];
+    whitelist: { enabled: boolean; entries: WhitelistEntry[] };
+    auto_blacklist: { enabled: boolean; threshold: number; time_window: number; block_duration: number };
+    fail2ban: { enabled: boolean; threshold: number; jail_name: string };
+  };
+  eslEvents: ESLEvent[];
+  eslStatus: ESLStatus;
+  callLogs: CallLog[];
+  securityLogs: SecurityLog[];
+  settings: Record<string, unknown>;
+  license: {
+    license_key: string;
+    client_name: string;
+    licensed: boolean;
+    expires: string;
+    trial: boolean;
+    nfr: boolean;
+    days_remaining: number;
+    max_connections: number;
+    version: string;
+  };
+  company: {
+    company_name: string;
+    company_email: string;
+    company_phone: string;
+    company_address: string;
+    company_zip: string;
+    company_city: string;
+    company_country: string;
+  };
+  invoice: {
+    same_as_company: boolean;
+    invoice_name: string;
+    invoice_address: string;
+    invoice_email: string;
+  };
+}
+
+const SEED_DATA: DemoStore = {
+  // ── Extensions (Nebenstellen) ──
+  extensions: [
+    { extension: '1001', description: 'Alice Johnson', enabled: true },
+    { extension: '1002', description: 'Bob Smith', enabled: true },
+    { extension: '1003', description: 'Carol White', enabled: true },
+    { extension: '1004', description: 'David Brown', enabled: false },
+    { extension: '1005', description: 'Eva Müller', enabled: true },
+    { extension: '1006', description: 'Frank Weber', enabled: true },
+    { extension: '1007', description: 'Grace Lee', enabled: false },
+    { extension: '1008', description: 'Hans Schmidt', enabled: true },
+    { extension: '1010', description: 'Lobby Phone', enabled: true },
+    { extension: '1020', description: 'Warehouse', enabled: true },
+    { extension: '1030', description: 'Conference Room', enabled: true },
+    { extension: '1040', description: 'Parking Gate', enabled: false },
+  ],
+  // ── Users (8 total: 6 enabled, 2 disabled) ──
+  users: [
+    { username: 'alice', extension: '1001', caller_id: 'Alice Johnson', enabled: true },
+    { username: 'bob', extension: '1002', caller_id: 'Bob Smith', enabled: true },
+    { username: 'carol', extension: '1003', caller_id: 'Carol White', enabled: true },
+    { username: 'david', extension: '1004', caller_id: 'David Brown', enabled: false },
+    { username: 'eva', extension: '1005', caller_id: 'Eva Müller', enabled: true },
+    { username: 'frank', extension: '1006', caller_id: 'Frank Weber', enabled: true },
+    { username: 'grace', extension: '1007', caller_id: 'Grace Lee', enabled: false },
+    { username: 'hans', extension: '1008', caller_id: 'Hans Schmidt', enabled: true },
+  ],
+  // ── ACL Users (4 entries) ──
+  aclUsers: [
+    { username: 'lobby-phone', ip: '192.168.1.50', extension: '1010', caller_id: 'Lobby' },
+    { username: 'warehouse', ip: '192.168.2.100', extension: '1020', caller_id: 'Warehouse' },
+    { username: 'conf-room', ip: '192.168.1.60', extension: '1030', caller_id: 'Conference Room' },
+    { username: 'parking-gate', ip: '192.168.3.10', extension: '1040', caller_id: 'Parking Gate' },
+  ],
+  // ── Gateways (5 total: mix of types, 3 enabled, 2 disabled) ──
+  gateways: [
+    { name: 'sipgate', type: 'provider', host: 'sipgate.de', port: 5060, username: 'sipuser1', password: '***', register: true, transport: 'udp', enabled: true },
+    { name: 'telekom', type: 'provider', host: 'tel.t-online.de', port: 5060, username: 'teluser1', password: '***', register: true, transport: 'udp', enabled: true },
+    { name: 'office-pbx', type: 'pbx', host: '10.0.0.5', port: 5060, username: 'trunk1', password: '***', register: false, transport: 'tcp', enabled: false },
+    { name: 'plivo-ai', type: 'ai_platform', host: 'sip.plivo.com', port: 5060, username: 'plivo-user', password: '***', register: true, transport: 'tls', enabled: true },
+    { name: 'backup-trunk', type: 'provider', host: 'sip.backup-provider.de', port: 5060, username: 'backup1', password: '***', register: true, transport: 'udp', enabled: false },
+  ],
+  // ── Gateway Statuses (all 3 color states: green, red, yellow) ──
+  gatewayStatuses: [
+    { name: 'sipgate', state: 'REGED', status: 'UP' },
+    { name: 'telekom', state: 'FAIL', status: 'DOWN' },
+    { name: 'office-pbx', state: 'DISABLED', status: 'DOWN' },
+    { name: 'plivo-ai', state: 'REGED', status: 'UP' },
+    { name: 'backup-trunk', state: 'NOREG', status: 'DOWN' },
+  ],
+  // ── Registrations (4 online users) ──
+  registrations: [
+    { user: 'alice', ip: '192.168.1.101', port: '5060', user_agent: 'Obi200/3.2.2', contact: 'sip:alice@192.168.1.101' },
+    { user: 'bob', ip: '192.168.1.102', port: '5060', user_agent: 'Linphone/5.2.0', contact: 'sip:bob@192.168.1.102' },
+    { user: 'carol', ip: '192.168.1.103', port: '5060', user_agent: 'Obi200/3.2.2', contact: 'sip:carol@192.168.1.103' },
+    { user: 'eva', ip: '10.10.0.50', port: '5060', user_agent: 'Obi200/3.2.2 (VPN)', contact: 'sip:eva@10.10.0.50' },
+  ],
+  // ── Active Calls (4 calls: different states) ──
+  activeCalls: [
+    { uuid: 'ac-1', direction: 'inbound', caller_id: '+4930111111', destination: '1001', state: 'active', duration: '02:15' },
+    { uuid: 'ac-2', direction: 'outbound', caller_id: '1002', destination: '+4930999999', state: 'ringing', duration: '00:05' },
+    { uuid: 'ac-3', direction: 'inbound', caller_id: '+4940555555', destination: '1003', state: 'active', duration: '05:42' },
+    { uuid: 'ac-4', direction: 'outbound', caller_id: '1005', destination: '+4930777000', state: 'early', duration: '00:12' },
+  ],
+  // ── Routes (expanded, some disabled for demo) ──
+  routes: {
+    defaults: { gateway: 'sipgate', extension: '1001', caller_id: '+4930123456' },
+    inbound: [
+      { gateway: 'sipgate', extension: '1001', enabled: true },
+      { gateway: 'telekom', extension: '1002', enabled: true },
+      { gateway: 'plivo-ai', extension: '1005', enabled: false },
+    ],
+    outbound: [
+      { pattern: '^0[1-9]', gateway: 'sipgate', enabled: true },
+      { pattern: '^\\+', gateway: 'telekom', prepend: '00', strip: 1, enabled: true },
+      { pattern: '^00', gateway: 'backup-trunk', enabled: false },
+    ],
+    user_routes: [
+      { username: 'alice', gateway: 'sipgate', enabled: true },
+      { username: 'bob', gateway: 'telekom', enabled: true },
+      { username: 'eva', gateway: 'plivo-ai', enabled: false },
+    ],
+  },
+  // ── Security (expanded blacklist/whitelist) ──
+  security: {
+    blacklist: [
+      { ip: '45.134.26.0/24', comment: 'Known SIP scanner', added_at: '2025-12-01T10:00:00Z', blocked_count: 42, fail2ban_banned: true },
+      { ip: '185.53.91.15', comment: 'Brute force', added_at: '2025-12-15T08:30:00Z', blocked_count: 7, fail2ban_banned: false },
+      { ip: '103.45.67.0/24', comment: 'Repeated auth failures', added_at: '2026-01-05T14:20:00Z', blocked_count: 23, fail2ban_banned: true },
+      { ip: '91.200.12.88', comment: 'SIP INVITE flood', added_at: '2026-01-20T09:15:00Z', blocked_count: 3, fail2ban_banned: false },
+      { ip: '198.51.100.22', comment: 'Port scan detected', added_at: '2026-02-01T11:00:00Z', blocked_count: 1, fail2ban_banned: false },
+    ],
+    whitelist: {
+      enabled: false,
+      entries: [
+        { ip: '192.168.1.0/24', comment: 'Office LAN' },
+        { ip: '10.0.0.0/8', comment: 'Internal network' },
+        { ip: '172.16.0.0/12', comment: 'VPN clients' },
+      ],
+    },
+    auto_blacklist: { enabled: true, threshold: 5, time_window: 300, block_duration: 3600 },
+    fail2ban: { enabled: false, threshold: 50, jail_name: 'freeswitch-sip' },
+  },
+  // ── ESL Events (16 entries: diverse FS categories) ──
+  eslEvents: [
+    { type: 'SWITCH', text: 'FreeSWITCH Version 1.10.12 started', level: 'info', timestamp: Date.now() - 360000, datetime: new Date(Date.now() - 360000).toISOString() },
+    { type: 'SOFIA', text: 'Sofia profile internal started on 0.0.0.0:5060', level: 'info', timestamp: Date.now() - 300000, datetime: new Date(Date.now() - 300000).toISOString() },
+    { type: 'ESL', text: 'ESL connection accepted from 127.0.0.1:54321', level: 'debug', timestamp: Date.now() - 280000, datetime: new Date(Date.now() - 280000).toISOString() },
+    { type: 'REGISTER', text: 'Registration: alice from 192.168.1.101', level: 'info', timestamp: Date.now() - 240000, datetime: new Date(Date.now() - 240000).toISOString() },
+    { type: 'REGISTER', text: 'Registration: bob from 192.168.1.102', level: 'info', timestamp: Date.now() - 200000, datetime: new Date(Date.now() - 200000).toISOString() },
+    { type: 'DIALPLAN', text: 'Processing dialplan XML for call +4930111111', level: 'debug', timestamp: Date.now() - 190000, datetime: new Date(Date.now() - 190000).toISOString() },
+    { type: 'REGISTER', text: 'Registration: carol from 192.168.1.103', level: 'info', timestamp: Date.now() - 180000, datetime: new Date(Date.now() - 180000).toISOString() },
+    { type: 'SOFIA', text: 'Gateway telekom FAIL — host unreachable: tel.t-online.de:5060', level: 'error', timestamp: Date.now() - 150000, datetime: new Date(Date.now() - 150000).toISOString() },
+    { type: 'CHANNEL', text: 'Channel created: sofia/internal/alice@192.168.1.101', level: 'info', timestamp: Date.now() - 120000, datetime: new Date(Date.now() - 120000).toISOString() },
+    { type: 'CODEC', text: 'Negotiated codec OPUS/48000 for call ac-1', level: 'debug', timestamp: Date.now() - 115000, datetime: new Date(Date.now() - 115000).toISOString() },
+    { type: 'SOFIA', text: 'Gateway backup-trunk NOREG — authentication rejected by sip.backup-provider.de', level: 'error', timestamp: Date.now() - 90000, datetime: new Date(Date.now() - 90000).toISOString() },
+    { type: 'DIALPLAN', text: 'Route matched: ^(\\d{10,})$ -> gateway sipgate via outbound', level: 'info', timestamp: Date.now() - 70000, datetime: new Date(Date.now() - 70000).toISOString() },
+    { type: 'REGISTER', text: 'Registration: eva from 10.10.0.50 (VPN)', level: 'info', timestamp: Date.now() - 60000, datetime: new Date(Date.now() - 60000).toISOString() },
+    { type: 'SECURITY', subtype: 'auth_fail', text: 'Auth failure from 45.134.26.55 — user "admin" not found', level: 'warning', timestamp: Date.now() - 30000, datetime: new Date(Date.now() - 30000).toISOString() },
+    { type: 'SECURITY', subtype: 'blocked', text: 'IP 185.53.91.15 auto-blocked after 5 failed attempts', level: 'error', timestamp: Date.now() - 15000, datetime: new Date(Date.now() - 15000).toISOString() },
+    { type: 'CHANNEL', text: 'Call ended: sofia/internal/alice@192.168.1.101 -> +4930111111 (NORMAL_CLEARING)', level: 'info', timestamp: Date.now() - 5000, datetime: new Date(Date.now() - 5000).toISOString() },
+  ],
+  eslStatus: {
+    connected: true, host: 'localhost:8021', running: true,
+    last_error: null, connection_attempts: 1,
+    buffer_stats: { total_events: 312, buffer_size: 12, max_size: 1000 },
+  },
+  // ── Call Logs (15 entries: mix of answered, missed, failed, busy) ──
+  callLogs: [
+    { uuid: 'c01', direction: 'inbound', caller_id: '+4930111111', destination: '1001', start_time: new Date(Date.now() - 1800000).toISOString(), duration: 245, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c02', direction: 'outbound', caller_id: '1001', destination: '+4930222222', start_time: new Date(Date.now() - 3600000).toISOString(), duration: 62, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c03', direction: 'inbound', caller_id: '+4930333333', destination: '1002', start_time: new Date(Date.now() - 5400000).toISOString(), duration: 0, result: 'missed', gateway: 'telekom' },
+    { uuid: 'c04', direction: 'outbound', caller_id: '1002', destination: '+4930444444', start_time: new Date(Date.now() - 7200000).toISOString(), duration: 180, result: 'answered', gateway: 'telekom' },
+    { uuid: 'c05', direction: 'inbound', caller_id: '+4930555555', destination: '1001', start_time: new Date(Date.now() - 10800000).toISOString(), duration: 0, result: 'failed', gateway: 'sipgate' },
+    { uuid: 'c06', direction: 'outbound', caller_id: '1003', destination: '+4930666666', start_time: new Date(Date.now() - 14400000).toISOString(), duration: 0, result: 'busy', gateway: 'sipgate' },
+    { uuid: 'c07', direction: 'inbound', caller_id: '+4940123456', destination: '1003', start_time: new Date(Date.now() - 18000000).toISOString(), duration: 312, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c08', direction: 'outbound', caller_id: '1005', destination: '+4930777000', start_time: new Date(Date.now() - 21600000).toISOString(), duration: 95, result: 'answered', gateway: 'plivo-ai' },
+    { uuid: 'c09', direction: 'inbound', caller_id: '+4930888111', destination: '1005', start_time: new Date(Date.now() - 28800000).toISOString(), duration: 0, result: 'missed', gateway: 'plivo-ai' },
+    { uuid: 'c10', direction: 'outbound', caller_id: '1001', destination: '+4930999222', start_time: new Date(Date.now() - 43200000).toISOString(), duration: 45, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c11', direction: 'inbound', caller_id: '+4940777888', destination: '1002', start_time: new Date(Date.now() - 50400000).toISOString(), duration: 0, result: 'failed', gateway: 'telekom' },
+    { uuid: 'c12', direction: 'outbound', caller_id: '1006', destination: '+4930111222', start_time: new Date(Date.now() - 57600000).toISOString(), duration: 128, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c13', direction: 'inbound', caller_id: '+4930444555', destination: '1001', start_time: new Date(Date.now() - 72000000).toISOString(), duration: 0, result: 'busy', gateway: 'sipgate' },
+    { uuid: 'c14', direction: 'inbound', caller_id: '+4930777777', destination: '1001', start_time: new Date(Date.now() - 86400000).toISOString(), duration: 412, result: 'answered', gateway: 'telekom' },
+    { uuid: 'c15', direction: 'outbound', caller_id: '1001', destination: '+4930888888', start_time: new Date(Date.now() - 90000000).toISOString(), duration: 67, result: 'answered', gateway: 'sipgate' },
+  ],
+  // ── Security Logs (12 entries: mix of levels and event types) ──
+  securityLogs: [
+    { timestamp: new Date(Date.now() - 5000).toISOString(), event: 'auth_failure', ip: '45.134.26.55', details: 'Invalid credentials for user admin', level: 'warning' },
+    { timestamp: new Date(Date.now() - 15000).toISOString(), event: 'blocked', ip: '185.53.91.15', details: 'IP blocked: exceeded 5 failed attempts', level: 'error' },
+    { timestamp: new Date(Date.now() - 30000).toISOString(), event: 'auth_failure', ip: '91.200.12.88', details: 'SIP INVITE from unknown source', level: 'warning' },
+    { timestamp: new Date(Date.now() - 60000).toISOString(), event: 'registration', ip: '192.168.1.101', details: 'User alice registered successfully', level: 'info' },
+    { timestamp: new Date(Date.now() - 90000).toISOString(), event: 'registration', ip: '192.168.1.103', details: 'User carol registered successfully', level: 'info' },
+    { timestamp: new Date(Date.now() - 120000).toISOString(), event: 'auth_failure', ip: '45.134.26.100', details: 'SIP REGISTER auth failure from unknown user', level: 'warning' },
+    { timestamp: new Date(Date.now() - 300000).toISOString(), event: 'registration', ip: '192.168.1.102', details: 'User bob registered successfully', level: 'info' },
+    { timestamp: new Date(Date.now() - 600000).toISOString(), event: 'blocked', ip: '45.134.26.0/24', details: 'CIDR range auto-blocked by Fail2Ban', level: 'error' },
+    { timestamp: new Date(Date.now() - 1800000).toISOString(), event: 'registration', ip: '10.10.0.50', details: 'User eva registered via VPN', level: 'info' },
+    { timestamp: new Date(Date.now() - 3600000).toISOString(), event: 'auth_failure', ip: '103.45.67.89', details: 'Brute force attempt detected (12 failures in 60s)', level: 'error' },
+    { timestamp: new Date(Date.now() - 7200000).toISOString(), event: 'blocked', ip: '198.51.100.22', details: 'Port scan detected — IP auto-blocked', level: 'error' },
+    { timestamp: new Date(Date.now() - 14400000).toISOString(), event: 'whitelist', ip: '172.16.0.0/12', details: 'Whitelist entry added: VPN clients', level: 'info' },
+  ],
+  settings: {
+    fs_domain: 'demo.sip-wrapper.local',
+    external_sip_ip: '203.0.113.10',
+    fs_internal_port: 5060,
+    fs_external_port: 5080,
+    codec_prefs: 'OPUS,G722,PCMU,PCMA',
+    default_country_code: '49',
+    outbound_caller_id: '+4930123456',
+  },
+  license: {
+    license_key: 'DEMO-0000-0000-0000',
+    client_name: 'Demo Ltd',
+    licensed: true,
+    expires: '2026-12-31',
+    trial: true,
+    nfr: false,
+    days_remaining: 30,
+    max_connections: 10,
+    version: '2.0.0',
+  },
+  company: {
+    company_name: 'Demo Ltd',
+    company_email: 'info@demo-ltd.de',
+    company_phone: '+49 30 123456',
+    company_address: 'Musterstrasse 1',
+    company_zip: '12345',
+    company_city: 'Musterstadt',
+    company_country: 'Deutschland',
+  },
+  invoice: {
+    same_as_company: true,
+    invoice_name: 'Demo Ltd',
+    invoice_address: 'Musterstrasse 1, 12345 Musterstadt',
+    invoice_email: 'billing@demo-ltd.de',
+  },
+};
+
+/** Initialize demo data in localStorage if not already present; patch missing fields in old data */
+export function seedDemoData(): void {
+  const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+  if (!raw) {
+    localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(SEED_DATA));
+    return;
+  }
+  // Migrate old data: add any missing top-level keys from SEED_DATA
+  try {
+    const existing = JSON.parse(raw) as Record<string, unknown>;
+    let patched = false;
+    for (const key of Object.keys(SEED_DATA) as (keyof DemoStore)[]) {
+      if (!(key in existing)) {
+        existing[key] = SEED_DATA[key];
+        patched = true;
+      }
+    }
+    if (patched) {
+      localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(existing));
+    }
+  } catch { /* corrupted data — leave as is */ }
+}
+
+/** Clear all demo data from localStorage */
+export function clearDemoData(): void {
+  localStorage.removeItem(DEMO_STORAGE_KEY);
+}
+
+/** Load entire demo store */
+export function loadDemoStore(): DemoStore {
+  const raw = localStorage.getItem(DEMO_STORAGE_KEY);
+  return raw ? JSON.parse(raw) : { ...SEED_DATA };
+}
+
+/** Save entire demo store */
+export function saveDemoStore(store: DemoStore): void {
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(store));
+}

@@ -1,3 +1,7 @@
+/**
+ * @file ConfirmDialog — Reusable confirmation dialog for save and delete actions
+ * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ */
 import {
   Dialog, DialogTitle, DialogContent, DialogContentText,
   DialogActions, Button,
@@ -8,11 +12,19 @@ interface Props {
   title: string;
   message: string;
   confirmLabel?: string;
+  cancelLabel?: string;
+  variant?: 'delete' | 'save';
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export default function ConfirmDialog({ open, title, message, confirmLabel = 'Confirm', onConfirm, onCancel }: Props) {
+export default function ConfirmDialog({
+  open, title, message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  variant = 'delete',
+  onConfirm, onCancel,
+}: Props) {
   return (
     <Dialog open={open} onClose={onCancel}>
       <DialogTitle>{title}</DialogTitle>
@@ -20,8 +32,14 @@ export default function ConfirmDialog({ open, title, message, confirmLabel = 'Co
         <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onCancel}>Cancel</Button>
-        <Button onClick={onConfirm} variant="contained" color="error">{confirmLabel}</Button>
+        <Button onClick={onCancel}>{cancelLabel}</Button>
+        <Button
+          onClick={onConfirm}
+          variant="contained"
+          color={variant === 'delete' ? 'error' : 'success'}
+        >
+          {confirmLabel}
+        </Button>
       </DialogActions>
     </Dialog>
   );

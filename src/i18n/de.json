@@ -5,22 +5,25 @@
     "config": "Konfiguration",
     "security": "Sicherheit",
     "logs": "Logs",
-    "profile": "Profil"
+    "profile": "Profil",
+    "license_billing": "Lizenz / Abrechnung"
   },
-  "auth": { "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort" },
+  "auth": { "login": "Anmelden", "logout": "Abmelden", "username": "Benutzername", "password": "Passwort", "host": "Server-Adresse" },
   "button": {
     "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
     "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
     "activate": "Aktivieren", "import": "Importieren", "export": "Exportieren",
     "apply_reload": "Anwenden & Neu laden", "block": "Blockieren", "allow": "Erlauben",
-    "refresh": "Aktualisieren", "check_now": "Jetzt pr\u00fcfen & blockieren", "save_defaults": "Defaults speichern"
+    "refresh": "Aktualisieren", "check_now": "Jetzt pr\u00fcfen & blockieren", "save_defaults": "Defaults speichern",
+    "save_changes": "\u00c4nderungen speichern"
   },
   "status": {
     "online": "Online", "offline": "Offline", "registered": "Registriert",
     "not_registered": "Nicht registriert", "success": "Erfolgreich", "error": "Fehler",
     "loading": "Laden...", "checking": "Pr\u00fcfen...", "connected": "Verbunden",
-    "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert",
-    "access_denied": "Zugriff verweigert"
+    "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert", "deactivated": "Deaktiviert",
+    "access_denied": "Zugriff verweigert",
+    "connection_ok": "Verbindung OK"
   },
   "section": {
     "users": "Benutzer", "sip_users": "SIP-Benutzer", "acl_users": "ACL-Benutzer",
@@ -36,15 +39,23 @@
     "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
     "register": "Registrieren", "caller_id": "Anrufer-ID", "name": "Name",
     "type": "Typ", "actions": "Aktionen", "user": "Benutzer", "gateway": "Gateway",
-    "comment": "Kommentar"
+    "comment": "Kommentar", "status": "Status"
   },
   "dashboard": {
     "gateway_status": "Gateway-Status", "user_registrations": "Benutzer-Registrierungen",
-    "active_calls": "Aktive Anrufe", "call_logs": "Anrufverlauf",
+    "active_calls": "Aktive Anrufe", "no_active_calls": "Keine aktiven Anrufe", "call_logs": "Anrufverlauf",
+    "total_calls_today": "Heute gesamt",
     "no_call_logs": "Keine Anrufe aufgezeichnet", "environment": "Umgebungsvariablen",
     "no_gateways": "Keine Gateways konfiguriert", "no_users_registered": "Keine Benutzer registriert",
     "no_logs": "Keine Logs", "call_stats": "Anrufstatistik",
-    "total_in": "Gesamt Eingehend", "total_out": "Gesamt Ausgehend", "failed": "fehlgeschlagen"
+    "total_in": "Gesamt Eingehend", "total_out": "Gesamt Ausgehend", "failed": "fehlgeschlagen",
+    "gateways_registered": "Registriert",
+    "users_online": "Online",
+    "total_calls": "Anrufe gesamt",
+    "failed_calls": "Fehlgeschlagen",
+    "blocked_ips": "Blockierte IPs",
+    "extensions_active": "Nebenstellen",
+    "license_status": "Lizenz"
   },
   "calls": {
     "call_flow": "Verbindung", "direction": "Richtung", "from": "Von",
@@ -71,7 +82,10 @@
     "change_password": "Passwort \u00e4ndern", "current_password": "Aktuelles Passwort",
     "new_password": "Neues Passwort", "confirm_password": "Passwort best\u00e4tigen",
     "passwords_not_match": "Passw\u00f6rter stimmen nicht \u00fcberein",
-    "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema"
+    "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema",
+    "auto_logout": "Auto-Logout", "auto_logout_enabled": "Auto-Logout aktivieren",
+    "auto_logout_timeout": "Timeout (Sekunden)",
+    "auto_logout_desc": "Automatisch abmelden nach Inaktivität"
   },
   "theme": {
     "light": "Hell", "dark": "Dunkel", "auto": "Auto",
@@ -93,7 +107,9 @@
     "license": "Lizenz", "client": "Kunde", "licensed": "Lizenziert",
     "expires": "L\u00e4uft ab", "trial_mode": "Testversion", "days_remaining": "Tage verbleibend",
     "connections": "Verbindungen", "trial_expired_title": "Testversion abgelaufen",
-    "trial_expired_text": "Ihre Testversion ist abgelaufen. Bitte geben Sie einen Lizenzschl\u00fcssel ein, um die Anwendung weiter zu nutzen."
+    "trial_expired_text": "Ihre Testversion ist abgelaufen. Bitte geben Sie einen Lizenzschl\u00fcssel ein, um die Anwendung weiter zu nutzen.",
+    "nfr": "NFR", "usage": "Nutzung", "used_of": "{{used}} / {{total}}",
+    "routing_connections": "Routings / Verbindungen"
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {
@@ -103,7 +119,18 @@
     "saved": "Gespeichert", "failed_to_load": "Logs konnten nicht geladen werden",
     "server_not_running": "l\u00e4uft nicht", "debug_dump": "Debug-Ausgabe",
     "esl_events": "ESL-Ereignisse", "esl_connected": "Verbunden",
-    "esl_disconnected": "Getrennt", "events_buffer": "Ereignis-Puffer"
+    "esl_disconnected": "Getrennt", "events_buffer": "Ereignis-Puffer",
+    "tab_system": "System-Logs",
+    "tab_calls": "Anruf-Logs",
+    "tab_security": "Sicherheits-Logs",
+    "no_calls": "Keine Anrufe aufgezeichnet",
+    "no_security": "Keine Sicherheitsereignisse",
+    "call_result_answered": "Angenommen",
+    "call_result_missed": "Verpasst",
+    "call_result_failed": "Fehlgeschlagen",
+    "call_result_busy": "Besetzt",
+    "event": "Ereignis",
+    "level_all": "Alle Level"
   },
   "security": {
     "blacklist": "Blacklist", "whitelist": "Whitelist", "auto_blacklist": "Auto-Blacklist",
@@ -128,12 +155,22 @@
     "save_fail2ban": "Fail2Ban-Einstellungen speichern", "refresh_status": "Status aktualisieren",
     "ip_or_cidr": "IP-Adresse oder CIDR", "comment_optional": "Kommentar (optional)"
   },
+  "extension": {
+    "extensions": "Nebenstellen",
+    "add_extension": "Nebenstelle hinzuf\u00fcgen",
+    "edit_extension": "Nebenstelle bearbeiten",
+    "view_extension": "Nebenstelle anzeigen",
+    "description": "Beschreibung",
+    "digits_only": "Nur Ziffern erlaubt",
+    "digits_hint": "Nur Ziffern (z.B. 1001)"
+  },
   "gateway": {
     "sip_gateways": "SIP-Gateways / Provider", "add_gateway": "Gateway hinzuf\u00fcgen",
     "auth_username": "Auth-Benutzername (optional)", "auth_username_hint": "F\u00fcr 3CX und einige PBX-Systeme"
   },
   "route": {
-    "add_route": "Route hinzuf\u00fcgen", "inbound_routes": "Eingehende Routen (DID)",
+    "add_route": "Route hinzuf\u00fcgen", "edit_route": "Route bearbeiten", "view_route": "Route anzeigen",
+    "inbound_routes": "Eingehende Routen (DID)",
     "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
     "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzuf\u00fcgen"
   },
@@ -141,9 +178,27 @@
     "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",
     "add_acl_user": "ACL-Benutzer hinzuf\u00fcgen", "edit_acl_user": "ACL-Benutzer bearbeiten",
     "add_gateway": "Gateway hinzuf\u00fcgen", "edit_gateway": "Gateway bearbeiten",
+    "view_user": "Benutzer anzeigen", "view_acl_user": "ACL-Benutzer anzeigen", "view_gateway": "Gateway anzeigen",
     "notification": "Benachrichtigung", "block_ip_address": "IP-Adresse blockieren",
     "allow_ip_address": "IP-Adresse erlauben", "multiple_ips_hint": "Mehrere IPs getrennt durch |",
     "select": "-- Ausw\u00e4hlen --"
+  },
+  "confirm": {
+    "save_title": "\u00c4nderungen speichern?",
+    "save_message": "M\u00f6chten Sie die \u00c4nderungen wirklich speichern?",
+    "delete_title": "L\u00f6schen?",
+    "delete_message": "M\u00f6chten Sie \"{{name}}\" wirklich l\u00f6schen? Diese Aktion kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
+    "delete_generic": "M\u00f6chten Sie diesen Eintrag wirklich l\u00f6schen? Diese Aktion kann nicht r\u00fcckg\u00e4ngig gemacht werden."
+  },
+  "unsaved": {
+    "title": "Ungespeicherte \u00c4nderungen",
+    "message": "Sie haben ungespeicherte \u00c4nderungen. Was m\u00f6chten Sie tun?",
+    "save_now": "Jetzt speichern",
+    "exit_without_saving": "Ohne Speichern verlassen",
+    "data_loss_title": "Daten gehen verloren",
+    "data_loss_message": "Alle ungespeicherten \u00c4nderungen gehen dauerhaft verloren. M\u00f6chten Sie wirklich fortfahren?",
+    "yes": "Ja, verlassen",
+    "no": "Nein, zur\u00fcck"
   },
   "validation": {
     "required": "Pflichtfeld",
@@ -151,7 +206,10 @@
     "invalid_username": "Nur Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche",
     "invalid_extension": "Nur Ziffern, *, #, +",
     "min_length": "Mindestens {{min}} Zeichen",
-    "leave_empty_keep": "Leer lassen um aktuelles Passwort zu behalten"
+    "leave_empty_keep": "Leer lassen um aktuelles Passwort zu behalten",
+    "host_protocol": "Muss mit http:// oder https:// beginnen",
+    "host_invalid": "Muss eine gültige Domain, IP-Adresse oder localhost sein",
+    "api_key_required": "API-Schlüssel ist erforderlich"
   },
   "system": {
     "system_settings": "Systemeinstellungen", "server": "Server",
@@ -160,5 +218,30 @@
     "codec_prefs": "Codec-Pr\u00e4ferenzen", "default_country": "Standard-L\u00e4ndercode",
     "outbound_caller_id": "Ausgehende Anrufer-ID", "save_settings": "Einstellungen speichern",
     "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen"
+  },
+  "countdown": {
+    "logout_in": "Logout in {{seconds}}s",
+    "activity_reset": "Maus bewegen oder Taste drücken zum Zurücksetzen",
+    "modal_title": "Sitzung l\u00e4uft ab",
+    "modal_message": "Sie werden wegen Inaktivit\u00e4t abgemeldet. Klicken Sie X oder bewegen Sie die Maus."
+  },
+  "error": {
+    "not_found_title": "404",
+    "not_found_subtitle": "Seite nicht gefunden",
+    "not_found_message": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "go_back": "Zurück",
+    "go_home": "Zum Dashboard"
+  },
+  "tabs": {
+    "move_left": "Nach links",
+    "move_right": "Nach rechts",
+    "drag_to_reorder": "Ziehen zum Umordnen"
+  },
+  "demo": {
+    "title": "Demo-Modus",
+    "enable": "Demo-Modus aktivieren",
+    "description": "Admin-Panel mit simulierten Daten betreiben. Keine echte Backend-Verbindung nötig.",
+    "login_success": "Angemeldet (Demo-Modus)",
+    "active_notice": "Demo-Modus aktiv — keine echte Serververbindung"
   }
 }

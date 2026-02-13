@@ -3,18 +3,20 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Tabs, Tab, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  IconButton, Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Switch, FormControlLabel, Snackbar, Alert, Chip,
+  IconButton, TextField, Switch, FormControlLabel, Snackbar, Alert, Chip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import BlockIcon from '@mui/icons-material/Block';
 import api from '../api/client';
+import ConfirmDialog from '../components/ConfirmDialog';
+import FormDialog from '../components/FormDialog';
 import type { BlacklistEntry, WhitelistEntry } from '../api/types';
 
 export default function Security() {
   const { t } = useTranslation();
   const [tab, setTab] = useState(0);
+  const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
@@ -22,7 +24,10 @@ export default function Security() {
   const [fail2ban, setFail2ban] = useState({ enabled: false, threshold: 50, jail_name: 'freeswitch-sip' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'blacklist' | 'whitelist'>('blacklist');
-  const [form, setForm] = useState({ ip: '', comment: '' });
+  const defaultIpForm = { ip: '', comment: '' };
+  const [form, setForm] = useState(defaultIpForm);
+  const [initialForm, setInitialForm] = useState(defaultIpForm);
+  const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
 
   const load = useCallback(async () => {
@@ -42,51 +47,48 @@ export default function Security() {
     setToast({ open: true, message: success ? t('status.success') : t('status.error'), severity: success ? 'success' : 'error' });
   };
 
-  const addEntry = async () => {
+  const doAddEntry = async () => {
     try {
-      if (dialogType === 'blacklist') {
-        await api.post('/security/blacklist', form);
-      } else {
-        await api.post('/security/whitelist', form);
-      }
+      if (dialogType === 'blacklist') await api.post('/security/blacklist', form);
+      else await api.post('/security/whitelist', form);
       setDialogOpen(false);
       showToast(true);
       load();
     } catch { showToast(false); }
   };
+  const addEntry = () => setConfirmSave({ open: true, action: doAddEntry });
 
-  const removeBlacklist = async (ip: string) => {
-    await api.delete(`/security/blacklist/${encodeURIComponent(ip)}`);
-    load();
+  const requestRemoveBlacklist = (ip: string) => {
+    setConfirmDelete({ open: true, name: ip, action: async () => { await api.delete(`/security/blacklist/${encodeURIComponent(ip)}`); load(); } });
   };
 
-  const removeWhitelist = async (ip: string) => {
-    await api.delete(`/security/whitelist/${encodeURIComponent(ip)}`);
-    load();
+  const requestRemoveWhitelist = (ip: string) => {
+    setConfirmDelete({ open: true, name: ip, action: async () => { await api.delete(`/security/whitelist/${encodeURIComponent(ip)}`); load(); } });
   };
+
+  const handleConfirmSave = async () => { const a = confirmSave.action; setConfirmSave({ open: false, action: null }); if (a) await a(); };
+  const handleConfirmDelete = async () => { const a = confirmDelete.action; setConfirmDelete({ open: false, name: '', action: null }); if (a) await a(); };
 
   const toggleWhitelist = async () => {
     await api.put('/security/whitelist/toggle', { enabled: !whitelistEnabled });
     setWhitelistEnabled(!whitelistEnabled);
   };
 
-  const saveAutoBlacklist = async () => {
-    try {
-      await api.put('/security/auto-blacklist', autoBlacklist);
-      showToast(true);
-    } catch { showToast(false); }
+  const doSaveAutoBlacklist = async () => {
+    try { await api.put('/security/auto-blacklist', autoBlacklist); showToast(true); } catch { showToast(false); }
   };
+  const saveAutoBlacklist = () => setConfirmSave({ open: true, action: doSaveAutoBlacklist });
 
-  const saveFail2ban = async () => {
-    try {
-      await api.put('/security/fail2ban', fail2ban);
-      showToast(true);
-    } catch { showToast(false); }
+  const doSaveFail2ban = async () => {
+    try { await api.put('/security/fail2ban', fail2ban); showToast(true); } catch { showToast(false); }
   };
+  const saveFail2ban = () => setConfirmSave({ open: true, action: doSaveFail2ban });
 
   const openDialog = (type: 'blacklist' | 'whitelist') => {
     setDialogType(type);
-    setForm({ ip: '', comment: '' });
+    const fresh = { ...defaultIpForm };
+    setForm(fresh);
+    setInitialForm(fresh);
     setDialogOpen(true);
   };
 
@@ -130,7 +132,7 @@ export default function Security() {
                         {e.fail2ban_banned && <Chip size="small" label="Banned" color="error" />}
                       </TableCell>
                       <TableCell align="right">
-                        <IconButton size="small" color="error" onClick={() => removeBlacklist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => requestRemoveBlacklist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -170,7 +172,7 @@ export default function Security() {
                       <TableCell>{e.ip}</TableCell>
                       <TableCell>{e.comment}</TableCell>
                       <TableCell align="right">
-                        <IconButton size="small" color="error" onClick={() => removeWhitelist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
+                        <IconButton size="small" color="error" onClick={() => requestRemoveWhitelist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -231,22 +233,29 @@ export default function Security() {
       )}
 
       {/* Add IP Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>
-          {dialogType === 'blacklist' ? t('modal.block_ip_address') : t('modal.allow_ip_address')}
-        </DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
-          <TextField label={t('security.ip_or_cidr')} value={form.ip} onChange={(e) => setForm({ ...form, ip: e.target.value })}
-            helperText={t('modal.multiple_ips_hint')} />
-          <TextField label={t('security.comment_optional')} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>{t('button.cancel')}</Button>
-          <Button variant="contained" startIcon={<BlockIcon />} onClick={addEntry}>
-            {dialogType === 'blacklist' ? t('button.block') : t('button.allow')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <FormDialog
+        open={dialogOpen}
+        title={dialogType === 'blacklist' ? t('modal.block_ip_address') : t('modal.allow_ip_address')}
+        dirty={formDirty}
+        onClose={() => setDialogOpen(false)}
+        onSave={addEntry}
+        saveLabel={dialogType === 'blacklist' ? t('button.block') : t('button.allow')}
+      >
+        <TextField label={t('security.ip_or_cidr')} value={form.ip} onChange={(e) => setForm({ ...form, ip: e.target.value })}
+          helperText={t('modal.multiple_ips_hint')} />
+        <TextField label={t('security.comment_optional')} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
+      </FormDialog>
+
+      <ConfirmDialog open={confirmSave.open} variant="save"
+        title={t('confirm.save_title')} message={t('confirm.save_message')}
+        confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
+
+      <ConfirmDialog open={confirmDelete.open} variant="delete"
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_message', { name: confirmDelete.name })}
+        confirmLabel={t('button.delete')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete({ open: false, name: '', action: null })} />
 
       <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
         <Alert severity={toast.severity}>{toast.message}</Alert>

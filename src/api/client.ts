@@ -1,7 +1,19 @@
+/**
+ * @file client — Axios API client with interceptors for auth and host config
+ * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ */
 import axios from 'axios';
+import demoAdapter from './demoAdapter';
+import { seedDemoData } from './demoData';
+import { isDemoMode } from '../store/preferences';
+import { clearApiKey } from '../store/keyStore';
+
+// Restore saved host on startup
+const savedHost = localStorage.getItem('api_host');
+const baseURL = savedHost ? `${savedHost}/api/v1` : '/api/v1';
 
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL,
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -17,11 +29,26 @@ api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('api_key');
+      clearApiKey();
       window.location.hash = '#/login';
     }
     return Promise.reject(err);
   }
 );
+
+/** Enable or disable demo mode on the API client */
+export function setDemoAdapter(enabled: boolean): void {
+  if (enabled) {
+    seedDemoData();
+    api.defaults.adapter = demoAdapter as never;
+  } else {
+    api.defaults.adapter = undefined as never;
+  }
+}
+
+// Initialize on load: if preferences say demo mode, activate immediately
+if (isDemoMode()) {
+  setDemoAdapter(true);
+}
 
 export default api;

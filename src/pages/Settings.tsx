@@ -9,11 +9,13 @@ import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
 import SyncIcon from '@mui/icons-material/Sync';
 import api from '../api/client';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function Settings() {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<Record<string, unknown>>({});
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
+  const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
 
   const load = useCallback(async () => {
     const res = await api.get('/settings');
@@ -22,7 +24,7 @@ export default function Settings() {
 
   useEffect(() => { load(); }, [load]);
 
-  const save = async () => {
+  const doSave = async () => {
     try {
       await api.put('/settings', settings);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
@@ -30,14 +32,22 @@ export default function Settings() {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
     }
   };
+  const save = () => setConfirmSave({ open: true, action: doSave });
 
-  const applyConfig = async () => {
+  const doApplyConfig = async () => {
     try {
       const res = await api.post('/config/apply');
       setToast({ open: true, message: res.data?.message || t('status.success'), severity: res.data?.success ? 'success' : 'error' });
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
     }
+  };
+  const applyConfig = () => setConfirmSave({ open: true, action: doApplyConfig });
+
+  const handleConfirmSave = async () => {
+    const a = confirmSave.action;
+    setConfirmSave({ open: false, action: null });
+    if (a) await a();
   };
 
   const exportConfig = async () => {
@@ -137,6 +147,11 @@ export default function Settings() {
           </Box>
         </CardContent>
       </Card>
+
+      <ConfirmDialog open={confirmSave.open} variant="save"
+        title={t('confirm.save_title')} message={t('confirm.save_message')}
+        confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
 
       <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
         <Alert severity={toast.severity}>{toast.message}</Alert>

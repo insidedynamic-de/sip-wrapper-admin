@@ -30,12 +30,19 @@ export interface Gateway {
   register: boolean;
   transport: string;
   auth_username?: string;
+  enabled?: boolean;
 }
 
 export interface GatewayStatus {
   name: string;
   state: string;
   status: string;
+}
+
+export interface Extension {
+  extension: string;
+  description: string;
+  enabled?: boolean;
 }
 
 export interface Registration {
@@ -65,6 +72,7 @@ export interface Route {
 export interface InboundRoute {
   gateway: string;
   extension: string;
+  enabled?: boolean;
 }
 
 export interface OutboundRoute {
@@ -72,11 +80,13 @@ export interface OutboundRoute {
   gateway: string;
   prepend?: string;
   strip?: number;
+  enabled?: boolean;
 }
 
 export interface UserRoute {
   username: string;
   gateway: string;
+  enabled?: boolean;
 }
 
 export interface RouteDefaults {
@@ -115,6 +125,25 @@ export interface ESLStatus {
   last_error: string | null;
   connection_attempts: number;
   buffer_stats: { total_events: number; buffer_size: number; max_size: number };
+}
+
+export interface CallLog {
+  uuid: string;
+  direction: 'inbound' | 'outbound';
+  caller_id: string;
+  destination: string;
+  start_time: string;
+  duration: number;
+  result: 'answered' | 'missed' | 'failed' | 'busy';
+  gateway: string;
+}
+
+export interface SecurityLog {
+  timestamp: string;
+  event: string;
+  ip: string;
+  details: string;
+  level: 'info' | 'warning' | 'error';
 }
 
 export interface VersionInfo {
