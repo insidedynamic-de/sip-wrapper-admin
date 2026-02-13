@@ -22,6 +22,7 @@ export interface AclUser {
 
 export interface Gateway {
   name: string;
+  description?: string;
   type: string;
   host: string;
   port: number;
@@ -60,6 +61,16 @@ export interface ActiveCall {
   destination: string;
   state: string;
   duration: string;
+  gateway?: string;
+}
+
+export interface CallStatEntry {
+  gateway: string;
+  direction: 'inbound' | 'outbound';
+  today: number;
+  month: number;
+  days_90: number;
+  days_180: number;
 }
 
 export interface Route {
@@ -72,6 +83,7 @@ export interface Route {
 export interface InboundRoute {
   gateway: string;
   extension: string;
+  description?: string;
   enabled?: boolean;
 }
 
@@ -86,6 +98,7 @@ export interface OutboundRoute {
 export interface UserRoute {
   username: string;
   gateway: string;
+  description?: string;
   enabled?: boolean;
 }
 
@@ -102,6 +115,7 @@ export interface BlacklistEntry {
   blocked_count?: number;
   last_blocked?: string;
   fail2ban_banned?: boolean;
+  fs_firewall_blocked?: boolean;
 }
 
 export interface WhitelistEntry {
@@ -150,4 +164,49 @@ export interface VersionInfo {
   version: string;
   git_commit: string | null;
   api_version: string;
+}
+
+export interface SystemInfo {
+  cpu: {
+    model: string;
+    cores: number;
+    threads: number;
+    usage: number;
+    frequency: string;
+    temperature?: number;
+  };
+  memory: {
+    total: number;
+    used: number;
+    free: number;
+    usage: number;
+  };
+  disks: {
+    mount: string;
+    total: number;
+    used: number;
+    free: number;
+    usage: number;
+    fs_type: string;
+  }[];
+  network: {
+    interface: string;
+    rx_bytes: number;
+    tx_bytes: number;
+    rx_rate: number;
+    tx_rate: number;
+  }[];
+  os: {
+    name: string;
+    version: string;
+    kernel: string;
+    hostname: string;
+    uptime: number;
+    arch: string;
+  };
+  board: {
+    manufacturer: string;
+    model: string;
+    serial?: string;
+  };
 }

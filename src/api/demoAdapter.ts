@@ -9,6 +9,17 @@ function mock(data: unknown, config: InternalAxiosRequestConfig, status = 200): 
   return { data, status, statusText: 'OK', headers: {}, config };
 }
 
+/** Return a rejected promise that mimics an Axios error response (for 4xx/5xx) */
+function mockError(data: unknown, config: InternalAxiosRequestConfig, status: number): Promise<never> {
+  const response: AxiosResponse = { data, status, statusText: 'Error', headers: {}, config };
+  const error = Object.assign(new Error(`Request failed with status code ${status}`), {
+    response,
+    config,
+    isAxiosError: true,
+  });
+  return Promise.reject(error);
+}
+
 function ok() {
   return { success: true, message: 'OK' };
 }
@@ -62,7 +73,26 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     return mock(store.gatewayStatuses, config);
   }
   if (url === '/registrations' && method === 'get') {
-    return mock(store.registrations, config);
+    // Build live registrations from enabled SIP users
+    const enabledSip = store.users.filter((u) => u.enabled);
+    const regs = enabledSip
+      .filter((u) => {
+        // Use a deterministic-ish check so the same user stays registered
+        // across refreshes within the same session, but some are "offline"
+        const hash = u.username.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+        return (hash + Math.floor(Date.now() / 60000)) % 3 !== 0; // ~67% online
+      })
+      .map((u) => {
+        const existing = store.registrations.find((r) => r.user === u.username);
+        return existing || {
+          user: u.username,
+          ip: `192.168.1.${100 + store.users.indexOf(u)}`,
+          port: '5060',
+          user_agent: 'Obi200/3.2.2',
+          contact: `sip:${u.username}@192.168.1.${100 + store.users.indexOf(u)}`,
+        };
+      });
+    return mock(regs, config);
   }
   if (url === '/active-calls' && method === 'get') {
     return mock({ calls: store.activeCalls, count: store.activeCalls.length }, config);
@@ -162,7 +192,15 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     if (m) {
       if (method === 'put') {
         const idx = store.gateways.findIndex((g) => g.name === m.name);
-        if (idx >= 0) store.gateways[idx] = { ...store.gateways[idx], ...body } as never;
+        if (idx >= 0) {
+          const newName = String((body as Record<string, unknown>).name || m.name);
+          store.gateways[idx] = { ...store.gateways[idx], ...body } as never;
+          // Update gateway status name if renamed
+          if (newName !== m.name) {
+            const st = store.gatewayStatuses.find((s) => s.name === m.name);
+            if (st) st.name = newName;
+          }
+        }
         saveDemoStore(store);
         return mock(ok(), config);
       }
@@ -285,7 +323,7 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     if (m && method === 'delete') {
       // Protect localhost entry from deletion
       if (m.ip === '127.0.0.1') {
-        return mock({ success: false, detail: 'Protected entry cannot be deleted' }, config, 403);
+        return mockError({ success: false, detail: 'Protected entry cannot be deleted' }, config, 403);
       }
       store.security.whitelist.entries = store.security.whitelist.entries.filter((e) => e.ip !== m.ip);
       saveDemoStore(store);
@@ -306,6 +344,37 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     store.security.fail2ban = { ...store.security.fail2ban, ...body } as never;
     saveDemoStore(store);
     return mock(ok(), config);
+  }
+  if (url === '/security/fail2ban/ban' && method === 'post') {
+    const ip = String(body.ip || '');
+    const entry = store.security.blacklist.find((e) => e.ip === ip);
+    if (entry) {
+      entry.fail2ban_banned = true;
+    }
+    saveDemoStore(store);
+    return mock(ok(), config);
+  }
+  if (url === '/security/fs-firewall/ban' && method === 'post') {
+    const ip = String(body.ip || '');
+    const entry = store.security.blacklist.find((e) => e.ip === ip);
+    if (entry) {
+      entry.fs_firewall_blocked = true;
+    }
+    saveDemoStore(store);
+    return mock(ok(), config);
+  }
+
+  // ── Whitelist edit ──
+  {
+    const m = matchPath('/security/whitelist/:ip', url);
+    if (m && method === 'put') {
+      const idx = store.security.whitelist.entries.findIndex((e) => e.ip === m.ip);
+      if (idx >= 0) {
+        store.security.whitelist.entries[idx] = { ...store.security.whitelist.entries[idx], ...body } as never;
+      }
+      saveDemoStore(store);
+      return mock(ok(), config);
+    }
   }
 
   // ── ESL / Logs ──
@@ -334,6 +403,9 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   if (url === '/logs/calls' && method === 'get') {
     return mock(store.callLogs, config);
   }
+  if (url === '/logs/call-stats' && method === 'get') {
+    return mock(store.callStats || [], config);
+  }
 
   // ── Security Logs ──
   if (url === '/logs/security' && method === 'get') {
@@ -361,14 +433,69 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     return mock({ success: true, message: 'Configuration imported (demo)' }, config);
   }
 
-  // ── License ──
+  // ── License (multi-license CRUD) ──
   if (url === '/license' && method === 'get') {
-    return mock(store.license, config);
+    const lics = store.licenses || [];
+    const totalConn = lics.reduce((s, l) => s + (l.licensed ? l.max_connections : 0), 0);
+    const hasLicensed = lics.some((l) => l.licensed);
+    const hasTrial = lics.some((l) => l.trial);
+    const hasNfr = lics.some((l) => l.nfr);
+    return mock({
+      licenses: lics,
+      total_connections: totalConn,
+      licensed: hasLicensed,
+      trial: hasTrial,
+      nfr: hasNfr,
+      max_connections: totalConn,
+      version: lics[0]?.version || '2.0.0',
+      server_id: lics[0]?.server_id || '',
+    }, config);
   }
   if (url === '/license' && method === 'put') {
-    store.license = { ...store.license, ...body } as never;
+    // Activate a license key — only accept known demo keys
+    const key = String(body.license_key || '');
+    if (!key) return mockError({ success: false, message: 'No key provided' }, config, 400);
+    const exists = (store.licenses || []).find((l) => l.license_key === key);
+    if (exists) return mockError({ success: false, message: 'license_duplicate' }, config, 409);
+    // Only accept known demo keys with predefined connection counts
+    const VALID_DEMO_KEYS: Record<string, number> = {
+      'DEMO-0000-0000-0001': 4,
+      'DEMO-0000-0000-0002': 4,
+      'DEMO-0000-0000-0003': 8,
+    };
+    const connections = VALID_DEMO_KEYS[key];
+    if (connections === undefined) return mockError({ success: false, message: 'license_invalid' }, config, 400);
+    const expDate = new Date();
+    expDate.setFullYear(expDate.getFullYear() + 1);
+    const newLic = {
+      license_key: key,
+      client_name: 'InsideDynamic Demo',
+      licensed: true,
+      expires: expDate.toISOString().slice(0, 10),
+      trial: false,
+      nfr: false,
+      days_remaining: 0,
+      max_connections: connections,
+      version: '2.0.0',
+      server_id: 'srv-a1b2c3d4',
+      bound_to: 'srv-a1b2c3d4',
+    };
+    store.licenses = [...(store.licenses || []), newLic];
     saveDemoStore(store);
     return mock(ok(), config);
+  }
+  {
+    const m = matchPath('/license/:key', url);
+    if (m && method === 'delete') {
+      store.licenses = (store.licenses || []).filter((l) => l.license_key !== m.key);
+      saveDemoStore(store);
+      return mock(ok(), config);
+    }
+  }
+  if (url === '/license/refresh' && method === 'post') {
+    const lics = store.licenses || [];
+    const totalConn = lics.reduce((s, l) => s + (l.licensed ? l.max_connections : 0), 0);
+    return mock({ licenses: lics, total_connections: totalConn }, config);
   }
 
   // ── Company ──
@@ -394,7 +521,7 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   // ── Auth / Session ──
   if (url === '/auth/login' && method === 'post') {
     if (store.session?.active && !body.force) {
-      return mock({
+      return mockError({
         active_session: true,
         ip: store.session.ip,
         logged_in_at: store.session.logged_in_at,
@@ -419,6 +546,26 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     store.company = { ...store.company, ...body } as never;
     saveDemoStore(store);
     return mock(ok(), config);
+  }
+
+  // ── System Info (monitoring) ──
+  if (url === '/system/info' && method === 'get') {
+    // Simulate slight CPU/RAM fluctuation
+    const sys = { ...store.systemInfo };
+    sys.cpu = { ...sys.cpu, usage: Math.max(5, Math.min(95, sys.cpu.usage + Math.floor(Math.random() * 11 - 5))) };
+    sys.memory = { ...sys.memory };
+    const memDelta = Math.floor(Math.random() * 536870912 - 268435456);
+    sys.memory.used = Math.max(4294967296, Math.min(sys.memory.total - 2147483648, sys.memory.used + memDelta));
+    sys.memory.free = sys.memory.total - sys.memory.used;
+    sys.memory.usage = Math.round((sys.memory.used / sys.memory.total) * 100);
+    if (sys.cpu.temperature) sys.cpu.temperature = Math.max(35, Math.min(85, sys.cpu.temperature + Math.floor(Math.random() * 5 - 2)));
+    // Simulate network rate fluctuation
+    sys.network = sys.network.map((n) => ({
+      ...n,
+      rx_rate: Math.max(1000, n.rx_rate + Math.floor(Math.random() * 20001 - 10000)),
+      tx_rate: Math.max(500, n.tx_rate + Math.floor(Math.random() * 10001 - 5000)),
+    }));
+    return mock(sys, config);
   }
 
   // ── Fallback ──

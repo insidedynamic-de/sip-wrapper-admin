@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Card, CardContent, Button, Grid,
-  TextField, Snackbar, Alert, Divider,
+  Box, Typography, Card, CardContent, Button,
+  TextField, Snackbar, Alert,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';

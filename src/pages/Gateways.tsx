@@ -32,7 +32,7 @@ export default function Gateways() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState(false);
   const [editGw, setEditGw] = useState<Gateway | null>(null);
-  const defaultForm = { name: '', type: 'provider', host: '', port: 5060, username: '', password: '', register: true, transport: 'udp', auth_username: '', enabled: true };
+  const defaultForm = { name: '', description: '', type: 'provider', host: '', port: 5060, username: '', password: '', register: true, transport: 'udp', auth_username: '', enabled: true };
   const [form, setForm] = useState(defaultForm);
   const [initialForm, setInitialForm] = useState(defaultForm);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -64,7 +64,7 @@ export default function Gateways() {
   const openView = (gw: Gateway) => {
     setEditGw(gw);
     setViewMode(true);
-    const gwForm = { ...gw, auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
+    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
     setForm(gwForm);
     setInitialForm(gwForm);
     setDialogOpen(true);
@@ -73,7 +73,7 @@ export default function Gateways() {
   const openEdit = (gw: Gateway) => {
     setEditGw(gw);
     setViewMode(false);
-    const gwForm = { ...gw, auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
+    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
     setForm(gwForm);
     setInitialForm(gwForm);
     setDialogOpen(true);
@@ -130,7 +130,7 @@ export default function Gateways() {
         rows={gateways}
         getKey={(gw) => gw.name}
         columns={[
-          { id: 'name', header: t('field.name'), field: 'name' },
+          { id: 'name', header: t('field.name'), render: (gw) => gw.description ? `${gw.name} (${gw.description})` : gw.name, searchText: (gw) => `${gw.name} ${gw.description || ''}` },
           { id: 'type', header: t('field.type'), render: (gw) => <Chip size="small" label={gw.type} />, searchText: (gw) => gw.type },
           { id: 'host', header: t('field.host'), render: (gw) => `${gw.host}:${gw.port}`, searchText: (gw) => `${gw.host}:${gw.port}` },
           { id: 'transport', header: t('field.transport'), field: 'transport' },
@@ -158,7 +158,8 @@ export default function Gateways() {
         onClose={() => setDialogOpen(false)}
         onSave={requestSave}
       >
-        <TextField label={t('field.name')} value={form.name} onChange={(e) => f('name', e.target.value)} disabled={viewMode || !!editGw} />
+        <TextField label={t('field.name')} value={form.name} onChange={(e) => f('name', e.target.value)} disabled={viewMode} />
+        <TextField label={t('extension.description')} value={form.description} onChange={(e) => f('description', e.target.value)} disabled={viewMode} />
         <SearchableSelect options={TYPE_OPTIONS} value={form.type} onChange={(v) => f('type', v)} label={t('field.type')} disabled={viewMode} />
         <TextField label={t('field.host')} value={form.host} onChange={(e) => f('host', e.target.value)} disabled={viewMode} />
         <TextField label={t('field.port')} type="number" value={form.port} onChange={(e) => f('port', parseInt(e.target.value) || 5060)} disabled={viewMode} />

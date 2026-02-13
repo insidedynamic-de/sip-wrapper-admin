@@ -5,17 +5,18 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Card, CardContent, Button, Grid,
+  Box, Typography, Card, CardContent, Button,
   TextField, Snackbar, Alert, ToggleButtonGroup, ToggleButton,
   Switch, FormControlLabel,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { loadPreferences, savePreferences } from '../store/preferences';
-import type { ThemeMode } from '../store/preferences';
+import type { ThemeMode, TimeFormat, DateFormat } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
 import PageActions from '../components/PageActions';
 import i18n from '../i18n';
@@ -33,6 +34,8 @@ interface PrefsSnapshot {
   language: string;
   autoLogout: boolean;
   autoLogoutTimeout: number;
+  timeFormat: TimeFormat;
+  dateFormat: DateFormat;
 }
 
 function makeSnapshot(): PrefsSnapshot {
@@ -43,6 +46,8 @@ function makeSnapshot(): PrefsSnapshot {
     language: p.language,
     autoLogout: p.autoLogout,
     autoLogoutTimeout: p.autoLogoutTimeout,
+    timeFormat: p.timeFormat,
+    dateFormat: p.dateFormat,
   };
 }
 
@@ -148,6 +153,21 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
           <ToggleButtonGroup value={local.language} exclusive onChange={(_, v) => v && updateLocal({ language: v })}>
             <ToggleButton value="en">{t('language.english')}</ToggleButton>
             <ToggleButton value="de">{t('language.german')}</ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* Time Format */}
+          <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>{t('profile.time_format')}</Typography>
+          <ToggleButtonGroup value={local.timeFormat} exclusive onChange={(_, v) => v && updateLocal({ timeFormat: v as TimeFormat })}>
+            <ToggleButton value="24h">24H (14:30)</ToggleButton>
+            <ToggleButton value="12h">12H (2:30 PM)</ToggleButton>
+          </ToggleButtonGroup>
+
+          {/* Date Format */}
+          <Typography variant="subtitle2" sx={{ mt: 3, mb: 1 }}>{t('profile.date_format')}</Typography>
+          <ToggleButtonGroup value={local.dateFormat} exclusive onChange={(_, v) => v && updateLocal({ dateFormat: v as DateFormat })}>
+            <ToggleButton value="DD.MM.YYYY">DD.MM.YYYY</ToggleButton>
+            <ToggleButton value="MM/DD/YYYY">MM/DD/YYYY</ToggleButton>
+            <ToggleButton value="YYYY-MM-DD">YYYY-MM-DD</ToggleButton>
           </ToggleButtonGroup>
         </CardContent>
       </Card>

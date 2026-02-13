@@ -6,7 +6,7 @@ import type {
   User, AclUser, Gateway, GatewayStatus, Registration, ActiveCall,
   InboundRoute, OutboundRoute, UserRoute, RouteDefaults,
   BlacklistEntry, WhitelistEntry, ESLEvent, ESLStatus,
-  CallLog, SecurityLog, Extension,
+  CallLog, SecurityLog, Extension, CallStatEntry, SystemInfo,
 } from './types';
 
 const DEMO_STORAGE_KEY = 'sip-wrapper-demo-data';
@@ -19,6 +19,7 @@ export interface DemoStore {
   gatewayStatuses: GatewayStatus[];
   registrations: Registration[];
   activeCalls: ActiveCall[];
+  callStats: CallStatEntry[];
   routes: {
     defaults: RouteDefaults;
     inbound: InboundRoute[];
@@ -28,7 +29,7 @@ export interface DemoStore {
   security: {
     blacklist: BlacklistEntry[];
     whitelist: { enabled: boolean; entries: WhitelistEntry[] };
-    auto_blacklist: { enabled: boolean; threshold: number; time_window: number; block_duration: number };
+    auto_blacklist: { enabled: boolean; threshold: number; time_window: number; block_duration: number; trust_proxy?: boolean };
     fail2ban: { enabled: boolean; threshold: number; jail_name: string };
   };
   eslEvents: ESLEvent[];
@@ -36,7 +37,7 @@ export interface DemoStore {
   callLogs: CallLog[];
   securityLogs: SecurityLog[];
   settings: Record<string, unknown>;
-  license: {
+  licenses: {
     license_key: string;
     client_name: string;
     licensed: boolean;
@@ -46,7 +47,9 @@ export interface DemoStore {
     days_remaining: number;
     max_connections: number;
     version: string;
-  };
+    server_id?: string;
+    bound_to?: string;
+  }[];
   company: {
     company_name: string;
     company_email: string;
@@ -62,6 +65,7 @@ export interface DemoStore {
     invoice_address: string;
     invoice_email: string;
   };
+  systemInfo: SystemInfo;
   session: {
     active: boolean;
     ip: string;
@@ -105,11 +109,11 @@ const SEED_DATA: DemoStore = {
   ],
   // ── Gateways (5 total: mix of types, 3 enabled, 2 disabled) ──
   gateways: [
-    { name: 'sipgate', type: 'provider', host: 'sipgate.de', port: 5060, username: 'sipuser1', password: '***', register: true, transport: 'udp', enabled: true },
-    { name: 'telekom', type: 'provider', host: 'tel.t-online.de', port: 5060, username: 'teluser1', password: '***', register: true, transport: 'udp', enabled: true },
-    { name: 'office-pbx', type: 'pbx', host: '10.0.0.5', port: 5060, username: 'trunk1', password: '***', register: false, transport: 'tcp', enabled: false },
-    { name: 'plivo-ai', type: 'ai_platform', host: 'sip.plivo.com', port: 5060, username: 'plivo-user', password: '***', register: true, transport: 'tls', enabled: true },
-    { name: 'backup-trunk', type: 'provider', host: 'sip.backup-provider.de', port: 5060, username: 'backup1', password: '***', register: true, transport: 'udp', enabled: false },
+    { name: 'sipgate', description: 'Main SIP Provider', type: 'provider', host: 'sipgate.de', port: 5060, username: 'sipuser1', password: '***', register: true, transport: 'udp', enabled: true },
+    { name: 'telekom', description: 'Deutsche Telekom', type: 'provider', host: 'tel.t-online.de', port: 5060, username: 'teluser1', password: '***', register: true, transport: 'udp', enabled: true },
+    { name: 'office-pbx', description: 'Office PBX System', type: 'pbx', host: '10.0.0.5', port: 5060, username: 'trunk1', password: '***', register: false, transport: 'tcp', enabled: false },
+    { name: 'plivo-ai', description: 'Plivo AI Platform', type: 'ai_platform', host: 'sip.plivo.com', port: 5060, username: 'plivo-user', password: '***', register: true, transport: 'tls', enabled: true },
+    { name: 'backup-trunk', description: 'Backup Provider', type: 'provider', host: 'sip.backup-provider.de', port: 5060, username: 'backup1', password: '***', register: true, transport: 'udp', enabled: false },
   ],
   // ── Gateway Statuses (all 3 color states: green, red, yellow) ──
   gatewayStatuses: [
@@ -126,30 +130,35 @@ const SEED_DATA: DemoStore = {
     { user: 'carol', ip: '192.168.1.103', port: '5060', user_agent: 'Obi200/3.2.2', contact: 'sip:carol@192.168.1.103' },
     { user: 'eva', ip: '10.10.0.50', port: '5060', user_agent: 'Obi200/3.2.2 (VPN)', contact: 'sip:eva@10.10.0.50' },
   ],
-  // ── Active Calls (4 calls: different states) ──
+  // ── Active Calls (4 calls: different states, each with gateway) ──
   activeCalls: [
-    { uuid: 'ac-1', direction: 'inbound', caller_id: '+4930111111', destination: '1001', state: 'active', duration: '02:15' },
-    { uuid: 'ac-2', direction: 'outbound', caller_id: '1002', destination: '+4930999999', state: 'ringing', duration: '00:05' },
-    { uuid: 'ac-3', direction: 'inbound', caller_id: '+4940555555', destination: '1003', state: 'active', duration: '05:42' },
-    { uuid: 'ac-4', direction: 'outbound', caller_id: '1005', destination: '+4930777000', state: 'early', duration: '00:12' },
+    { uuid: 'ac-1', direction: 'inbound', caller_id: '+4930111111', destination: '1001', state: 'active', duration: '02:15', gateway: 'sipgate' },
+    { uuid: 'ac-2', direction: 'outbound', caller_id: '1002', destination: '+4930999999', state: 'ringing', duration: '00:05', gateway: 'telekom' },
+    { uuid: 'ac-3', direction: 'inbound', caller_id: '+4940555555', destination: '1003', state: 'active', duration: '05:42', gateway: 'sipgate' },
+    { uuid: 'ac-4', direction: 'outbound', caller_id: '1005', destination: '+4930777000', state: 'early', duration: '00:12', gateway: 'plivo-ai' },
+  ],
+  // ── Call Statistics (per-connection aggregated stats) ──
+  callStats: [
+    { gateway: 'sipgate', direction: 'inbound', today: 3, month: 18, days_90: 52, days_180: 97 },
+    { gateway: 'sipgate', direction: 'outbound', today: 2, month: 14, days_90: 41, days_180: 78 },
+    { gateway: 'telekom', direction: 'inbound', today: 1, month: 9, days_90: 28, days_180: 53 },
+    { gateway: 'telekom', direction: 'outbound', today: 1, month: 7, days_90: 22, days_180: 44 },
+    { gateway: 'plivo-ai', direction: 'inbound', today: 0, month: 4, days_90: 12, days_180: 23 },
+    { gateway: 'plivo-ai', direction: 'outbound', today: 1, month: 5, days_90: 15, days_180: 28 },
   ],
   // ── Routes (expanded, some disabled for demo) ──
   routes: {
     defaults: { gateway: 'sipgate', extension: '1001', caller_id: '+4930123456' },
     inbound: [
-      { gateway: 'sipgate', extension: '1001', enabled: true },
-      { gateway: 'telekom', extension: '1002', enabled: true },
-      { gateway: 'plivo-ai', extension: '1005', enabled: false },
+      { gateway: 'sipgate', extension: '1001', description: 'Main office line', enabled: true },
+      { gateway: 'telekom', extension: '1002', description: 'Secondary line', enabled: true },
+      { gateway: 'plivo-ai', extension: '1005', description: 'AI voice line', enabled: false },
     ],
-    outbound: [
-      { pattern: '^0[1-9]', gateway: 'sipgate', enabled: true },
-      { pattern: '^\\+', gateway: 'telekom', prepend: '00', strip: 1, enabled: true },
-      { pattern: '^00', gateway: 'backup-trunk', enabled: false },
-    ],
+    outbound: [],
     user_routes: [
-      { username: 'alice', gateway: 'sipgate', enabled: true },
-      { username: 'bob', gateway: 'telekom', enabled: true },
-      { username: 'eva', gateway: 'plivo-ai', enabled: false },
+      { username: 'alice', gateway: 'sipgate', description: 'Alice outbound via Sipgate', enabled: true },
+      { username: 'bob', gateway: 'telekom', description: 'Bob outbound via Telekom', enabled: true },
+      { username: 'eva', gateway: 'plivo-ai', description: 'Eva outbound via Plivo', enabled: false },
     ],
   },
   // ── Security (expanded blacklist/whitelist) ──
@@ -170,8 +179,8 @@ const SEED_DATA: DemoStore = {
         { ip: '172.16.0.0/12', comment: 'VPN clients' },
       ],
     },
-    auto_blacklist: { enabled: true, threshold: 5, time_window: 300, block_duration: 3600 },
-    fail2ban: { enabled: false, threshold: 50, jail_name: 'freeswitch-sip' },
+    auto_blacklist: { enabled: true, threshold: 5, time_window: 300, block_duration: 3600, trust_proxy: false },
+    fail2ban: { enabled: false, threshold: 50, jail_name: 'sip-jail' },
   },
   // ── ESL Events (16 entries: diverse FS categories) ──
   eslEvents: [
@@ -239,17 +248,9 @@ const SEED_DATA: DemoStore = {
     default_country_code: '49',
     outbound_caller_id: '+4930123456',
   },
-  license: {
-    license_key: 'DEMO-0000-0000-0000',
-    client_name: 'Demo Ltd',
-    licensed: true,
-    expires: '2026-12-31',
-    trial: true,
-    nfr: false,
-    days_remaining: 30,
-    max_connections: 10,
-    version: '2.0.0',
-  },
+  licenses: [
+    { license_key: 'DEMO-0000-0000-0001', client_name: 'InsideDynamic Demo', licensed: true, expires: '2026-12-31', trial: false, nfr: false, days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
+  ],
   company: {
     company_name: 'Demo Ltd',
     company_email: 'info@demo-ltd.de',
@@ -264,6 +265,44 @@ const SEED_DATA: DemoStore = {
     invoice_name: 'Demo Ltd',
     invoice_address: 'Musterstrasse 1, 12345 Musterstadt',
     invoice_email: 'billing@demo-ltd.de',
+  },
+  // ── System Info (monitoring) ──
+  systemInfo: {
+    cpu: {
+      model: 'Intel Xeon E-2288G @ 3.70GHz',
+      cores: 8,
+      threads: 16,
+      usage: 23,
+      frequency: '3.70 GHz',
+      temperature: 52,
+    },
+    memory: {
+      total: 34359738368,
+      used: 14495514624,
+      free: 19864223744,
+      usage: 42,
+    },
+    disks: [
+      { mount: '/', total: 536870912000, used: 214748364800, free: 322122547200, usage: 40, fs_type: 'ext4' },
+      { mount: '/data', total: 1099511627776, used: 329853488333, free: 769658139443, usage: 30, fs_type: 'xfs' },
+    ],
+    network: [
+      { interface: 'eth0', rx_bytes: 1258291200, tx_bytes: 524288000, rx_rate: 125000, tx_rate: 82000 },
+      { interface: 'eth1', rx_bytes: 209715200, tx_bytes: 104857600, rx_rate: 15000, tx_rate: 8000 },
+    ],
+    os: {
+      name: 'Debian GNU/Linux',
+      version: '12 (bookworm)',
+      kernel: '6.1.0-18-amd64',
+      hostname: 'sip-wrapper-prod',
+      uptime: 1296000,
+      arch: 'x86_64',
+    },
+    board: {
+      manufacturer: 'Supermicro',
+      model: 'X11SCL-F',
+      serial: 'SM-2024-A3B4',
+    },
   },
   // Pre-seed with an active session to demonstrate the conflict dialog
   session: {

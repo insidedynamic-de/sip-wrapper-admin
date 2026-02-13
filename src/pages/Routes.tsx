@@ -1,47 +1,53 @@
 /**
- * @file RoutesPage — Routing configuration with per-section graph/table toggle
+ * @file RoutesPage — Routing configuration: Defaults + unified Extension Routes
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Card, CardContent, Button, Grid,
-  TextField, Snackbar, Alert, ToggleButtonGroup, ToggleButton, Tooltip,
+  Box, Typography, Card, CardContent, Button,
+  TextField, Snackbar, Alert, Tooltip,
+  RadioGroup, Radio, FormControlLabel, FormLabel,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
-import TableChartIcon from '@mui/icons-material/TableChart';
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import CallReceivedIcon from '@mui/icons-material/CallReceived';
+import CallMadeIcon from '@mui/icons-material/CallMade';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
 import SearchableSelect from '../components/SearchableSelect';
-import { RoutingGraph } from '../components/RoutingGraph';
-import type { Route, Gateway, GatewayStatus, InboundRoute, OutboundRoute, UserRoute, Extension, User } from '../api/types';
+import type { Route, Gateway, GatewayStatus, Extension, User, Registration } from '../api/types';
 
-type OutboundWithIndex = OutboundRoute & { _index: number };
+interface ExtensionRoute {
+  extension: string;
+  username: string;
+  gateway: string;
+  description: string;
+  extDescription: string;
+  direction: 'inbound' | 'outbound';
+  enabled: boolean;
+}
 
 export default function RoutesPage() {
   const { t } = useTranslation();
 
-  // Per-section view mode (graph or table)
-  const [inboundView, setInboundView] = useState<'table' | 'graph'>('table');
-  const [userView, setUserView] = useState<'table' | 'graph'>('table');
-
   const [routes, setRoutes] = useState<Route | null>(null);
   const [gateways, setGateways] = useState<Gateway[]>([]);
-  const [gatewayStatuses, setGatewayStatuses] = useState<GatewayStatus[]>([]);
+  const [, setGatewayStatuses] = useState<GatewayStatus[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [defaults, setDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
 
   // Dialog state
-  const [dialog, setDialog] = useState<{ type: string; open: boolean }>({ type: '', open: false });
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState(false);
-  const [editItem, setEditItem] = useState<{ type: string; key: string | number } | null>(null);
-  const [form, setForm] = useState<Record<string, string>>({});
-  const [initialForm, setInitialForm] = useState<Record<string, string>>({});
+  const [editRoute, setEditRoute] = useState<ExtensionRoute | null>(null);
+  const [form, setForm] = useState({ extension: '', gateway: '', direction: 'inbound' as 'inbound' | 'outbound', description: '' });
+  const [initialForm, setInitialForm] = useState({ extension: '', gateway: '', direction: 'inbound' as 'inbound' | 'outbound', description: '' });
   const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -49,19 +55,22 @@ export default function RoutesPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
 
   const load = useCallback(async () => {
-    const [r, g, gs, e, u] = await Promise.all([
+    const [r, g, gs, e, u, reg] = await Promise.all([
       api.get('/routes'), api.get('/gateways'), api.get('/gateways/status'),
-      api.get('/extensions'), api.get('/users'),
+      api.get('/extensions'), api.get('/users'), api.get('/registrations'),
     ]);
     setRoutes(r.data);
     setGateways(g.data || []);
     setGatewayStatuses(gs.data || []);
     setExtensions(e.data || []);
     setUsers(u.data || []);
+    setRegistrations(reg.data || []);
     if (r.data?.defaults) setDefaults(r.data.defaults);
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // ── Save Defaults ──
 
   const doSaveDefaults = async () => {
     try {
@@ -74,86 +83,145 @@ export default function RoutesPage() {
   };
   const saveDefaults = () => setConfirmSave({ open: true, action: doSaveDefaults });
 
+  // ── Build unified Extension Routes from inbound routes + user routes ──
+
+  const extRoutes: ExtensionRoute[] = useMemo(() => {
+    if (!routes) return [];
+    const rows: ExtensionRoute[] = [];
+
+    // Inbound routes
+    for (const ib of routes.inbound || []) {
+      const ext = extensions.find((e) => e.extension === ib.extension);
+      const user = users.find((u) => u.extension === ib.extension);
+      rows.push({
+        extension: ib.extension,
+        username: user?.username || '',
+        gateway: ib.gateway,
+        description: ib.description || '',
+        extDescription: ext?.description || '',
+        direction: 'inbound',
+        enabled: ib.enabled !== false,
+      });
+    }
+
+    // Outbound routes (user_routes)
+    for (const ur of routes.user_routes || []) {
+      const user = users.find((u) => u.username === ur.username);
+      const ext = user ? extensions.find((e) => e.extension === user.extension) : null;
+      rows.push({
+        extension: user?.extension || '',
+        username: ur.username,
+        gateway: ur.gateway,
+        description: ur.description || '',
+        extDescription: ext?.description || '',
+        direction: 'outbound',
+        enabled: ur.enabled !== false,
+      });
+    }
+
+    return rows;
+  }, [routes, extensions, users]);
+
+  const gwOptions = gateways.map((g) => ({
+    label: g.description ? `${g.name} \u2014 ${g.description}` : g.name,
+    value: g.name,
+  }));
+  const extOptions = extensions
+    .filter((e) => e.enabled !== false)
+    .map((e) => ({ label: `${e.extension} \u2014 ${e.description}`, value: e.extension }));
+
   // ── Open Add / View / Edit ──
 
-  const openAdd = (type: string) => {
-    setEditItem(null);
+  const openAdd = () => {
+    setEditRoute(null);
     setViewMode(false);
-    setForm({});
-    setInitialForm({});
-    setDialog({ type, open: true });
+    const f = { extension: '', gateway: '', direction: 'inbound' as const, description: '' };
+    setForm(f);
+    setInitialForm(f);
+    setDialogOpen(true);
   };
 
-  const openViewInbound = (r: InboundRoute) => {
-    setEditItem({ type: 'inbound', key: r.gateway });
+  const openView = (r: ExtensionRoute) => {
+    setEditRoute(r);
     setViewMode(true);
-    const f = { gateway: r.gateway, extension: r.extension };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'inbound', open: true });
+    const f = { extension: r.extension, gateway: r.gateway, direction: r.direction, description: r.description };
+    setForm(f);
+    setInitialForm(f);
+    setDialogOpen(true);
   };
 
-  const openEditInbound = (r: InboundRoute) => {
-    setEditItem({ type: 'inbound', key: r.gateway });
+  const openEdit = (r: ExtensionRoute) => {
+    setEditRoute(r);
     setViewMode(false);
-    const f = { gateway: r.gateway, extension: r.extension };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'inbound', open: true });
+    const f = { extension: r.extension, gateway: r.gateway, direction: r.direction, description: r.description };
+    setForm(f);
+    setInitialForm(f);
+    setDialogOpen(true);
   };
 
-  const openViewOutbound = (r: OutboundWithIndex) => {
-    setEditItem({ type: 'outbound', key: r._index });
-    setViewMode(true);
-    const f = { pattern: r.pattern, gateway: r.gateway, prepend: r.prepend || '', strip: String(r.strip || 0) };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'outbound', open: true });
-  };
-
-  const openEditOutbound = (r: OutboundWithIndex) => {
-    setEditItem({ type: 'outbound', key: r._index });
-    setViewMode(false);
-    const f = { pattern: r.pattern, gateway: r.gateway, prepend: r.prepend || '', strip: String(r.strip || 0) };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'outbound', open: true });
-  };
-
-  const openViewUser = (r: UserRoute) => {
-    setEditItem({ type: 'user', key: r.username });
-    setViewMode(true);
-    const f = { username: r.username, gateway: r.gateway };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'user', open: true });
-  };
-
-  const openEditUser = (r: UserRoute) => {
-    setEditItem({ type: 'user', key: r.username });
-    setViewMode(false);
-    const f = { username: r.username, gateway: r.gateway };
-    setForm(f); setInitialForm(f);
-    setDialog({ type: 'user', open: true });
-  };
-
-  // ── Save (Add or Edit) ──
+  // ── Save route ──
 
   const doSaveRoute = async () => {
+    // Check for duplicate (same extension + gateway + direction)
+    const isDuplicate = extRoutes.some((r) =>
+      r.extension === form.extension && r.gateway === form.gateway && r.direction === form.direction &&
+      !(editRoute && r.extension === editRoute.extension && r.gateway === editRoute.gateway && r.direction === editRoute.direction)
+    );
+    if (isDuplicate) {
+      setToast({ open: true, message: t('route.error_duplicate'), severity: 'error' });
+      return;
+    }
     try {
-      if (editItem) {
-        if (dialog.type === 'inbound') {
-          await api.put(`/routes/inbound/${editItem.key}`, { gateway: form.gateway, extension: form.extension });
-        } else if (dialog.type === 'outbound') {
-          await api.put(`/routes/outbound/${editItem.key}`, { pattern: form.pattern, gateway: form.gateway, prepend: form.prepend, strip: parseInt(form.strip) || 0 });
-        } else if (dialog.type === 'user') {
-          await api.put(`/routes/user/${editItem.key}`, { username: form.username, gateway: form.gateway });
+      const dirChanged = editRoute && editRoute.direction !== form.direction;
+      const extChanged = editRoute && editRoute.extension !== form.extension;
+
+      // If direction or extension changed, delete old route first then create new
+      if (editRoute && (dirChanged || extChanged)) {
+        if (editRoute.direction === 'inbound') {
+          await api.delete(`/routes/inbound/${editRoute.gateway}`);
+        } else {
+          await api.delete(`/routes/user/${editRoute.username}`);
+        }
+        // Create as new
+        if (form.direction === 'inbound') {
+          await api.post('/routes/inbound', {
+            gateway: form.gateway, extension: form.extension, description: form.description, enabled: editRoute.enabled,
+          });
+        } else {
+          const user = users.find((u) => u.extension === form.extension);
+          if (user) {
+            await api.post('/routes/user', {
+              username: user.username, gateway: form.gateway, description: form.description, enabled: editRoute.enabled,
+            });
+          }
+        }
+      } else if (editRoute) {
+        // Simple update — same direction and extension
+        if (form.direction === 'inbound') {
+          await api.put(`/routes/inbound/${editRoute.gateway}`, {
+            gateway: form.gateway, extension: form.extension, description: form.description,
+          });
+        } else {
+          await api.put(`/routes/user/${editRoute.username}`, {
+            username: editRoute.username, gateway: form.gateway, description: form.description,
+          });
         }
       } else {
-        if (dialog.type === 'inbound') {
-          await api.post('/routes/inbound', { gateway: form.gateway, extension: form.extension, enabled: true });
-        } else if (dialog.type === 'outbound') {
-          await api.post('/routes/outbound', { pattern: form.pattern, gateway: form.gateway, prepend: form.prepend, strip: parseInt(form.strip) || 0, enabled: true });
-        } else if (dialog.type === 'user') {
-          await api.post('/routes/user', { username: form.username, gateway: form.gateway, enabled: true });
+        // New route
+        if (form.direction === 'inbound') {
+          await api.post('/routes/inbound', {
+            gateway: form.gateway, extension: form.extension, description: form.description, enabled: true,
+          });
+        } else {
+          const user = users.find((u) => u.extension === form.extension);
+          if (user) {
+            await api.post('/routes/user', {
+              username: user.username, gateway: form.gateway, description: form.description, enabled: true,
+            });
+          }
         }
       }
-      setDialog({ type: '', open: false });
+      setDialogOpen(false);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
       load();
     } catch {
@@ -162,34 +230,41 @@ export default function RoutesPage() {
   };
   const saveRoute = () => setConfirmSave({ open: true, action: doSaveRoute });
 
-  // ── Delete ──
+  // ── Delete route ──
 
-  const requestDeleteInbound = (gateway: string) => {
-    setConfirmDelete({ open: true, name: gateway, action: async () => { await api.delete(`/routes/inbound/${gateway}`); load(); } });
+  const requestDelete = (r: ExtensionRoute) => {
+    const name = r.username ? `${r.username} (${r.extension})` : r.extension;
+    setConfirmDelete({
+      open: true,
+      name,
+      action: async () => {
+        if (r.direction === 'inbound') {
+          await api.delete(`/routes/inbound/${r.gateway}`);
+        } else {
+          await api.delete(`/routes/user/${r.username}`);
+        }
+        load();
+      },
+    });
   };
 
-  const requestDeleteOutbound = (index: number, pattern: string) => {
-    setConfirmDelete({ open: true, name: pattern, action: async () => { await api.delete(`/routes/outbound/${index}`); load(); } });
+  // ── Toggle enabled ──
+
+  const toggleEnabled = async (r: ExtensionRoute) => {
+    try {
+      const newEnabled = !r.enabled;
+      if (r.direction === 'inbound') {
+        await api.put(`/routes/inbound/${r.gateway}`, { enabled: newEnabled });
+      } else {
+        await api.put(`/routes/user/${r.username}`, { enabled: newEnabled });
+      }
+      load();
+    } catch {
+      setToast({ open: true, message: t('status.error'), severity: 'error' });
+    }
   };
 
-  const requestDeleteUser = (username: string) => {
-    setConfirmDelete({ open: true, name: username, action: async () => { await api.delete(`/routes/user/${username}`); load(); } });
-  };
-
-  // ── Toggle ──
-
-  const toggleInbound = async (gateway: string, enabled: boolean) => {
-    try { await api.put(`/routes/inbound/${gateway}`, { enabled }); load(); }
-    catch { setToast({ open: true, message: t('status.error'), severity: 'error' }); }
-  };
-  const toggleOutbound = async (index: number, enabled: boolean) => {
-    try { await api.put(`/routes/outbound/${index}`, { enabled }); load(); }
-    catch { setToast({ open: true, message: t('status.error'), severity: 'error' }); }
-  };
-  const toggleUserRoute = async (username: string, enabled: boolean) => {
-    try { await api.put(`/routes/user/${username}`, { enabled }); load(); }
-    catch { setToast({ open: true, message: t('status.error'), severity: 'error' }); }
-  };
+  // ── Confirm handlers ──
 
   const handleConfirmSave = async () => {
     const action = confirmSave.action;
@@ -203,56 +278,10 @@ export default function RoutesPage() {
     if (action) await action();
   };
 
-  // ── Graph callbacks: create / delete routes via drag & drop ──
-
-  const handleGraphCreate = async (type: 'inbound' | 'user', params: Record<string, string>) => {
-    try {
-      if (type === 'inbound') {
-        await api.post('/routes/inbound', { ...params, enabled: true });
-      } else {
-        await api.post('/routes/user', { ...params, enabled: true });
-      }
-      setToast({ open: true, message: t('status.success'), severity: 'success' });
-      load();
-    } catch {
-      setToast({ open: true, message: t('status.error'), severity: 'error' });
-    }
-  };
-
-  const handleGraphDelete = async (type: 'inbound' | 'user', key: string) => {
-    try {
-      if (type === 'inbound') {
-        await api.delete(`/routes/inbound/${key}`);
-      } else {
-        await api.delete(`/routes/user/${key}`);
-      }
-      setToast({ open: true, message: t('status.success'), severity: 'success' });
-      load();
-    } catch {
-      setToast({ open: true, message: t('status.error'), severity: 'error' });
-    }
-  };
-
-  const gwNames = gateways.map((g) => g.name);
-  const extOptions = extensions.filter((e) => e.enabled !== false).map((e) => ({ label: `${e.extension} — ${e.description}`, value: e.extension }));
-  const userOptions = users.filter((u) => u.enabled !== false).map((u) => ({ label: `${u.username} — ${u.caller_id || u.extension}`, value: u.username }));
-  const outboundRows: OutboundWithIndex[] = (routes?.outbound || []).map((r, i) => ({ ...r, _index: i }));
-
   const dialogTitle = () => {
     if (viewMode) return t('route.view_route');
-    if (editItem) return t('route.edit_route');
-    return t('route.add_route');
-  };
-
-  // Shared graph props
-  const graphProps = {
-    gateways,
-    extensions,
-    users,
-    routes,
-    gatewayStatuses,
-    onCreateRoute: handleGraphCreate,
-    onDeleteRoute: handleGraphDelete,
+    if (editRoute) return t('route.edit_extension_route');
+    return t('route.add_extension_route');
   };
 
   return (
@@ -262,20 +291,35 @@ export default function RoutesPage() {
         <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_reload')}</Button>
       </Box>
 
-      {/* Defaults */}
+      {/* Defaults — split outbound / inbound */}
       <Card sx={{ mb: 3 }}>
         <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('section.default_routes')}</Typography>
-          <Grid container spacing={2} alignItems="center">
-            <Grid size={{ xs: 12, md: 3 }}>
-              <SearchableSelect
-                options={gwNames} value={defaults.gateway}
-                onChange={(v) => setDefaults({ ...defaults, gateway: v })}
-                label={t('config.default_gateway')} helperText={t('config.outbound_calls_via')}
-                allowEmpty emptyLabel="-- None --" fullWidth
-              />
+          <Grid container spacing={4}>
+            {/* Outbound default */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />
+                <Typography variant="subtitle2">{t('route.type_outbound')}</Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <SearchableSelect
+                  options={gwOptions} value={defaults.gateway}
+                  onChange={(v) => setDefaults({ ...defaults, gateway: v })}
+                  label={t('config.default_gateway')} helperText={t('config.outbound_calls_via')}
+                  allowEmpty emptyLabel="-- None --" fullWidth
+                />
+                <TextField fullWidth label={t('field.caller_id')} value={defaults.caller_id}
+                  onChange={(e) => setDefaults({ ...defaults, caller_id: e.target.value })}
+                  helperText={t('config.caller_id_desc')} size="small" />
+              </Box>
             </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+            {/* Inbound default */}
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
+                <Typography variant="subtitle2">{t('route.type_inbound')}</Typography>
+              </Box>
               <SearchableSelect
                 options={extOptions}
                 value={defaults.extension}
@@ -283,180 +327,134 @@ export default function RoutesPage() {
                 label={t('config.default_extension')} helperText={t('config.inbound_default')} fullWidth
               />
             </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
-              <TextField fullWidth label={t('field.caller_id')} value={defaults.caller_id}
-                onChange={(e) => setDefaults({ ...defaults, caller_id: e.target.value })}
-                helperText={t('config.caller_id_desc')} />
-            </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Inbound Routes — with graph/table toggle inside */}
-      <Card sx={{ mb: 3 }}>
+      {/* Extension Routes */}
+      <Card>
         <CardContent sx={{ px: 4, py: 3 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">{t('section.inbound_routing')}</Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <ToggleButtonGroup
-                value={inboundView}
-                exclusive
-                onChange={(_, v) => v && setInboundView(v)}
-                size="small"
-              >
-                <ToggleButton value="table" sx={{ px: 0.8, py: 0.3 }}>
-                  <Tooltip title={t('route.view_table')}><TableChartIcon fontSize="small" /></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="graph" sx={{ px: 0.8, py: 0.3 }}>
-                  <Tooltip title={t('route.view_graph')}><AccountTreeIcon fontSize="small" /></Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
-              {inboundView === 'table' && (
-                <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('inbound')}>
-                  {t('route.add_inbound')}
-                </Button>
-              )}
-            </Box>
-          </Box>
-          {inboundView === 'table' ? (
-            <CrudTable<InboundRoute>
-              rows={routes?.inbound || []}
-              getKey={(r, i) => `inbound-${i}`}
-              columns={[
-                { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
-                { id: 'extension', header: t('field.extension'), field: 'extension' },
-              ]}
-              columnOrderKey="routes-inbound-columns"
-              searchable
-              getEnabled={(r) => r.enabled !== false}
-              onToggle={(r) => toggleInbound(r.gateway, r.enabled === false)}
-              onView={openViewInbound}
-              onEdit={openEditInbound}
-              onDelete={(r) => requestDeleteInbound(r.gateway)}
-              dimDisabled
-              withCard={false}
-            />
-          ) : (
-            <RoutingGraph {...graphProps} edgeFilter="inbound" height={380} />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Outbound Routes — table only (pattern-based, no graph) */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ px: 4, py: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-            <Typography variant="h6">{t('section.outbound_routing')}</Typography>
-            <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('outbound')}>
-              {t('route.add_route')}
+            <Typography variant="h6">{t('section.extension_routes')}</Typography>
+            <Button size="small" startIcon={<AddIcon />} onClick={openAdd}>
+              {t('route.add_extension_route')}
             </Button>
           </Box>
-          <CrudTable<OutboundWithIndex>
-            rows={outboundRows}
-            getKey={(r) => `outbound-${r._index}`}
+          <CrudTable<ExtensionRoute>
+            rows={extRoutes}
+            getKey={(r) => `${r.direction}-${r.extension}-${r.gateway}`}
             columns={[
-              { id: 'pattern', header: t('field.pattern'), field: 'pattern' },
-              { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
+              {
+                id: 'user',
+                header: t('field.user'),
+                render: (r) => {
+                  const isReg = registrations.some((reg) => {
+                    const user = users.find((u) => u.extension === r.extension);
+                    return user && reg.user === user.username;
+                  });
+                  return (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Tooltip title={isReg ? t('status.registered') : t('status.not_registered')}>
+                        <Box
+                          sx={{
+                            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+                            bgcolor: isReg ? 'success.main' : 'error.main',
+                          }}
+                        />
+                      </Tooltip>
+                      <Box>
+                        <Typography variant="body2">
+                          {r.username ? `${r.username} (${r.extension})` : r.extension}
+                        </Typography>
+                        {r.extDescription && (
+                          <Typography variant="caption" color="text.secondary">{r.extDescription}</Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  );
+                },
+                searchText: (r) => `${r.username} ${r.extension} ${r.extDescription}`,
+              },
+              {
+                id: 'gateway',
+                header: t('field.gateway'),
+                render: (r) => {
+                  const gw = gateways.find((g) => g.name === r.gateway);
+                  return gw?.description ? `${r.gateway} (${gw.description})` : r.gateway;
+                },
+                searchText: (r) => r.gateway,
+              },
+              {
+                id: 'description',
+                header: t('field.name'),
+                render: (r) => r.description || '\u2014',
+                searchText: (r) => r.description,
+              },
+              {
+                id: 'direction',
+                header: t('route.direction'),
+                render: (r) => (
+                  <Tooltip title={r.direction === 'inbound' ? t('route.type_inbound') : t('route.type_outbound')}>
+                    {r.direction === 'inbound'
+                      ? <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
+                      : <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />}
+                  </Tooltip>
+                ),
+              },
             ]}
-            columnOrderKey="routes-outbound-columns"
+            columnOrderKey="routes-extension-columns"
             searchable
-            getEnabled={(r) => r.enabled !== false}
-            onToggle={(r) => toggleOutbound(r._index, r.enabled === false)}
-            onView={openViewOutbound}
-            onEdit={openEditOutbound}
-            onDelete={(r) => requestDeleteOutbound(r._index, r.pattern)}
+            getEnabled={(r) => r.enabled}
+            onToggle={toggleEnabled}
+            onView={openView}
+            onEdit={openEdit}
+            onDelete={requestDelete}
             dimDisabled
             withCard={false}
           />
         </CardContent>
       </Card>
 
-      {/* User Routes — with graph/table toggle inside */}
-      <Card>
-        <CardContent sx={{ px: 4, py: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">{t('section.user_routing')}</Typography>
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-              <ToggleButtonGroup
-                value={userView}
-                exclusive
-                onChange={(_, v) => v && setUserView(v)}
-                size="small"
-              >
-                <ToggleButton value="table" sx={{ px: 0.8, py: 0.3 }}>
-                  <Tooltip title={t('route.view_table')}><TableChartIcon fontSize="small" /></Tooltip>
-                </ToggleButton>
-                <ToggleButton value="graph" sx={{ px: 0.8, py: 0.3 }}>
-                  <Tooltip title={t('route.view_graph')}><AccountTreeIcon fontSize="small" /></Tooltip>
-                </ToggleButton>
-              </ToggleButtonGroup>
-              {userView === 'table' && (
-                <Button size="small" startIcon={<AddIcon />} onClick={() => openAdd('user')}>
-                  {t('route.add_user_route')}
-                </Button>
-              )}
-            </Box>
-          </Box>
-          {userView === 'table' ? (
-            <CrudTable<UserRoute>
-              rows={routes?.user_routes || []}
-              getKey={(r, i) => `user-${i}`}
-              columns={[
-                { id: 'user', header: t('field.user'), field: 'username' },
-                { id: 'gateway', header: t('field.gateway'), field: 'gateway' },
-              ]}
-              columnOrderKey="routes-user-columns"
-              searchable
-              getEnabled={(r) => r.enabled !== false}
-              onToggle={(r) => toggleUserRoute(r.username, r.enabled === false)}
-              onView={openViewUser}
-              onEdit={openEditUser}
-              onDelete={(r) => requestDeleteUser(r.username)}
-              dimDisabled
-              withCard={false}
-            />
-          ) : (
-            <RoutingGraph {...graphProps} edgeFilter="user" height={380} />
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Route Dialog (Add / Edit / View) */}
+      {/* Extension Route Dialog */}
       <FormDialog
-        open={dialog.open}
+        open={dialogOpen}
         readOnly={viewMode}
         title={dialogTitle()}
         dirty={formDirty}
-        onClose={() => setDialog({ type: '', open: false })}
+        onClose={() => setDialogOpen(false)}
         onSave={saveRoute}
       >
-        {dialog.type === 'inbound' && (
-          <>
-            <SearchableSelect options={gwNames} value={form.gateway || ''} onChange={(v) => setForm({ ...form, gateway: v })} label={t('field.gateway')} disabled={viewMode} />
-            <SearchableSelect
-              options={extOptions}
-              value={form.extension || ''} onChange={(v) => setForm({ ...form, extension: v })} label={t('field.extension')} disabled={viewMode}
-            />
-          </>
-        )}
-        {dialog.type === 'outbound' && (
-          <>
-            <TextField label={t('field.pattern')} value={form.pattern || ''} onChange={(e) => setForm({ ...form, pattern: e.target.value })} disabled={viewMode} />
-            <SearchableSelect options={gwNames} value={form.gateway || ''} onChange={(v) => setForm({ ...form, gateway: v })} label={t('field.gateway')} disabled={viewMode} />
-          </>
-        )}
-        {dialog.type === 'user' && (
-          <>
-            <SearchableSelect
-              options={userOptions}
-              value={form.username || ''}
-              onChange={(v) => setForm({ ...form, username: v })}
-              label={t('field.user')}
-              disabled={viewMode || !!editItem}
-            />
-            <SearchableSelect options={gwNames} value={form.gateway || ''} onChange={(v) => setForm({ ...form, gateway: v })} label={t('field.gateway')} disabled={viewMode} />
-          </>
-        )}
+        <Box>
+          <FormLabel>{t('route.direction')}</FormLabel>
+          <RadioGroup
+            row
+            value={form.direction}
+            onChange={(e) => setForm({ ...form, direction: e.target.value as 'inbound' | 'outbound' })}
+          >
+            <FormControlLabel value="inbound" control={<Radio />} label={t('route.type_inbound')} disabled={viewMode} />
+            <FormControlLabel value="outbound" control={<Radio />} label={t('route.type_outbound')} disabled={viewMode} />
+          </RadioGroup>
+        </Box>
+        <SearchableSelect
+          options={extOptions}
+          value={form.extension}
+          onChange={(v) => setForm({ ...form, extension: v })}
+          label={t('field.extension')}
+          disabled={viewMode}
+        />
+        <SearchableSelect
+          options={gwOptions}
+          value={form.gateway}
+          onChange={(v) => setForm({ ...form, gateway: v })}
+          label={t('field.gateway')}
+          disabled={viewMode}
+        />
+        <TextField
+          label={t('field.name')}
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          disabled={viewMode}
+        />
       </FormDialog>
 
       <ConfirmDialog open={confirmSave.open} variant="save"

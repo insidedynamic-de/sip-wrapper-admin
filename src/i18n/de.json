@@ -6,6 +6,7 @@
     "security": "Sicherheit",
     "logs": "Logs",
     "profile": "Profil",
+    "monitoring": "Monitoring",
     "license_billing": "Lizenz / Abrechnung"
   },
   "auth": {
@@ -29,6 +30,8 @@
     "not_registered": "Nicht registriert", "success": "Erfolgreich", "error": "Fehler",
     "loading": "Laden...", "checking": "Pr\u00fcfen...", "connected": "Verbunden",
     "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert", "deactivated": "Deaktiviert",
+    "ok": "OK",
+    "warning": "Warnung",
     "access_denied": "Zugriff verweigert",
     "connection_ok": "Verbindung OK",
     "connection_failed": "Verbindung fehlgeschlagen"
@@ -38,7 +41,8 @@
     "gateways": "Gateways", "routes": "Routen", "settings": "Einstellungen",
     "outbound_routing": "Ausgehende Routen", "inbound_routing": "Eingehende Routen",
     "user_routing": "Benutzer-Routen", "default_routes": "Standard-Routen",
-    "user_outbound_routes": "Benutzer-Ausgangsrouten"
+    "user_outbound_routes": "Benutzer-Ausgangsrouten",
+    "extension_routes": "Nebenstellen-Routen"
   },
   "field": {
     "extension": "Nebenstelle", "ip_address": "IP-Adresse", "user_agent": "User-Agent",
@@ -47,7 +51,7 @@
     "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
     "register": "Registrieren", "caller_id": "Anrufer-ID", "name": "Name",
     "type": "Typ", "actions": "Aktionen", "user": "Benutzer", "gateway": "Gateway",
-    "comment": "Kommentar", "status": "Status"
+    "comment": "Kommentar", "status": "Status", "details": "Details"
   },
   "dashboard": {
     "gateway_status": "Gateway-Status", "user_registrations": "Benutzer-Registrierungen",
@@ -63,7 +67,14 @@
     "failed_calls": "Fehlgeschlagen",
     "blocked_ips": "Blockierte IPs",
     "extensions_active": "Nebenstellen",
-    "license_status": "Lizenz"
+    "license_status": "Lizenz",
+    "customize": "Dashboard anpassen",
+    "connection": "Verbindung",
+    "today": "Heute",
+    "this_month": "Monat",
+    "last_90_days": "90 Tage",
+    "last_180_days": "180 Tage",
+    "no_call_stats": "Keine Anrufstatistiken verfügbar"
   },
   "calls": {
     "call_flow": "Verbindung", "direction": "Richtung", "from": "Von",
@@ -94,7 +105,9 @@
     "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Auto-Logout aktivieren",
     "auto_logout_timeout": "Timeout (Sekunden)",
-    "auto_logout_desc": "Automatisch abmelden nach Inaktivität"
+    "auto_logout_desc": "Automatisch abmelden nach Inaktivität",
+    "time_format": "Zeitformat",
+    "date_format": "Datumsformat"
   },
   "theme": {
     "light": "Hell", "dark": "Dunkel", "auto": "Auto",
@@ -117,8 +130,20 @@
     "expires": "L\u00e4uft ab", "trial_mode": "Testversion", "days_remaining": "Tage verbleibend",
     "connections": "Verbindungen", "trial_expired_title": "Testversion abgelaufen",
     "trial_expired_text": "Ihre Testversion ist abgelaufen. Bitte geben Sie einen Lizenzschl\u00fcssel ein, um die Anwendung weiter zu nutzen.",
-    "nfr": "NFR", "usage": "Nutzung", "used_of": "{{used}} / {{total}}",
-    "routing_connections": "Routings / Verbindungen"
+    "nfr": "NFR", "standard": "Standard", "usage": "Nutzung", "used_of": "{{used}} / {{total}}",
+    "routing_connections": "Routings / Verbindungen",
+    "license_type": "Lizenztyp",
+    "refresh_license": "Lizenz aktualisieren",
+    "refresh_success": "Lizenz erfolgreich aktualisiert",
+    "refresh_failed": "Lizenz konnte nicht vom Server aktualisiert werden",
+    "server_id": "Server-ID",
+    "server_mismatch": "Diese Lizenz ist an einen anderen Server gebunden. Das System wird nach 14 Tagen aufh\u00f6ren zu funktionieren. Bitte kontaktieren Sie den Support.",
+    "total_licenses": "Lizenzen gesamt",
+    "demo_keys_title": "Demo-Lizenzschl\u00fcssel (kopieren & einf\u00fcgen zum Aktivieren)",
+    "copy_key": "Schl\u00fcssel kopieren",
+    "key_copied": "Schl\u00fcssel in Zwischenablage kopiert",
+    "error_duplicate": "Dieser Lizenzschl\u00fcssel ist bereits aktiviert",
+    "error_invalid": "Ung\u00fcltiger Lizenzschl\u00fcssel"
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {
@@ -163,7 +188,21 @@
     "jail_name": "Jail-Name", "jail_for_sip": "Fail2Ban-Jail f\u00fcr SIP-Blocking",
     "save_fail2ban": "Fail2Ban-Einstellungen speichern", "refresh_status": "Status aktualisieren",
     "ip_or_cidr": "IP-Adresse oder CIDR", "comment_optional": "Kommentar (optional)",
-    "local_protected": "Localhost (geschützt — kann nicht entfernt werden)"
+    "local_protected": "Localhost (geschützt — kann nicht entfernt werden)",
+    "external_protected": "Externe SIP-IP (geschützt — kann nicht entfernt werden)",
+    "send_to_fail2ban": "An Fail2Ban senden",
+    "send_to_fs_firewall": "An SIP-Firewall senden",
+    "fs_firewall": "SIP-Firewall",
+    "banned": "Gesperrt",
+    "trust_proxy": "Proxy-Header vertrauen",
+    "trust_proxy_desc": "X-Forwarded-For-Header verwenden, um die echte Client-IP hinter einem Reverse-Proxy zu erkennen.",
+    "monitoring": "Monitoring",
+    "auth_monitoring": "Authentifizierungs-Monitoring",
+    "no_failed_auth": "Keine fehlgeschlagenen Authentifizierungsversuche",
+    "progress": "Fortschritt",
+    "critical": "Kritisch",
+    "last_attempt": "Letzter Versuch",
+    "add_acl_user": "Als ACL-Benutzer hinzufügen"
   },
   "extension": {
     "extensions": "Nebenstellen",
@@ -183,10 +222,16 @@
     "add_route": "Route hinzuf\u00fcgen", "edit_route": "Route bearbeiten", "view_route": "Route anzeigen",
     "inbound_routes": "Eingehende Routen (DID)",
     "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
-    "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzufügen",
+    "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzuf\u00fcgen",
+    "add_extension_route": "Nebenstellen-Route hinzuf\u00fcgen",
+    "edit_extension_route": "Nebenstellen-Route bearbeiten",
+    "direction": "Richtung",
     "view_table": "Tabellenansicht", "view_graph": "Graphansicht",
     "default_route": "Standard", "override_route": "\u00dcberschreibung",
-    "drag_hint": "Vom Punkt zum Punkt ziehen um Route zu erstellen \u2022 Linie klicken zum L\u00f6schen"
+    "drag_hint": "Vom Punkt zum Punkt ziehen um Route zu erstellen \u2022 Linie klicken zum L\u00f6schen",
+    "type_inbound": "Eingehend",
+    "type_outbound": "Ausgehend",
+    "error_duplicate": "Diese Route existiert bereits (gleiche Nebenstelle, Gateway und Richtung)"
   },
   "modal": {
     "add_user": "Benutzer hinzuf\u00fcgen", "edit_user": "Benutzer bearbeiten",
@@ -194,6 +239,7 @@
     "add_gateway": "Gateway hinzuf\u00fcgen", "edit_gateway": "Gateway bearbeiten",
     "view_user": "Benutzer anzeigen", "view_acl_user": "ACL-Benutzer anzeigen", "view_gateway": "Gateway anzeigen",
     "notification": "Benachrichtigung", "block_ip_address": "IP-Adresse blockieren",
+    "edit_whitelist": "Whitelist-Eintrag bearbeiten",
     "allow_ip_address": "IP-Adresse erlauben", "multiple_ips_hint": "Mehrere IPs getrennt durch |",
     "select": "-- Ausw\u00e4hlen --"
   },
@@ -216,7 +262,7 @@
   },
   "validation": {
     "required": "Pflichtfeld",
-    "invalid_ip": "Muss eine g\u00fcltige IP-Adresse sein (z.B. 192.168.1.1)",
+    "invalid_ip": "Muss eine g\u00fcltige IPv4- oder IPv6-Adresse sein (z.B. 192.168.1.1 oder ::1)",
     "invalid_username": "Nur Buchstaben, Zahlen, Punkte, Bindestriche, Unterstriche",
     "invalid_extension": "Nur Ziffern, *, #, +",
     "min_length": "Mindestens {{min}} Zeichen",
@@ -261,6 +307,36 @@
   },
   "table": {
     "search": "Suchen..."
+  },
+  "monitoring": {
+    "overview": "Übersicht",
+    "hardware": "Hardware",
+    "cores": "Kerne",
+    "threads": "Threads",
+    "temperature": "Temperatur",
+    "free": "Frei",
+    "storage": "Speicher",
+    "network": "Netzwerk",
+    "interface": "Schnittstelle",
+    "rx_rate": "Empfangsrate",
+    "tx_rate": "Senderate",
+    "os": "Betriebssystem",
+    "hostname": "Hostname",
+    "os_name": "OS",
+    "kernel": "Kernel",
+    "arch": "Architektur",
+    "uptime": "Laufzeit",
+    "board": "Mainboard",
+    "manufacturer": "Hersteller",
+    "model": "Modell",
+    "serial": "Seriennummer",
+    "total": "Gesamt",
+    "used": "Belegt",
+    "usage": "Auslastung",
+    "mount": "Einhängepunkt",
+    "fs_type": "Dateisystem",
+    "frequency": "Frequenz",
+    "security": "Sicherheit"
   },
   "demo": {
     "title": "Demo-Modus",

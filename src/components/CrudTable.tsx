@@ -219,9 +219,9 @@ export default function CrudTable<T>({
         <TableHead>
           <TableRow>
             {headerCells}
-            {getStatus && <TableCell>{statusHeader || t('field.status')}</TableCell>}
-            {getEnabled && <TableCell>{enabledHeader || t('status.enabled')}</TableCell>}
-            {hasActions && <TableCell align="right">{t('field.actions')}</TableCell>}
+            {getStatus && <TableCell sx={{ width: 120, whiteSpace: 'nowrap' }}>{statusHeader || t('field.status')}</TableCell>}
+            {getEnabled && <TableCell sx={{ width: 80, whiteSpace: 'nowrap' }}>{enabledHeader || t('status.enabled')}</TableCell>}
+            {hasActions && <TableCell align="right" sx={{ width: 110, whiteSpace: 'nowrap' }}>{t('field.actions')}</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -242,13 +242,13 @@ export default function CrudTable<T>({
                     ? { label: t('status.deactivated'), color: 'default' as const }
                     : getStatus(row);
                   return (
-                    <TableCell>
+                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
                       <Chip size="small" label={s.label} color={s.color} />
                     </TableCell>
                   );
                 })()}
                 {getEnabled && (
-                  <TableCell>
+                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
                     <Switch
                       size="small"
                       checked={enabled}
@@ -258,7 +258,7 @@ export default function CrudTable<T>({
                   </TableCell>
                 )}
                 {hasActions && (
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                     {onView && (
                       <IconButton size="small" onClick={() => onView(row)}>
                         <VisibilityIcon fontSize="small" />

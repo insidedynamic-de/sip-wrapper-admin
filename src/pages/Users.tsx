@@ -154,7 +154,7 @@ export default function Users() {
     }
     if (form.type === 'acl') {
       if (!form.ip.trim()) e.ip = t('validation.required');
-      else if (!/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(form.ip)) e.ip = t('validation.invalid_ip');
+      else if (!/^((\d{1,3}\.){3}\d{1,3}|([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4})(\/\d{1,3})?$/.test(form.ip)) e.ip = t('validation.invalid_ip');
     }
     setErrors(e);
     return Object.keys(e).length === 0;

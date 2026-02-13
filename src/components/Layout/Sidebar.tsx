@@ -11,6 +11,7 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
+import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BadgeIcon from '@mui/icons-material/Badge';
@@ -30,6 +31,7 @@ const navItems = [
   { key: '/',              icon: <DashboardIcon />, label: 'nav.dashboard' },
   { key: '/configuration', icon: <TuneIcon />,      label: 'nav.config' },
   { key: '/routes',        icon: <AltRouteIcon />,  label: 'section.routes' },
+  { key: '/monitoring',    icon: <MonitorHeartIcon />, label: 'nav.monitoring' },
   { key: '/logs',          icon: <TerminalIcon />,  label: 'nav.logs' },
   { key: '/license',       icon: <BadgeIcon />,     label: 'nav.license_billing' },
   { key: '/profile',       icon: <SettingsIcon />,  label: 'nav.profile' },

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Chip, Button, Tabs, Tab,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, InputAdornment,
+  TablePagination, TextField, InputAdornment,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
@@ -20,7 +20,8 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import api from '../api/client';
 import SearchableSelect from '../components/SearchableSelect';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
-import type { ESLEvent, ESLStatus, CallLog, SecurityLog } from '../api/types';
+import { formatDateTime } from '../store/preferences';
+import type { ESLEvent, ESLStatus, CallLog, SecurityLog, Gateway, User, Extension, Route } from '../api/types';
 
 const LEVEL_COLORS: Record<string, 'info' | 'warning' | 'error' | 'default' | 'success'> = {
   info: 'info', warning: 'warning', error: 'error', debug: 'default',
@@ -73,10 +74,20 @@ export default function Logs() {
   // Call logs
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [callFilter, setCallFilter] = useState('');
+  const [callPage, setCallPage] = useState(0);
+  const [callRowsPerPage, setCallRowsPerPage] = useState(25);
 
   // Security logs
   const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([]);
   const [secFilter, setSecFilter] = useState('');
+  const [secPage, setSecPage] = useState(0);
+  const [secRowsPerPage, setSecRowsPerPage] = useState(25);
+
+  // Context data for enriching call logs
+  const [gwList, setGwList] = useState<Gateway[]>([]);
+  const [userList, setUserList] = useState<User[]>([]);
+  const [extList, setExtList] = useState<Extension[]>([]);
+  const [routes, setRoutes] = useState<Route | null>(null);
 
   // Category filter for system logs
   const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
@@ -112,8 +123,50 @@ export default function Logs() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { loadEsl(); loadCalls(); loadSecurity(); }, [loadEsl, loadCalls, loadSecurity]);
+  const loadContext = useCallback(async () => {
+    try {
+      const [gwRes, uRes, eRes, rRes] = await Promise.all([
+        api.get('/gateways'), api.get('/users'), api.get('/extensions'), api.get('/routes'),
+      ]);
+      setGwList(gwRes.data || []);
+      setUserList(uRes.data || []);
+      setExtList(eRes.data || []);
+      setRoutes(rRes.data || null);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadEsl(); loadCalls(); loadSecurity(); loadContext(); }, [loadEsl, loadCalls, loadSecurity, loadContext]);
   useAutoRefresh(loadEsl, 3000);
+
+  // Resolve extension number to "username (extension)" or "extension — description"
+  const resolveUser = useCallback((ext: string) => {
+    const user = userList.find((u) => u.extension === ext);
+    if (user) return `${user.username} (${ext})`;
+    const e = extList.find((x) => x.extension === ext);
+    if (e) return `${ext} \u2014 ${e.description}`;
+    return ext;
+  }, [userList, extList]);
+
+  // Resolve gateway name to "name (description)"
+  const resolveGateway = useCallback((name: string) => {
+    const gw = gwList.find((g) => g.name === name);
+    return gw?.description ? `${name} (${gw.description})` : name;
+  }, [gwList]);
+
+  // Resolve connection/route name from routes data
+  const resolveConnection = useCallback((gwName: string, direction: string, callerOrDest: string) => {
+    if (!routes) return '\u2014';
+    if (direction === 'inbound') {
+      const r = (routes.inbound || []).find((ib) => ib.gateway === gwName);
+      return r?.description || '\u2014';
+    }
+    const user = userList.find((u) => u.extension === callerOrDest);
+    if (user) {
+      const r = (routes.user_routes || []).find((ur) => ur.username === user.username);
+      return r?.description || '\u2014';
+    }
+    return '\u2014';
+  }, [routes, userList]);
 
   const start = () => api.post('/esl/start').then(() => loadEsl());
   const stop = () => api.post('/esl/stop').then(() => loadEsl());
@@ -274,7 +327,7 @@ export default function Logs() {
               size="small"
               placeholder={t('logs.search')}
               value={callFilter}
-              onChange={(e) => setCallFilter(e.target.value)}
+              onChange={(e) => { setCallFilter(e.target.value); setCallPage(0); }}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               sx={{ width: 300 }}
             />
@@ -287,48 +340,68 @@ export default function Logs() {
                   <Typography color="text.secondary">{t('logs.no_calls')}</Typography>
                 </Box>
               ) : (
-                <TableContainer sx={{ maxHeight: 600 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
-                        <TableCell sx={{ width: 100 }}>{t('calls.direction')}</TableCell>
-                        <TableCell>{t('calls.from')}</TableCell>
-                        <TableCell>{t('calls.to')}</TableCell>
-                        <TableCell sx={{ width: 100 }}>{t('calls.duration')}</TableCell>
-                        <TableCell sx={{ width: 100 }}>{t('calls.result')}</TableCell>
-                        <TableCell sx={{ width: 100 }}>{t('field.gateway')}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredCalls.map((c) => (
-                        <TableRow key={c.uuid} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
-                            {new Date(c.start_time).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              size="small"
-                              label={c.direction === 'inbound' ? '\u2193 IN' : '\u2191 OUT'}
-                              color={c.direction === 'inbound' ? 'info' : 'default'}
-                            />
-                          </TableCell>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: 13 }}>{c.caller_id}</TableCell>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: 13 }}>{c.destination}</TableCell>
-                          <TableCell>{formatDuration(c.duration)}</TableCell>
-                          <TableCell>
-                            <Chip
-                              size="small"
-                              label={t(`logs.call_result_${c.result}`)}
-                              color={CALL_RESULT_COLORS[c.result] || 'default'}
-                            />
-                          </TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>{c.gateway}</TableCell>
+                <>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
+                          <TableCell sx={{ width: 80 }}>{t('calls.direction')}</TableCell>
+                          <TableCell>{t('calls.from')}</TableCell>
+                          <TableCell>{t('calls.to')}</TableCell>
+                          <TableCell sx={{ width: 90 }}>{t('calls.duration')}</TableCell>
+                          <TableCell sx={{ width: 100 }}>{t('calls.result')}</TableCell>
+                          <TableCell>{t('field.gateway')}</TableCell>
+                          <TableCell>{t('dashboard.connection')}</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {filteredCalls
+                          .slice(callPage * callRowsPerPage, callPage * callRowsPerPage + callRowsPerPage)
+                          .map((c) => {
+                            const fromResolved = c.direction === 'inbound' ? c.caller_id : resolveUser(c.caller_id);
+                            const toResolved = c.direction === 'inbound' ? resolveUser(c.destination) : c.destination;
+                            const connExt = c.direction === 'inbound' ? c.destination : c.caller_id;
+                            return (
+                              <TableRow key={c.uuid} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                                <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
+                                  {formatDateTime(c.start_time)}
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    size="small"
+                                    label={c.direction === 'inbound' ? '\u2193 IN' : '\u2191 OUT'}
+                                    color={c.direction === 'inbound' ? 'info' : 'default'}
+                                  />
+                                </TableCell>
+                                <TableCell sx={{ fontSize: 13 }}>{fromResolved}</TableCell>
+                                <TableCell sx={{ fontSize: 13 }}>{toResolved}</TableCell>
+                                <TableCell>{formatDuration(c.duration)}</TableCell>
+                                <TableCell>
+                                  <Chip
+                                    size="small"
+                                    label={t(`logs.call_result_${c.result}`)}
+                                    color={CALL_RESULT_COLORS[c.result] || 'default'}
+                                  />
+                                </TableCell>
+                                <TableCell sx={{ fontSize: 12 }}>{resolveGateway(c.gateway)}</TableCell>
+                                <TableCell sx={{ fontSize: 12 }}>{resolveConnection(c.gateway, c.direction, connExt)}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <TablePagination
+                    component="div"
+                    count={filteredCalls.length}
+                    page={callPage}
+                    onPageChange={(_, p) => setCallPage(p)}
+                    rowsPerPage={callRowsPerPage}
+                    onRowsPerPageChange={(e) => { setCallRowsPerPage(parseInt(e.target.value, 10)); setCallPage(0); }}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                  />
+                </>
               )}
             </CardContent>
           </Card>
@@ -343,7 +416,7 @@ export default function Logs() {
               size="small"
               placeholder={t('logs.search')}
               value={secFilter}
-              onChange={(e) => setSecFilter(e.target.value)}
+              onChange={(e) => { setSecFilter(e.target.value); setSecPage(0); }}
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               sx={{ width: 300 }}
             />
@@ -356,34 +429,47 @@ export default function Logs() {
                   <Typography color="text.secondary">{t('logs.no_security')}</Typography>
                 </Box>
               ) : (
-                <TableContainer sx={{ maxHeight: 600 }}>
-                  <Table size="small" stickyHeader>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
-                        <TableCell sx={{ width: 80 }}>{t('logs.level')}</TableCell>
-                        <TableCell sx={{ width: 130 }}>{t('logs.event')}</TableCell>
-                        <TableCell sx={{ width: 150 }}>{t('field.ip_address')}</TableCell>
-                        <TableCell>Details</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {filteredSecurity.map((s, i) => (
-                        <TableRow key={i} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
-                            {new Date(s.timestamp).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            <Chip size="small" label={s.level} color={LEVEL_COLORS[s.level] || 'default'} />
-                          </TableCell>
-                          <TableCell sx={{ fontSize: 12, fontWeight: 500 }}>{s.event}</TableCell>
-                          <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{s.ip}</TableCell>
-                          <TableCell sx={{ fontSize: 12 }}>{s.details}</TableCell>
+                <>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
+                          <TableCell sx={{ width: 80 }}>{t('logs.level')}</TableCell>
+                          <TableCell sx={{ width: 130 }}>{t('logs.event')}</TableCell>
+                          <TableCell sx={{ width: 150 }}>{t('field.ip_address')}</TableCell>
+                          <TableCell>Details</TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {filteredSecurity
+                          .slice(secPage * secRowsPerPage, secPage * secRowsPerPage + secRowsPerPage)
+                          .map((s, i) => (
+                            <TableRow key={i} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                              <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
+                                {formatDateTime(s.timestamp)}
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="small" label={s.level} color={LEVEL_COLORS[s.level] || 'default'} />
+                              </TableCell>
+                              <TableCell sx={{ fontSize: 12, fontWeight: 500 }}>{s.event}</TableCell>
+                              <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{s.ip}</TableCell>
+                              <TableCell sx={{ fontSize: 12 }}>{s.details}</TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <TablePagination
+                    component="div"
+                    count={filteredSecurity.length}
+                    page={secPage}
+                    onPageChange={(_, p) => setSecPage(p)}
+                    rowsPerPage={secRowsPerPage}
+                    onRowsPerPageChange={(e) => { setSecRowsPerPage(parseInt(e.target.value, 10)); setSecPage(0); }}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                  />
+                </>
               )}
             </CardContent>
           </Card>

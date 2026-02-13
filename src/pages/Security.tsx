@@ -1,21 +1,28 @@
+/**
+ * @file Security — Blacklist, whitelist, auto-blacklist, and Fail2Ban settings
+ * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Tabs, Tab, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  IconButton, TextField, Switch, FormControlLabel, Snackbar, Alert, Chip,
+  IconButton, TextField, Switch, FormControlLabel, Snackbar, Alert, Chip, Tooltip,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import ShieldIcon from '@mui/icons-material/Shield';
+import LockIcon from '@mui/icons-material/Lock';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
-import LockIcon from '@mui/icons-material/Lock';
 import type { BlacklistEntry, WhitelistEntry } from '../api/types';
 
-/** Protected whitelist entry — always present, cannot be deleted or edited */
-const PROTECTED_WHITELIST_IP = '127.0.0.1';
+/** Protected localhost IP — always present, cannot be deleted */
+const PROTECTED_LOCALHOST = '127.0.0.1';
 
 export default function Security() {
   const { t } = useTranslation();
@@ -25,10 +32,12 @@ export default function Security() {
   const [blacklist, setBlacklist] = useState<BlacklistEntry[]>([]);
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
-  const [autoBlacklist, setAutoBlacklist] = useState({ enabled: true, threshold: 5, time_window: 300, block_duration: 3600 });
-  const [fail2ban, setFail2ban] = useState({ enabled: false, threshold: 50, jail_name: 'freeswitch-sip' });
+  const [externalIp, setExternalIp] = useState('');
+  const [autoBlacklist, setAutoBlacklist] = useState({ enabled: true, threshold: 5, time_window: 300, block_duration: 3600, trust_proxy: false });
+  const [fail2ban, setFail2ban] = useState({ enabled: false, threshold: 50, jail_name: 'sip-jail' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'blacklist' | 'whitelist'>('blacklist');
+  const [editIp, setEditIp] = useState<string | null>(null);
   const defaultIpForm = { ip: '', comment: '' };
   const [form, setForm] = useState(defaultIpForm);
   const [initialForm, setInitialForm] = useState(defaultIpForm);
@@ -37,12 +46,16 @@ export default function Security() {
 
   const load = useCallback(async () => {
     try {
-      const res = await api.get('/security');
-      setBlacklist(res.data?.blacklist || []);
-      setWhitelist(res.data?.whitelist?.entries || []);
-      setWhitelistEnabled(res.data?.whitelist?.enabled || false);
-      if (res.data?.auto_blacklist) setAutoBlacklist(res.data.auto_blacklist);
-      if (res.data?.fail2ban) setFail2ban(res.data.fail2ban);
+      const [secRes, settingsRes] = await Promise.all([
+        api.get('/security'),
+        api.get('/settings'),
+      ]);
+      setBlacklist(secRes.data?.blacklist || []);
+      setWhitelist(secRes.data?.whitelist?.entries || []);
+      setWhitelistEnabled(secRes.data?.whitelist?.enabled || false);
+      if (secRes.data?.auto_blacklist) setAutoBlacklist(secRes.data.auto_blacklist);
+      if (secRes.data?.fail2ban) setFail2ban(secRes.data.fail2ban);
+      setExternalIp(String(settingsRes.data?.external_sip_ip || ''));
     } catch { /* ignore */ }
   }, []);
 
@@ -52,37 +65,86 @@ export default function Security() {
     setToast({ open: true, message: success ? t('status.success') : t('status.error'), severity: success ? 'success' : 'error' });
   };
 
-  const doAddEntry = async () => {
+  // ── Add / Edit entry ──
+
+  const doSaveEntry = async () => {
     try {
-      if (dialogType === 'blacklist') await api.post('/security/blacklist', form);
-      else await api.post('/security/whitelist', form);
+      if (editIp) {
+        await api.put(`/security/whitelist/${encodeURIComponent(editIp)}`, form);
+      } else if (dialogType === 'blacklist') {
+        await api.post('/security/blacklist', form);
+      } else {
+        await api.post('/security/whitelist', form);
+      }
       setDialogOpen(false);
       showToast(true);
       load();
     } catch { showToast(false); }
   };
-  const addEntry = () => setConfirmSave({ open: true, action: doAddEntry });
+  const saveEntry = () => setConfirmSave({ open: true, action: doSaveEntry });
+
+  // ── Blacklist actions ──
 
   const requestRemoveBlacklist = (ip: string) => {
-    setConfirmDelete({ open: true, name: ip, action: async () => { await api.delete(`/security/blacklist/${encodeURIComponent(ip)}`); load(); } });
+    setConfirmDelete({
+      open: true, name: ip, action: async () => {
+        try { await api.delete(`/security/blacklist/${encodeURIComponent(ip)}`); showToast(true); load(); }
+        catch { showToast(false); }
+      },
+    });
   };
 
+  const sendToFail2ban = async (ip: string) => {
+    try {
+      await api.post('/security/fail2ban/ban', { ip });
+      showToast(true);
+      load();
+    } catch { showToast(false); }
+  };
+
+  const sendToFsFirewall = async (ip: string) => {
+    try {
+      await api.post('/security/fs-firewall/ban', { ip });
+      showToast(true);
+      load();
+    } catch { showToast(false); }
+  };
+
+  // ── Whitelist actions ──
+
   const requestRemoveWhitelist = (ip: string) => {
-    setConfirmDelete({ open: true, name: ip, action: async () => { await api.delete(`/security/whitelist/${encodeURIComponent(ip)}`); load(); } });
+    setConfirmDelete({
+      open: true, name: ip, action: async () => {
+        try { await api.delete(`/security/whitelist/${encodeURIComponent(ip)}`); showToast(true); load(); }
+        catch { showToast(false); }
+      },
+    });
   };
 
   const handleConfirmSave = async () => { const a = confirmSave.action; setConfirmSave({ open: false, action: null }); if (a) await a(); };
   const handleConfirmDelete = async () => { const a = confirmDelete.action; setConfirmDelete({ open: false, name: '', action: null }); if (a) await a(); };
 
-  // Ensure protected entry always exists in the displayed whitelist
-  const protectedEntry: WhitelistEntry = { ip: PROTECTED_WHITELIST_IP, comment: t('security.local_protected') };
-  const displayWhitelist = whitelist.some((e) => e.ip === PROTECTED_WHITELIST_IP)
-    ? whitelist
-    : [protectedEntry, ...whitelist];
+  // Protected IPs — always shown in whitelist, cannot be deleted or edited
+  const protectedIps = new Set([PROTECTED_LOCALHOST]);
+  if (externalIp) protectedIps.add(externalIp);
+
+  // Build display list: ensure protected entries always appear at top
+  const displayWhitelist = (() => {
+    const entries = [...whitelist];
+    if (!entries.some((e) => e.ip === PROTECTED_LOCALHOST)) {
+      entries.unshift({ ip: PROTECTED_LOCALHOST, comment: t('security.local_protected') });
+    }
+    if (externalIp && !entries.some((e) => e.ip === externalIp)) {
+      entries.splice(1, 0, { ip: externalIp, comment: t('security.external_protected') });
+    }
+    return entries;
+  })();
 
   const toggleWhitelist = async () => {
-    await api.put('/security/whitelist/toggle', { enabled: !whitelistEnabled });
-    setWhitelistEnabled(!whitelistEnabled);
+    try {
+      await api.put('/security/whitelist/toggle', { enabled: !whitelistEnabled });
+      setWhitelistEnabled(!whitelistEnabled);
+    } catch { showToast(false); }
   };
 
   const doSaveSecuritySettings = async () => {
@@ -97,12 +159,19 @@ export default function Security() {
   };
   const saveSecuritySettings = () => setConfirmSave({ open: true, action: doSaveSecuritySettings });
 
-  const openDialog = (type: 'blacklist' | 'whitelist') => {
+  const openDialog = (type: 'blacklist' | 'whitelist', entry?: WhitelistEntry) => {
     setDialogType(type);
-    const fresh = { ...defaultIpForm };
+    setEditIp(entry ? entry.ip : null);
+    const fresh = entry ? { ip: entry.ip, comment: entry.comment || '' } : { ...defaultIpForm };
     setForm(fresh);
     setInitialForm(fresh);
     setDialogOpen(true);
+  };
+
+  const dialogTitle = () => {
+    if (editIp) return t('modal.edit_whitelist');
+    if (dialogType === 'blacklist') return t('modal.block_ip_address');
+    return t('modal.allow_ip_address');
   };
 
   return (
@@ -135,6 +204,7 @@ export default function Security() {
                     <TableCell>{t('field.comment')}</TableCell>
                     <TableCell>{t('security.blocked')}</TableCell>
                     <TableCell>{t('security.fail2ban')}</TableCell>
+                    <TableCell>{t('security.fs_firewall')}</TableCell>
                     <TableCell align="right">{t('field.actions')}</TableCell>
                   </TableRow>
                 </TableHead>
@@ -145,9 +215,26 @@ export default function Security() {
                       <TableCell>{e.comment}</TableCell>
                       <TableCell>{e.blocked_count || 0}</TableCell>
                       <TableCell>
-                        {e.fail2ban_banned && <Chip size="small" label="Banned" color="error" />}
+                        {e.fail2ban_banned && <Chip size="small" label={t('security.banned')} color="error" />}
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell>
+                        {e.fs_firewall_blocked && <Chip size="small" label={t('security.blocked')} color="warning" />}
+                      </TableCell>
+                      <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                        {!e.fail2ban_banned && (
+                          <Tooltip title={t('security.send_to_fail2ban')}>
+                            <IconButton size="small" color="warning" onClick={() => sendToFail2ban(e.ip)}>
+                              <LocalFireDepartmentIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {!e.fs_firewall_blocked && (
+                          <Tooltip title={t('security.send_to_fs_firewall')}>
+                            <IconButton size="small" color="info" onClick={() => sendToFsFirewall(e.ip)}>
+                              <ShieldIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                         <IconButton size="small" color="error" onClick={() => requestRemoveBlacklist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
                       </TableCell>
                     </TableRow>
@@ -184,7 +271,7 @@ export default function Security() {
                 </TableHead>
                 <TableBody>
                   {displayWhitelist.map((e) => {
-                    const isProtected = e.ip === PROTECTED_WHITELIST_IP;
+                    const isProtected = protectedIps.has(e.ip);
                     return (
                       <TableRow key={e.ip} sx={isProtected ? { bgcolor: 'action.hover' } : undefined}>
                         <TableCell>
@@ -192,9 +279,18 @@ export default function Security() {
                           {e.ip}
                         </TableCell>
                         <TableCell>{e.comment}</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
                           {!isProtected && (
-                            <IconButton size="small" color="error" onClick={() => requestRemoveWhitelist(e.ip)}><DeleteIcon fontSize="small" /></IconButton>
+                            <>
+                              <Tooltip title={t('button.edit')}>
+                                <IconButton size="small" color="primary" onClick={() => openDialog('whitelist', e)}>
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <IconButton size="small" color="error" onClick={() => requestRemoveWhitelist(e.ip)}>
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </>
                           )}
                         </TableCell>
                       </TableRow>
@@ -217,7 +313,7 @@ export default function Security() {
               label={t('security.enable_auto_blacklist')}
             />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('security.auto_blacklist_desc')}</Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
               <TextField type="number" label={t('security.max_attempts')} value={autoBlacklist.threshold}
                 onChange={(e) => setAutoBlacklist({ ...autoBlacklist, threshold: parseInt(e.target.value) || 5 })}
                 helperText={t('security.block_after_n')} sx={{ width: 200 }} />
@@ -228,6 +324,11 @@ export default function Security() {
                 onChange={(e) => setAutoBlacklist({ ...autoBlacklist, block_duration: parseInt(e.target.value) || 0 })}
                 helperText={t('security.permanent')} sx={{ width: 200 }} />
             </Box>
+            <FormControlLabel
+              control={<Switch checked={autoBlacklist.trust_proxy || false} onChange={(e) => setAutoBlacklist({ ...autoBlacklist, trust_proxy: e.target.checked })} />}
+              label={t('security.trust_proxy')}
+            />
+            <Typography variant="body2" color="text.secondary">{t('security.trust_proxy_desc')}</Typography>
           </CardContent>
         </Card>
       )}
@@ -254,17 +355,18 @@ export default function Security() {
         </Card>
       )}
 
-      {/* Add IP Dialog */}
+      {/* Add / Edit IP Dialog */}
       <FormDialog
         open={dialogOpen}
-        title={dialogType === 'blacklist' ? t('modal.block_ip_address') : t('modal.allow_ip_address')}
+        title={dialogTitle()}
         dirty={formDirty}
         onClose={() => setDialogOpen(false)}
-        onSave={addEntry}
-        saveLabel={dialogType === 'blacklist' ? t('button.block') : t('button.allow')}
+        onSave={saveEntry}
+        saveLabel={editIp ? t('button.save') : (dialogType === 'blacklist' ? t('button.block') : t('button.allow'))}
       >
         <TextField label={t('security.ip_or_cidr')} value={form.ip} onChange={(e) => setForm({ ...form, ip: e.target.value })}
-          helperText={t('modal.multiple_ips_hint')} />
+          disabled={!!editIp}
+          helperText={editIp ? undefined : t('modal.multiple_ips_hint')} />
         <TextField label={t('security.comment_optional')} value={form.comment} onChange={(e) => setForm({ ...form, comment: e.target.value })} />
       </FormDialog>
 

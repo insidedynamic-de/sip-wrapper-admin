@@ -1,20 +1,24 @@
 /**
- * @file License — License info, company data, and invoice settings
+ * @file License — License management (CRUD), company data, and invoice settings
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Card, CardContent, TextField, Button, Grid, Chip,
-  Snackbar, Alert, Switch, FormControlLabel,
+  Box, Typography, Card, CardContent, TextField, Button, Chip,
+  Snackbar, Alert, Switch, FormControlLabel, IconButton, Tooltip,
 } from '@mui/material';
+import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
+import { isDemoMode } from '../store/preferences';
 
-interface LicenseInfo {
+interface LicenseEntry {
   license_key: string;
   client_name: string;
   licensed: boolean;
@@ -24,15 +28,20 @@ interface LicenseInfo {
   days_remaining: number;
   max_connections: number;
   version: string;
+  server_id?: string;
+  bound_to?: string;
 }
+
+const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003'];
 
 export default function License() {
   const { t } = useTranslation();
-  const [license, setLicense] = useState<LicenseInfo>({
-    license_key: '', client_name: '', licensed: false, expires: '',
-    trial: false, nfr: false, days_remaining: 0, max_connections: 0, version: '',
-  });
+  const demo = isDemoMode();
+
+  const [licenses, setLicenses] = useState<LicenseEntry[]>([]);
+  const [totalConnections, setTotalConnections] = useState(0);
   const [routingCount, setRoutingCount] = useState(0);
+  const [serverId, setServerId] = useState('');
   const [company, setCompany] = useState({
     company_name: '', company_email: '', company_phone: '',
     company_address: '', company_zip: '', company_city: '', company_country: '',
@@ -40,14 +49,17 @@ export default function License() {
   const [invoice, setInvoice] = useState({
     same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
   });
+
+  // Activate license
   const [licenseKey, setLicenseKey] = useState('');
+
+  // View dialog
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [viewMode, setViewMode] = useState(false);
-  const [dialogForm, setDialogForm] = useState({ license_key: '', client_name: '' });
-  const [dialogInitial, setDialogInitial] = useState({ license_key: '', client_name: '' });
-  const dialogDirty = JSON.stringify(dialogForm) !== JSON.stringify(dialogInitial);
+  const [dialogLicense, setDialogLicense] = useState<LicenseEntry | null>(null);
+
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
+  const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
 
   const showToast = (msg: string, ok: boolean) => setToast({ open: true, message: msg, severity: ok ? 'success' : 'error' });
 
@@ -59,20 +71,17 @@ export default function License() {
         api.get('/invoice'),
         api.get('/routes'),
       ]);
-      setLicense({
-        license_key: '', client_name: '', licensed: false, expires: '',
-        trial: false, nfr: false, days_remaining: 0, max_connections: 0, version: '',
-        ...licRes.data,
-      });
-      // Count enabled routings (1 routing = 1 connection = 1 license)
+      const data = licRes.data || {};
+      setLicenses(data.licenses || []);
+      setTotalConnections(data.total_connections || 0);
+      setServerId(data.server_id || '');
+      // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {
         const inb = (rd.inbound || []).filter((r: { enabled?: boolean }) => r.enabled !== false).length;
-        const outb = (rd.outbound || []).filter((r: { enabled?: boolean }) => r.enabled !== false).length;
         const usr = (rd.user_routes || []).filter((r: { enabled?: boolean }) => r.enabled !== false).length;
-        setRoutingCount(inb + outb + usr);
+        setRoutingCount(inb + usr);
       }
-      setLicenseKey(licRes.data?.license_key || '');
       setCompany({
         company_name: '', company_email: '', company_phone: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
@@ -87,41 +96,64 @@ export default function License() {
 
   useEffect(() => { load(); }, [load]);
 
+  // License type label per entry
+  const licType = (l: LicenseEntry) => {
+    if (l.trial) return t('license.trial_mode');
+    if (l.nfr) return 'NFR';
+    if (l.licensed) return t('license.standard');
+    return '\u2014';
+  };
+
+  // ── Activate license ──
   const doActivateLicense = async () => {
     try {
       await api.put('/license', { license_key: licenseKey });
+      setLicenseKey('');
       showToast(t('status.success'), true);
       load();
-    } catch { showToast(t('status.error'), false); }
+    } catch (err: unknown) {
+      // Show specific error from backend (duplicate / invalid key)
+      const resp = (err as { response?: { data?: { message?: string } } })?.response?.data;
+      const msgKey = resp?.message;
+      if (msgKey === 'license_duplicate') {
+        showToast(t('license.error_duplicate'), false);
+      } else if (msgKey === 'license_invalid') {
+        showToast(t('license.error_invalid'), false);
+      } else {
+        showToast(t('status.error'), false);
+      }
+    }
   };
   const activateLicense = () => setConfirmSave({ open: true, action: doActivateLicense });
 
-  const openViewLicense = () => {
-    setViewMode(true);
-    const f = { license_key: license.license_key, client_name: license.client_name };
-    setDialogForm(f);
-    setDialogInitial(f);
-    setDialogOpen(true);
-  };
-
-  const openEditLicense = () => {
-    setViewMode(false);
-    const f = { license_key: license.license_key, client_name: license.client_name };
-    setDialogForm(f);
-    setDialogInitial(f);
-    setDialogOpen(true);
-  };
-
-  const doSaveLicense = async () => {
+  // ── Refresh ──
+  const refreshLicense = async () => {
     try {
-      await api.put('/license', { license_key: dialogForm.license_key, client_name: dialogForm.client_name });
-      setDialogOpen(false);
-      showToast(t('status.success'), true);
+      await api.post('/license/refresh');
+      showToast(t('license.refresh_success'), true);
       load();
-    } catch { showToast(t('status.error'), false); }
+    } catch { showToast(t('license.refresh_failed'), false); }
   };
-  const saveLicense = () => setConfirmSave({ open: true, action: doSaveLicense });
 
+  // ── View license ──
+  const openView = (l: LicenseEntry) => {
+    setDialogLicense(l);
+    setDialogOpen(true);
+  };
+
+  // ── Delete license ──
+  const requestDelete = (l: LicenseEntry) => {
+    setConfirmDelete({
+      open: true,
+      name: l.license_key,
+      action: async () => {
+        await api.delete(`/license/${encodeURIComponent(l.license_key)}`);
+        load();
+      },
+    });
+  };
+
+  // ── Company / Invoice save ──
   const doSaveCompany = async () => {
     try {
       await api.put('/company', company);
@@ -140,44 +172,106 @@ export default function License() {
   };
   const saveInvoice = () => setConfirmSave({ open: true, action: doSaveInvoice });
 
+  // ── Confirm handlers ──
   const handleConfirmSave = async () => {
     const a = confirmSave.action;
     setConfirmSave({ open: false, action: null });
     if (a) await a();
   };
+  const handleConfirmDelete = async () => {
+    const a = confirmDelete.action;
+    setConfirmDelete({ open: false, name: '', action: null });
+    if (a) await a();
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showToast(t('license.key_copied'), true);
+  };
 
   return (
     <Box>
-      <Typography variant="h5" sx={{ mb: 3 }}>{t('license.license_info')}</Typography>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5">{t('license.license_info')}</Typography>
+        <Button variant="outlined" startIcon={<RefreshIcon />} onClick={refreshLicense}>
+          {t('license.refresh_license')}
+        </Button>
+      </Box>
 
-      {/* License Status Table */}
-      <CrudTable<LicenseInfo>
-        rows={[license]}
-        getKey={() => 'license'}
+      {/* Connection summary */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent sx={{ px: 4, py: 2 }}>
+          <Box sx={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+            <Box>
+              <Typography variant="body2" color="text.secondary">{t('license.routing_connections')}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700, color: routingCount > totalConnections ? 'error.main' : 'text.primary' }}>
+                {routingCount} / {totalConnections}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="body2" color="text.secondary">{t('license.total_licenses')}</Typography>
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>{licenses.length}</Typography>
+            </Box>
+            {serverId && (
+              <Box>
+                <Typography variant="body2" color="text.secondary">{t('license.server_id')}</Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>{serverId}</Typography>
+              </Box>
+            )}
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Demo keys card — only in demo mode */}
+      {demo && (
+        <Card sx={{ mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
+          <CardContent sx={{ px: 4, py: 2 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('license.demo_keys_title')}</Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              {DEMO_KEYS.map((key) => (
+                <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1, px: 1.5, py: 0.5 }}>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{key}</Typography>
+                  <Tooltip title={t('license.copy_key')}>
+                    <IconButton size="small" onClick={() => copyToClipboard(key)} sx={{ color: 'inherit' }}>
+                      <ContentCopyIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ))}
+            </Box>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Licenses table */}
+      <CrudTable<LicenseEntry>
+        rows={licenses}
+        getKey={(l) => l.license_key}
         columns={[
-          { header: t('license.client'), render: (l) => l.client_name || '\u2014' },
-          { header: t('license.version'), render: (l) => l.version || '\u2014' },
-          { header: t('license.expires'), render: (l) => l.expires || '\u2014' },
-          { header: t('license.days_remaining'), render: (l) => l.trial && l.days_remaining > 0
-            ? <Typography component="span" sx={{ fontWeight: 600, color: l.days_remaining <= 7 ? 'error.main' : 'text.primary' }}>{l.days_remaining}</Typography>
-            : '\u2014'
-          },
-          { header: t('license.routing_connections'), render: () => (
-            <Typography component="span" sx={{ fontWeight: 600, color: routingCount > license.max_connections ? 'error.main' : 'text.primary' }}>
-              {routingCount} / {license.max_connections}
-            </Typography>
+          { id: 'key', header: t('license.license_key'), render: (l) => (
+            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{l.license_key}</Typography>
+          ), searchText: (l) => l.license_key },
+          { id: 'client', header: t('license.client'), render: (l) => l.client_name || '\u2014', searchText: (l) => l.client_name },
+          { id: 'type', header: t('license.license_type'), render: (l) => (
+            <Chip size="small" label={licType(l)}
+              color={l.trial ? 'warning' : l.nfr ? 'info' : l.licensed ? 'success' : 'default'} />
           )},
-          ...(license.nfr ? [{ header: 'NFR', render: () => <Chip size="small" label={t('license.nfr')} color={'info' as const} /> }] : []),
+          { id: 'expires', header: t('license.expires'), render: (l) => l.expires || '\u2014' },
+          { id: 'connections', header: t('license.connections'), render: (l) => (
+            <Typography component="span" sx={{ fontWeight: 600 }}>{l.max_connections}</Typography>
+          )},
         ]}
+        columnOrderKey="license-columns"
+        searchable
         getStatus={(l) => ({
-          label: l.trial ? t('license.trial_mode') : l.licensed ? t('license.licensed') : '\u2014',
-          color: l.trial ? 'warning' : l.licensed ? 'success' : 'default',
+          label: l.licensed ? t('license.licensed') : '\u2014',
+          color: l.licensed ? 'success' : 'default',
         })}
-        onView={openViewLicense}
-        onEdit={openEditLicense}
+        onView={openView}
+        onDelete={requestDelete}
       />
 
-      {/* License Key Activation */}
+      {/* Activate License */}
       <Card sx={{ mt: 3, mb: 3 }}>
         <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('license.activate_license')}</Typography>
@@ -190,7 +284,7 @@ export default function License() {
               size="small"
               placeholder="XXXX-XXXX-XXXX-XXXX"
             />
-            <Button variant="contained" onClick={activateLicense}>
+            <Button variant="contained" onClick={activateLicense} disabled={!licenseKey.trim()}>
               {t('license.activate_license')}
             </Button>
           </Box>
@@ -274,33 +368,30 @@ export default function License() {
         </CardContent>
       </Card>
 
-      {/* License View/Edit Dialog */}
+      {/* License View Dialog */}
       <FormDialog
         open={dialogOpen}
-        readOnly={viewMode}
-        title={viewMode ? t('license.license_info') : t('license.update_license')}
-        dirty={dialogDirty}
+        readOnly
+        title={t('license.license_info')}
+        dirty={false}
         onClose={() => setDialogOpen(false)}
-        onSave={saveLicense}
+        onSave={() => {}}
       >
-        <TextField
-          label={t('license.license_key')}
-          value={dialogForm.license_key}
-          onChange={(e) => setDialogForm({ ...dialogForm, license_key: e.target.value })}
-          disabled={viewMode}
-          placeholder="XXXX-XXXX-XXXX-XXXX"
-        />
-        <TextField
-          label={t('license.client_name')}
-          value={dialogForm.client_name}
-          onChange={(e) => setDialogForm({ ...dialogForm, client_name: e.target.value })}
-          disabled={viewMode}
-        />
-        <TextField label={t('license.version')} value={license.version || '\u2014'} disabled />
-        <TextField label={t('license.expires')} value={license.expires || '\u2014'} disabled />
-        <TextField label={t('license.routing_connections')} value={`${routingCount} / ${license.max_connections}`} disabled />
-        {license.trial && (
-          <TextField label={t('license.days_remaining')} value={license.days_remaining} disabled />
+        {dialogLicense && (
+          <>
+            <TextField label={t('license.license_key')} value={dialogLicense.license_key} disabled />
+            <TextField label={t('license.client_name')} value={dialogLicense.client_name} disabled />
+            <TextField label={t('license.license_type')} value={licType(dialogLicense)} disabled />
+            <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
+            <TextField label={t('license.expires')} value={dialogLicense.expires || '\u2014'} disabled />
+            <TextField label={t('license.connections')} value={dialogLicense.max_connections} disabled />
+            {dialogLicense.trial && (
+              <TextField label={t('license.days_remaining')} value={dialogLicense.days_remaining} disabled />
+            )}
+            {dialogLicense.server_id && (
+              <TextField label={t('license.server_id')} value={dialogLicense.server_id} disabled />
+            )}
+          </>
         )}
       </FormDialog>
 
@@ -308,6 +399,12 @@ export default function License() {
         title={t('confirm.save_title')} message={t('confirm.save_message')}
         confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
+
+      <ConfirmDialog open={confirmDelete.open} variant="delete"
+        title={t('confirm.delete_title')}
+        message={t('confirm.delete_message', { name: confirmDelete.name })}
+        confirmLabel={t('button.delete')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete({ open: false, name: '', action: null })} />
 
       <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
         <Alert severity={toast.severity}>{toast.message}</Alert>

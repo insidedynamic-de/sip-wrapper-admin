@@ -6,6 +6,7 @@
     "security": "Security",
     "logs": "Logs",
     "profile": "Profile",
+    "monitoring": "Monitoring",
     "license_billing": "License / Billing"
   },
   "auth": {
@@ -29,6 +30,8 @@
     "not_registered": "Not registered", "success": "Success", "error": "Error",
     "loading": "Loading...", "checking": "Checking...", "connected": "Connected",
     "disconnected": "Disconnected", "enabled": "Enabled", "disabled": "Disabled", "deactivated": "Deactivated",
+    "ok": "OK",
+    "warning": "Warning",
     "access_denied": "Access Denied",
     "connection_ok": "Connection OK",
     "connection_failed": "Connection failed"
@@ -38,7 +41,8 @@
     "gateways": "Gateways", "routes": "Routes", "settings": "Settings",
     "outbound_routing": "Outbound Routes", "inbound_routing": "Inbound Routes",
     "user_routing": "User Routes", "default_routes": "Default Routes",
-    "user_outbound_routes": "User Outbound Routes"
+    "user_outbound_routes": "User Outbound Routes",
+    "extension_routes": "Extension Routes"
   },
   "field": {
     "extension": "Extension", "ip_address": "IP Address", "user_agent": "User-Agent",
@@ -47,7 +51,7 @@
     "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
     "register": "Register", "caller_id": "Caller ID", "name": "Name",
     "type": "Type", "actions": "Actions", "user": "User", "gateway": "Gateway",
-    "comment": "Comment", "status": "Status"
+    "comment": "Comment", "status": "Status", "details": "Details"
   },
   "dashboard": {
     "gateway_status": "Gateway Status", "user_registrations": "User Registrations",
@@ -63,7 +67,14 @@
     "failed_calls": "Failed",
     "blocked_ips": "Blocked IPs",
     "extensions_active": "Extensions",
-    "license_status": "License"
+    "license_status": "License",
+    "customize": "Customize Dashboard",
+    "connection": "Connection",
+    "today": "Today",
+    "this_month": "Month",
+    "last_90_days": "90 Days",
+    "last_180_days": "180 Days",
+    "no_call_stats": "No call statistics available"
   },
   "calls": {
     "call_flow": "Connection", "direction": "Direction", "from": "From",
@@ -94,7 +105,9 @@
     "appearance": "Appearance", "theme_mode": "Theme Mode", "color_theme": "Color Theme",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Enable Auto-Logout",
     "auto_logout_timeout": "Timeout (seconds)",
-    "auto_logout_desc": "Automatically logout after inactivity"
+    "auto_logout_desc": "Automatically logout after inactivity",
+    "time_format": "Time Format",
+    "date_format": "Date Format"
   },
   "theme": {
     "light": "Light", "dark": "Dark", "auto": "Auto",
@@ -117,8 +130,20 @@
     "expires": "Expires", "trial_mode": "Trial", "days_remaining": "days remaining",
     "connections": "Connections", "trial_expired_title": "Trial Expired",
     "trial_expired_text": "Your trial period has expired. Please enter a license key to continue using the application.",
-    "nfr": "NFR", "usage": "Usage", "used_of": "{{used}} / {{total}}",
-    "routing_connections": "Routings / Connections"
+    "nfr": "NFR", "standard": "Standard", "usage": "Usage", "used_of": "{{used}} / {{total}}",
+    "routing_connections": "Routings / Connections",
+    "license_type": "License Type",
+    "refresh_license": "Refresh License",
+    "refresh_success": "License refreshed successfully",
+    "refresh_failed": "Failed to refresh license from server",
+    "server_id": "Server ID",
+    "server_mismatch": "This license is bound to a different server. The system will stop working after 14 days. Please contact support.",
+    "total_licenses": "Total Licenses",
+    "demo_keys_title": "Demo License Keys (copy & paste to activate)",
+    "copy_key": "Copy Key",
+    "key_copied": "Key copied to clipboard",
+    "error_duplicate": "This license key is already activated",
+    "error_invalid": "Invalid license key"
   },
   "language": { "language": "Language", "german": "German", "english": "English" },
   "logs": {
@@ -163,7 +188,21 @@
     "jail_name": "Jail Name", "jail_for_sip": "Fail2Ban jail for SIP blocking",
     "save_fail2ban": "Save Fail2Ban Settings", "refresh_status": "Refresh Status",
     "ip_or_cidr": "IP Address or CIDR", "comment_optional": "Comment (optional)",
-    "local_protected": "Localhost (protected — cannot be removed)"
+    "local_protected": "Localhost (protected — cannot be removed)",
+    "external_protected": "External SIP IP (protected — cannot be removed)",
+    "send_to_fail2ban": "Send to Fail2Ban",
+    "send_to_fs_firewall": "Send to SIP Firewall",
+    "fs_firewall": "SIP Firewall",
+    "banned": "Banned",
+    "trust_proxy": "Trust Proxy Headers",
+    "trust_proxy_desc": "Use X-Forwarded-For header to identify real client IP when behind a reverse proxy.",
+    "monitoring": "Monitoring",
+    "auth_monitoring": "Authentication Monitoring",
+    "no_failed_auth": "No failed authentication attempts",
+    "progress": "Progress",
+    "critical": "Critical",
+    "last_attempt": "Last Attempt",
+    "add_acl_user": "Add as ACL User"
   },
   "extension": {
     "extensions": "Extensions",
@@ -184,9 +223,15 @@
     "inbound_routes": "Inbound Routes (DID)",
     "add_inbound": "Add Inbound Route", "did_number": "DID / Phone Number",
     "dest_type": "Destination Type", "add_user_route": "Add User Route",
+    "add_extension_route": "Add Extension Route",
+    "edit_extension_route": "Edit Extension Route",
+    "direction": "Direction",
     "view_table": "Table View", "view_graph": "Graph View",
     "default_route": "Default", "override_route": "Override",
-    "drag_hint": "Drag from handle to handle to create a route \u2022 Click edge to delete"
+    "drag_hint": "Drag from handle to handle to create a route \u2022 Click edge to delete",
+    "type_inbound": "Inbound",
+    "type_outbound": "Outbound",
+    "error_duplicate": "This route already exists (same extension, gateway and direction)"
   },
   "modal": {
     "add_user": "Add User", "edit_user": "Edit User",
@@ -194,7 +239,8 @@
     "add_gateway": "Add Gateway", "edit_gateway": "Edit Gateway",
     "view_user": "View User", "view_acl_user": "View ACL User", "view_gateway": "View Gateway",
     "notification": "Notification", "block_ip_address": "Block IP Address",
-    "allow_ip_address": "Allow IP Address", "multiple_ips_hint": "Multiple IPs separated by |",
+    "allow_ip_address": "Allow IP Address", "edit_whitelist": "Edit Whitelist Entry",
+    "multiple_ips_hint": "Multiple IPs separated by |",
     "select": "-- Select --"
   },
   "confirm": {
@@ -216,7 +262,7 @@
   },
   "validation": {
     "required": "Required field",
-    "invalid_ip": "Must be a valid IP address (e.g. 192.168.1.1)",
+    "invalid_ip": "Must be a valid IPv4 or IPv6 address (e.g. 192.168.1.1 or ::1)",
     "invalid_username": "Only letters, numbers, dots, hyphens, underscores",
     "invalid_extension": "Only digits, *, #, +",
     "min_length": "Minimum {{min}} characters",
@@ -261,6 +307,36 @@
   },
   "table": {
     "search": "Search..."
+  },
+  "monitoring": {
+    "overview": "Overview",
+    "hardware": "Hardware",
+    "cores": "Cores",
+    "threads": "Threads",
+    "temperature": "Temperature",
+    "free": "Free",
+    "storage": "Storage",
+    "network": "Network",
+    "interface": "Interface",
+    "rx_rate": "RX Rate",
+    "tx_rate": "TX Rate",
+    "os": "Operating System",
+    "hostname": "Hostname",
+    "os_name": "OS",
+    "kernel": "Kernel",
+    "arch": "Architecture",
+    "uptime": "Uptime",
+    "board": "Mainboard",
+    "manufacturer": "Manufacturer",
+    "model": "Model",
+    "serial": "Serial Number",
+    "total": "Total",
+    "used": "Used",
+    "usage": "Usage",
+    "mount": "Mount",
+    "fs_type": "File System",
+    "frequency": "Frequency",
+    "security": "Security"
   },
   "demo": {
     "title": "Demo Mode",
