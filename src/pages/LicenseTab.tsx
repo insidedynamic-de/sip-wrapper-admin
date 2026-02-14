@@ -41,6 +41,9 @@ interface AvailableLicense {
   license_name: string;
   max_connections: number;
   valid_until: string;
+  bound_to?: string;
+  server_name?: string;
+  licensed: boolean;
 }
 
 const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003', 'DEMO-PREMSUPPORT-0001'];

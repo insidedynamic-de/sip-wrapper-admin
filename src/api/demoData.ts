@@ -75,6 +75,9 @@ export interface DemoStore {
     license_name: string;
     max_connections: number;
     valid_until: string;
+    bound_to?: string;
+    server_name?: string;
+    licensed: boolean;
   }[];
   auditLog: AuditEntry[];
   systemInfo: SystemInfo;
@@ -264,11 +267,13 @@ const SEED_DATA: DemoStore = {
     { license_key: 'DEMO-0000-0000-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
   ],
   available_licenses: [
-    { license_key: 'DEMO-0000-0000-0002', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31' },
-    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 8, valid_until: '2026-12-31' },
-    { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support', max_connections: 0, valid_until: '2026-12-31' },
-    { license_key: 'DEMO-VAPI-0001', product: 'Linkify', subproduct: 'VAPI Integration', license_name: 'VAPI', max_connections: 0, valid_until: '2026-12-31' },
-    { license_key: 'DEMO-ODOO-0001', product: 'Linkify', subproduct: 'Odoo Integration', license_name: 'Odoo', max_connections: 0, valid_until: '2026-12-31' },
+    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31', bound_to: 'srv-a1b2c3d4', server_name: 'sip-wrapper-prod', licensed: true },
+    { license_key: 'DEMO-0000-0000-0002', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31', licensed: false },
+    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 8, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true },
+    { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support', max_connections: 0, valid_until: '2026-12-31', licensed: false },
+    { license_key: 'DEMO-VAPI-0001', product: 'Linkify', subproduct: 'VAPI Integration', license_name: 'VAPI', max_connections: 0, valid_until: '2026-12-31', licensed: false },
+    { license_key: 'DEMO-ODOO-0001', product: 'Linkify', subproduct: 'Odoo Integration', license_name: 'Odoo', max_connections: 0, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true },
+    { license_key: 'DEMO-RETELL-0001', product: 'Linkify', subproduct: 'Retell Integration', license_name: 'Retell', max_connections: 0, valid_until: '2026-12-31', licensed: false },
   ],
   company: {
     company_name: 'Demo Ltd',
