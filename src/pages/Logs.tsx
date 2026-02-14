@@ -17,11 +17,12 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import PhoneIcon from '@mui/icons-material/Phone';
 import ShieldIcon from '@mui/icons-material/Shield';
+import PersonIcon from '@mui/icons-material/Person';
 import api from '../api/client';
 import SearchableSelect from '../components/SearchableSelect';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { formatDateTime } from '../store/preferences';
-import type { ESLEvent, ESLStatus, CallLog, SecurityLog, Gateway, User, Extension, Route } from '../api/types';
+import type { ESLEvent, ESLStatus, CallLog, SecurityLog, Gateway, User, Extension, Route, AuditEntry, AuditCategory } from '../api/types';
 
 const LEVEL_COLORS: Record<string, 'info' | 'warning' | 'error' | 'default' | 'success'> = {
   info: 'info', warning: 'warning', error: 'error', debug: 'default',
@@ -38,7 +39,14 @@ function formatDuration(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-const LOG_TAB_IDS = ['system', 'calls', 'security'];
+const LOG_TAB_IDS = ['system', 'calls', 'security', 'audit'];
+
+const AUDIT_CATEGORIES: AuditCategory[] = ['auth', 'user', 'gateway', 'route', 'security', 'config', 'license', 'system'];
+
+const CATEGORY_COLORS: Record<AuditCategory, 'info' | 'success' | 'warning' | 'error' | 'default' | 'primary' | 'secondary'> = {
+  auth: 'info', user: 'success', gateway: 'primary', route: 'secondary',
+  security: 'error', config: 'warning', license: 'default', system: 'default',
+};
 
 function tabFromHash(hash: string): number {
   if (!hash) return 0;
@@ -83,6 +91,14 @@ export default function Logs() {
   const [secPage, setSecPage] = useState(0);
   const [secRowsPerPage, setSecRowsPerPage] = useState(25);
 
+  // Audit logs
+  const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
+  const [auditTotal, setAuditTotal] = useState(0);
+  const [auditFilter, setAuditFilter] = useState('');
+  const [auditPage, setAuditPage] = useState(0);
+  const [auditRowsPerPage, setAuditRowsPerPage] = useState(25);
+  const [auditCategory, setAuditCategory] = useState<AuditCategory | ''>('');
+
   // Context data for enriching call logs
   const [gwList, setGwList] = useState<Gateway[]>([]);
   const [userList, setUserList] = useState<User[]>([]);
@@ -123,6 +139,17 @@ export default function Logs() {
     } catch { /* ignore */ }
   }, []);
 
+  const loadAudit = useCallback(async () => {
+    try {
+      const params: Record<string, unknown> = { limit: auditRowsPerPage, offset: auditPage * auditRowsPerPage };
+      if (auditCategory) params.category = auditCategory;
+      if (auditFilter) params.search = auditFilter;
+      const res = await api.get('/audit', { params });
+      setAuditLogs(res.data?.entries || []);
+      setAuditTotal(res.data?.total || 0);
+    } catch { /* ignore */ }
+  }, [auditRowsPerPage, auditPage, auditCategory, auditFilter]);
+
   const loadContext = useCallback(async () => {
     try {
       const [gwRes, uRes, eRes, rRes] = await Promise.all([
@@ -135,7 +162,7 @@ export default function Logs() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { loadEsl(); loadCalls(); loadSecurity(); loadContext(); }, [loadEsl, loadCalls, loadSecurity, loadContext]);
+  useEffect(() => { loadEsl(); loadCalls(); loadSecurity(); loadAudit(); loadContext(); }, [loadEsl, loadCalls, loadSecurity, loadAudit, loadContext]);
   useAutoRefresh(loadEsl, 3000);
 
   // Resolve extension number to "username (extension)" or "extension — description"
@@ -203,6 +230,7 @@ export default function Logs() {
         <Tab icon={<TerminalIcon />} iconPosition="start" label={t('logs.tab_system')} />
         <Tab icon={<PhoneIcon />} iconPosition="start" label={t('logs.tab_calls')} />
         <Tab icon={<ShieldIcon />} iconPosition="start" label={t('logs.tab_security')} />
+        <Tab icon={<PersonIcon />} iconPosition="start" label={t('logs.tab_audit')} />
       </Tabs>
 
       {/* System Logs (ESL) */}
@@ -408,7 +436,7 @@ export default function Logs() {
         </>
       )}
 
-      {/* Security Logs */}
+      {/* Security Logs (tab index shifted: was 2, now 2) */}
       {tab === 2 && (
         <>
           <Box sx={{ mb: 2 }}>
@@ -467,6 +495,109 @@ export default function Logs() {
                     onPageChange={(_, p) => setSecPage(p)}
                     rowsPerPage={secRowsPerPage}
                     onRowsPerPageChange={(e) => { setSecRowsPerPage(parseInt(e.target.value, 10)); setSecPage(0); }}
+                    rowsPerPageOptions={[10, 25, 50, 100]}
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+      {/* Audit / User Actions */}
+      {tab === 3 && (
+        <>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
+            <TextField
+              size="small"
+              placeholder={t('logs.search')}
+              value={auditFilter}
+              onChange={(e) => { setAuditFilter(e.target.value); setAuditPage(0); }}
+              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
+              sx={{ width: 300 }}
+            />
+            <SearchableSelect
+              options={[
+                { label: t('logs.level_all'), value: '' },
+                ...AUDIT_CATEGORIES.map((c) => ({ label: t(`audit.cat_${c}`), value: c })),
+              ]}
+              value={auditCategory}
+              onChange={(v) => { setAuditCategory(v as AuditCategory | ''); setAuditPage(0); }}
+              label={t('audit.category')}
+            />
+          </Box>
+
+          {/* Category chips */}
+          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+            <Chip
+              label={t('logs.level_all')}
+              size="small"
+              variant={auditCategory === '' ? 'filled' : 'outlined'}
+              color={auditCategory === '' ? 'primary' : 'default'}
+              onClick={() => { setAuditCategory(''); setAuditPage(0); }}
+            />
+            {AUDIT_CATEGORIES.map((cat) => (
+              <Chip
+                key={cat}
+                label={t(`audit.cat_${cat}`)}
+                size="small"
+                variant={auditCategory === cat ? 'filled' : 'outlined'}
+                color={auditCategory === cat ? CATEGORY_COLORS[cat] : 'default'}
+                onClick={() => { setAuditCategory(auditCategory === cat ? '' : cat); setAuditPage(0); }}
+              />
+            ))}
+          </Box>
+
+          <Card>
+            <CardContent sx={{ p: 0 }}>
+              {auditLogs.length === 0 ? (
+                <Box sx={{ p: 3 }}>
+                  <Typography color="text.secondary">{t('audit.no_entries')}</Typography>
+                </Box>
+              ) : (
+                <>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
+                          <TableCell sx={{ width: 100 }}>{t('audit.category')}</TableCell>
+                          <TableCell sx={{ width: 120 }}>{t('audit.action')}</TableCell>
+                          <TableCell sx={{ width: 80 }}>{t('field.user')}</TableCell>
+                          <TableCell sx={{ width: 130 }}>{t('field.ip_address')}</TableCell>
+                          <TableCell sx={{ width: 130 }}>{t('audit.hostname')}</TableCell>
+                          <TableCell>{t('field.details')}</TableCell>
+                          <TableCell sx={{ width: 70 }}>{t('field.status')}</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {auditLogs.map((a) => (
+                          <TableRow key={a.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                            <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
+                              {formatDateTime(a.timestamp)}
+                            </TableCell>
+                            <TableCell>
+                              <Chip size="small" label={t(`audit.cat_${a.category}`)} color={CATEGORY_COLORS[a.category] || 'default'} />
+                            </TableCell>
+                            <TableCell sx={{ fontSize: 12, fontWeight: 500 }}>{a.action}</TableCell>
+                            <TableCell sx={{ fontSize: 12 }}>{a.user}</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{a.ip}</TableCell>
+                            <TableCell sx={{ fontSize: 12 }}>{a.hostname}</TableCell>
+                            <TableCell sx={{ fontSize: 12 }}>{a.details}</TableCell>
+                            <TableCell>
+                              <Chip size="small" label={a.success ? 'OK' : t('status.error')} color={a.success ? 'success' : 'error'} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                  <TablePagination
+                    component="div"
+                    count={auditTotal}
+                    page={auditPage}
+                    onPageChange={(_, p) => setAuditPage(p)}
+                    rowsPerPage={auditRowsPerPage}
+                    onRowsPerPageChange={(e) => { setAuditRowsPerPage(parseInt(e.target.value, 10)); setAuditPage(0); }}
                     rowsPerPageOptions={[10, 25, 50, 100]}
                   />
                 </>

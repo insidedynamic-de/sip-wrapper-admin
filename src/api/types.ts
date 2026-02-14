@@ -160,6 +160,21 @@ export interface SecurityLog {
   level: 'info' | 'warning' | 'error';
 }
 
+export type AuditCategory = 'auth' | 'user' | 'gateway' | 'route' | 'security' | 'config' | 'license' | 'system';
+
+export interface AuditEntry {
+  id: string;
+  timestamp: string;
+  action: string;
+  category: AuditCategory;
+  user: string;
+  ip: string;
+  hostname: string;
+  user_agent: string;
+  details: string;
+  success: boolean;
+}
+
 export interface VersionInfo {
   version: string;
   git_commit: string | null;

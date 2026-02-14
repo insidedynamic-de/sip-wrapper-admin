@@ -7,6 +7,7 @@ import type {
   InboundRoute, OutboundRoute, UserRoute, RouteDefaults,
   BlacklistEntry, WhitelistEntry, ESLEvent, ESLStatus,
   CallLog, SecurityLog, Extension, CallStatEntry, SystemInfo,
+  AuditEntry,
 } from './types';
 
 const DEMO_STORAGE_KEY = 'sip-wrapper-demo-data';
@@ -65,6 +66,7 @@ export interface DemoStore {
     invoice_address: string;
     invoice_email: string;
   };
+  auditLog: AuditEntry[];
   systemInfo: SystemInfo;
   session: {
     active: boolean;
@@ -266,6 +268,29 @@ const SEED_DATA: DemoStore = {
     invoice_address: 'Musterstrasse 1, 12345 Musterstadt',
     invoice_email: 'billing@demo-ltd.de',
   },
+  // ── Audit Log (user actions) ──
+  auditLog: [
+    { id: 'a01', timestamp: new Date(Date.now() - 300000).toISOString(), action: 'login', category: 'auth', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Admin login from WORKSTATION-01', success: true },
+    { id: 'a02', timestamp: new Date(Date.now() - 600000).toISOString(), action: 'create', category: 'user', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Created SIP user: hans', success: true },
+    { id: 'a03', timestamp: new Date(Date.now() - 900000).toISOString(), action: 'update', category: 'gateway', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Updated gateway: sipgate', success: true },
+    { id: 'a04', timestamp: new Date(Date.now() - 1200000).toISOString(), action: 'enable', category: 'route', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Enabled route: 1001 → sipgate (inbound)', success: true },
+    { id: 'a05', timestamp: new Date(Date.now() - 1800000).toISOString(), action: 'config_apply', category: 'config', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Configuration applied and reloaded', success: true },
+    { id: 'a06', timestamp: new Date(Date.now() - 3600000).toISOString(), action: 'login_failed', category: 'auth', user: 'unknown', ip: '10.0.0.55', hostname: 'unknown', user_agent: 'curl/7.88.1', details: 'Invalid API key', success: false },
+    { id: 'a07', timestamp: new Date(Date.now() - 3700000).toISOString(), action: 'login_failed', category: 'auth', user: 'unknown', ip: '10.0.0.55', hostname: 'unknown', user_agent: 'curl/7.88.1', details: 'Invalid API key', success: false },
+    { id: 'a08', timestamp: new Date(Date.now() - 7200000).toISOString(), action: 'license_activate', category: 'license', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Activated license: DEMO-0000-0000-0001', success: true },
+    { id: 'a09', timestamp: new Date(Date.now() - 10800000).toISOString(), action: 'create', category: 'security', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Added to blacklist: 45.134.26.0/24', success: true },
+    { id: 'a10', timestamp: new Date(Date.now() - 14400000).toISOString(), action: 'config_export', category: 'config', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Configuration exported to file', success: true },
+    { id: 'a11', timestamp: new Date(Date.now() - 21600000).toISOString(), action: 'login', category: 'auth', user: 'admin', ip: '192.168.1.200', hostname: 'LAPTOP-02', user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605', details: 'Admin login from LAPTOP-02', success: true },
+    { id: 'a12', timestamp: new Date(Date.now() - 28800000).toISOString(), action: 'delete', category: 'user', user: 'admin', ip: '192.168.1.200', hostname: 'LAPTOP-02', user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605', details: 'Deleted SIP user: testuser', success: true },
+    { id: 'a13', timestamp: new Date(Date.now() - 36000000).toISOString(), action: 'disable', category: 'route', user: 'admin', ip: '192.168.1.200', hostname: 'LAPTOP-02', user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605', details: 'Disabled route: 1005 → plivo-ai (inbound)', success: true },
+    { id: 'a14', timestamp: new Date(Date.now() - 43200000).toISOString(), action: 'logout', category: 'auth', user: 'admin', ip: '192.168.1.200', hostname: 'LAPTOP-02', user_agent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605', details: 'Manual logout', success: true },
+    { id: 'a15', timestamp: new Date(Date.now() - 50400000).toISOString(), action: 'login_force', category: 'auth', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Force login, previous session from 192.168.1.200', success: true },
+    { id: 'a16', timestamp: new Date(Date.now() - 57600000).toISOString(), action: 'update', category: 'user', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Updated SIP user: alice (changed caller_id)', success: true },
+    { id: 'a17', timestamp: new Date(Date.now() - 64800000).toISOString(), action: 'create', category: 'route', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Created route: bob → telekom (outbound)', success: true },
+    { id: 'a18', timestamp: new Date(Date.now() - 72000000).toISOString(), action: 'config_import', category: 'config', user: 'admin', ip: '192.168.1.100', hostname: 'WORKSTATION-01', user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120', details: 'Configuration imported from file', success: true },
+    { id: 'a19', timestamp: new Date(Date.now() - 86400000).toISOString(), action: 'login', category: 'auth', user: 'admin', ip: '10.10.0.50', hostname: 'VPN-CLIENT', user_agent: 'Mozilla/5.0 (Linux; Android 14) Mobile', details: 'Admin login from VPN-CLIENT', success: true },
+    { id: 'a20', timestamp: new Date(Date.now() - 90000000).toISOString(), action: 'logout_auto', category: 'auth', user: 'admin', ip: '10.10.0.50', hostname: 'VPN-CLIENT', user_agent: 'Mozilla/5.0 (Linux; Android 14) Mobile', details: 'Auto-logout after 300s inactivity', success: true },
+  ],
   // ── System Info (monitoring) ──
   systemInfo: {
     cpu: {

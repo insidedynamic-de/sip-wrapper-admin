@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docker:build": "docker build -t sip-wrapper-admin .",
+    "docker:tag": "docker tag sip-wrapper-admin ghcr.io/insidedynamic-de/sip-wrapper-admin:latest",
+    "docker:push": "docker push ghcr.io/insidedynamic-de/sip-wrapper-admin:latest"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

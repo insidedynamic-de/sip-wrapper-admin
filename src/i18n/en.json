@@ -156,6 +156,7 @@
     "tab_system": "System Logs",
     "tab_calls": "Call Logs",
     "tab_security": "Security Logs",
+    "tab_audit": "User Actions",
     "no_calls": "No call records",
     "no_security": "No security events",
     "call_result_answered": "Answered",
@@ -339,6 +340,20 @@
     "fs_type": "File System",
     "frequency": "Frequency",
     "security": "Security"
+  },
+  "audit": {
+    "category": "Category",
+    "action": "Action",
+    "hostname": "Hostname",
+    "no_entries": "No user actions recorded",
+    "cat_auth": "Auth",
+    "cat_user": "Users",
+    "cat_gateway": "Gateways",
+    "cat_route": "Routes",
+    "cat_security": "Security",
+    "cat_config": "Config",
+    "cat_license": "License",
+    "cat_system": "System"
   },
   "demo": {
     "title": "Demo Mode",

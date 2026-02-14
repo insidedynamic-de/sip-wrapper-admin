@@ -54,6 +54,7 @@ Defined in `src/api/demoData.ts`. Top-level fields:
 | `eslStatus` | `ESLStatus` | ESL connection status |
 | `callLogs` | `CallLog[]` | Historical call records |
 | `securityLogs` | `SecurityLog[]` | Security event log |
+| `auditLog` | `AuditEntry[]` | Admin action audit trail (login, CRUD, config changes) |
 | `settings` | `Record<string, unknown>` | FreeSWITCH settings (domain, ports, codecs) |
 | `licenses` | `LicenseEntry[]` | Multi-license array |
 | `company` | `object` | Company contact info |
@@ -209,6 +210,13 @@ All endpoints are under `/api/v1/` (stripped by adapter). Response format: `{ su
 |--------|-----|------|----------|
 | PUT | `/profile/company` | Partial company | `ok()` |
 
+### Audit Log
+| Method | URL | Params | Response |
+|--------|-----|--------|----------|
+| GET | `/audit` | `?category=auth&search=...&limit=50&offset=0` | `{ entries: AuditEntry[], total }` |
+
+Supported query params: `category` (auth/user/gateway/route/security/config/license/system), `action`, `success` (true/false), `search` (full-text in details/ip/hostname/user/action), `limit`, `offset`. Results sorted newest-first.
+
 ### System Info (Monitoring)
 | Method | URL | Response |
 |--------|-----|----------|
@@ -282,7 +290,7 @@ All interfaces in `src/api/types.ts`:
 | **Configuration > License** | `/license`, `/license/:key`, `/license/refresh`, `/routes` (for routing count) |
 | **Routes** | `/routes`, `/routes/defaults`, `/routes/inbound/*`, `/routes/user/*`, `/gateways`, `/gateways/status`, `/extensions`, `/users`, `/registrations`, `/license` (for limit enforcement) |
 | **Monitoring** | `/system/info`, `/logs/security`, `/acl-users` |
-| **Logs** | `/esl/events`, `/esl/start`, `/esl/stop`, `/esl/clear`, `/logs/calls`, `/logs/call-stats`, `/logs/security` |
+| **Logs** | `/esl/events`, `/esl/start`, `/esl/stop`, `/esl/clear`, `/logs/calls`, `/logs/call-stats`, `/logs/security`, `/audit` |
 | **Profile > Billing** | `/company`, `/invoice`, `/config/apply` |
 | **Login** | `/auth/login`, `/auth/logout` |
 

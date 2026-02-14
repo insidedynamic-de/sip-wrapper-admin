@@ -438,6 +438,30 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     return mock(store.securityLogs, config);
   }
 
+  // ── Audit Log ──
+  if (url === '/audit' && method === 'get') {
+    let entries = store.auditLog || [];
+    const params = config.params || {};
+    if (params.category) entries = entries.filter((e) => e.category === params.category);
+    if (params.action) entries = entries.filter((e) => e.action === params.action);
+    if (params.success !== undefined && params.success !== '') entries = entries.filter((e) => e.success === (params.success === 'true'));
+    if (params.search) {
+      const q = String(params.search).toLowerCase();
+      entries = entries.filter((e) =>
+        e.details.toLowerCase().includes(q) || e.ip.toLowerCase().includes(q) ||
+        e.hostname.toLowerCase().includes(q) || e.user.toLowerCase().includes(q) ||
+        e.action.toLowerCase().includes(q),
+      );
+    }
+    // Sort newest first
+    entries = [...entries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    const total = entries.length;
+    const offset = Number(params.offset) || 0;
+    const limit = Number(params.limit) || 50;
+    entries = entries.slice(offset, offset + limit);
+    return mock({ entries, total }, config);
+  }
+
   // ── Settings ──
   if (url === '/settings' && method === 'get') {
     return mock(store.settings, config);

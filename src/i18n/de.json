@@ -156,6 +156,7 @@
     "tab_system": "System-Logs",
     "tab_calls": "Anruf-Logs",
     "tab_security": "Sicherheits-Logs",
+    "tab_audit": "Benutzeraktionen",
     "no_calls": "Keine Anrufe aufgezeichnet",
     "no_security": "Keine Sicherheitsereignisse",
     "call_result_answered": "Angenommen",
@@ -339,6 +340,20 @@
     "fs_type": "Dateisystem",
     "frequency": "Frequenz",
     "security": "Sicherheit"
+  },
+  "audit": {
+    "category": "Kategorie",
+    "action": "Aktion",
+    "hostname": "Hostname",
+    "no_entries": "Keine Benutzeraktionen aufgezeichnet",
+    "cat_auth": "Auth",
+    "cat_user": "Benutzer",
+    "cat_gateway": "Gateways",
+    "cat_route": "Routen",
+    "cat_security": "Sicherheit",
+    "cat_config": "Konfiguration",
+    "cat_license": "Lizenz",
+    "cat_system": "System"
   },
   "demo": {
     "title": "Demo-Modus",

@@ -1,0 +1,13 @@
+services:
+  admin:
+    image: ${DOCKER_IMAGE:-ghcr.io/insidedynamic-de/sip-wrapper-admin:latest}
+    container_name: sip-wrapper-admin
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
