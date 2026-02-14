@@ -546,8 +546,13 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
       };
       store.licenses = [...(store.licenses || []), newLic];
     }
-    // Remove from available_licenses if it was there
-    store.available_licenses = (store.available_licenses || []).filter((a) => a.license_key !== key);
+    // Mark as bound in available_licenses (don't remove — it stays in the full list)
+    const availEntry = (store.available_licenses || []).find((a) => a.license_key === key);
+    if (availEntry) {
+      availEntry.bound_to = 'srv-a1b2c3d4';
+      availEntry.server_name = 'sip-wrapper-prod';
+      availEntry.licensed = true;
+    }
     saveDemoStore(store);
     return mock(ok(), config);
   }
@@ -567,19 +572,13 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   {
     const m = matchPath('/license/:key', url);
     if (m && method === 'delete') {
-      const removed = (store.licenses || []).find((l) => l.license_key === m.key);
       store.licenses = (store.licenses || []).filter((l) => l.license_key !== m.key);
-      // Return license to available pool
-      if (removed) {
-        if (!store.available_licenses) store.available_licenses = [];
-        store.available_licenses.push({
-          license_key: removed.license_key,
-          product: removed.product,
-          subproduct: removed.subproduct,
-          license_name: removed.license_name,
-          max_connections: removed.max_connections,
-          valid_until: removed.valid_until,
-        });
+      // Unbind in available_licenses pool
+      const availEntry = (store.available_licenses || []).find((a) => a.license_key === m.key);
+      if (availEntry) {
+        availEntry.bound_to = undefined;
+        availEntry.server_name = undefined;
+        availEntry.licensed = false;
       }
       saveDemoStore(store);
       return mock(ok(), config);

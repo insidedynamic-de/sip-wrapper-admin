@@ -85,7 +85,9 @@ export default function LicenseTab() {
       setLicenses(data.licenses || []);
       setTotalConnections(data.total_connections || 0);
       setServerId(data.server_id || '');
-      setAvailableLicenses(availRes.data || []);
+      // Only show licenses that are not bound to any server (free to install)
+      const all: AvailableLicense[] = availRes.data || [];
+      setAvailableLicenses(all.filter((a) => !a.bound_to && !a.licensed));
       // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {

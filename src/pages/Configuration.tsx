@@ -9,6 +9,7 @@ import RouterIcon from '@mui/icons-material/Router';
 import ShieldIcon from '@mui/icons-material/Shield';
 import SettingsIcon from '@mui/icons-material/Settings';
 import BadgeIcon from '@mui/icons-material/Badge';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import { TabView } from '../components/TabView';
 import type { TabItemConfig } from '../components/TabView';
 import Users from './Users';
@@ -16,6 +17,7 @@ import Gateways from './Gateways';
 import Security from './Security';
 import SystemSettings from './SystemSettings';
 import LicenseTab from './LicenseTab';
+import AllLicensesTab from './AllLicensesTab';
 
 export default function Configuration() {
   const { t } = useTranslation();
@@ -26,6 +28,7 @@ export default function Configuration() {
     { id: 'security', label: t('nav.security'),     icon: <ShieldIcon />,  content: <Security /> },
     { id: 'settings', label: t('section.settings'), icon: <SettingsIcon />, content: <SystemSettings /> },
     { id: 'license',  label: t('license.license'),  icon: <BadgeIcon />,   content: <LicenseTab /> },
+    { id: 'all-licenses', label: t('license.all_licenses'), icon: <ViewListIcon />, content: <AllLicensesTab /> },
   ];
 
   return (

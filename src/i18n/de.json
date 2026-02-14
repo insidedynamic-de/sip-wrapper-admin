@@ -164,7 +164,11 @@
     "install": "Installieren",
     "install_title": "Lizenz installieren?",
     "install_message": "Lizenz {{name}} auf diesem Server installieren?",
-    "no_available": "Alle erworbenen Lizenzen sind bereits auf diesem Server installiert."
+    "no_available": "Alle erworbenen Lizenzen sind bereits auf diesem Server installiert.",
+    "all_licenses": "Alle Lizenzen",
+    "all_licenses_hint": "Übersicht aller erworbenen Lizenzen über alle Server hinweg. Lizenzen können über den Lizenz-Tab auf einem Server installiert werden.",
+    "installed_on": "Installiert auf",
+    "not_installed": "Nicht installiert"
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {
