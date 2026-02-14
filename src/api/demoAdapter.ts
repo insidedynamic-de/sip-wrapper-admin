@@ -484,6 +484,9 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   }
 
   // ── License (multi-license CRUD) ──
+  if (url === '/license/available' && method === 'get') {
+    return mock(store.available_licenses || [], config);
+  }
   if (url === '/license' && method === 'get') {
     const lics = store.licenses || [];
     const totalConn = lics.reduce((s, l) => s + (l.licensed ? l.max_connections : 0), 0);
@@ -497,7 +500,7 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     }, config);
   }
   if (url === '/license' && method === 'put') {
-    // Activate a license key — only accept known demo keys
+    // Activate a license key — accept known demo keys or keys from available_licenses
     const key = String(body.license_key || '');
     if (!key) return mockError({ success: false, message: 'No key provided' }, config, 400);
     const existing = (store.licenses || []).find((l) => l.license_key === key);
@@ -508,8 +511,12 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
       'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
       'DEMO-0000-0000-0003': { connections: 8, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
       'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support' },
+      'DEMO-VAPI-0001': { connections: 0, product: 'Linkify', subproduct: 'VAPI Integration', license_name: 'VAPI' },
+      'DEMO-ODOO-0001': { connections: 0, product: 'Linkify', subproduct: 'Odoo Integration', license_name: 'Odoo' },
     };
-    const keyInfo = VALID_DEMO_KEYS[key];
+    // Also check available_licenses as a source of valid keys
+    const avail = (store.available_licenses || []).find((a) => a.license_key === key);
+    const keyInfo = VALID_DEMO_KEYS[key] || (avail ? { connections: avail.max_connections, product: avail.product, subproduct: avail.subproduct, license_name: avail.license_name } : null);
     if (!keyInfo) return mockError({ success: false, message: 'license_invalid' }, config, 400);
     if (existing) {
       // Reactivate deactivated license
@@ -539,6 +546,8 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
       };
       store.licenses = [...(store.licenses || []), newLic];
     }
+    // Remove from available_licenses if it was there
+    store.available_licenses = (store.available_licenses || []).filter((a) => a.license_key !== key);
     saveDemoStore(store);
     return mock(ok(), config);
   }
@@ -558,7 +567,20 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   {
     const m = matchPath('/license/:key', url);
     if (m && method === 'delete') {
+      const removed = (store.licenses || []).find((l) => l.license_key === m.key);
       store.licenses = (store.licenses || []).filter((l) => l.license_key !== m.key);
+      // Return license to available pool
+      if (removed) {
+        if (!store.available_licenses) store.available_licenses = [];
+        store.available_licenses.push({
+          license_key: removed.license_key,
+          product: removed.product,
+          subproduct: removed.subproduct,
+          license_name: removed.license_name,
+          max_connections: removed.max_connections,
+          valid_until: removed.valid_until,
+        });
+      }
       saveDemoStore(store);
       return mock(ok(), config);
     }

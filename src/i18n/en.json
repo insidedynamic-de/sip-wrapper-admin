@@ -158,7 +158,13 @@
     "deactivate_title": "Deactivate License?",
     "deactivate_message": "Are you sure you want to deactivate license \"{{name}}\"? The license will be unbound from this server and can be reactivated later.",
     "deactivate_success": "License deactivated successfully",
-    "error_already_deactivated": "This license is already deactivated"
+    "error_already_deactivated": "This license is already deactivated",
+    "available_licenses": "Available Licenses",
+    "available_hint": "These licenses are purchased but not yet installed on this server. Click + to install.",
+    "install": "Install",
+    "install_title": "Install License?",
+    "install_message": "Install license {{name}} on this server?",
+    "no_available": "All purchased licenses are already installed on this server."
   },
   "language": { "language": "Language", "german": "German", "english": "English" },
   "logs": {
@@ -317,7 +323,14 @@
     "not_found_subtitle": "Page Not Found",
     "not_found_message": "Sorry, the page you're looking for doesn't exist or has been moved.",
     "go_back": "Go Back",
-    "go_home": "Go to Dashboard"
+    "go_home": "Go to Dashboard",
+    "boundary_title": "Something went wrong",
+    "boundary_message": "An unexpected error occurred on this page. You can try reloading or navigate to another page.",
+    "show_details": "Show Details",
+    "hide_details": "Hide Details",
+    "reload": "Reload Page",
+    "send_report": "Send Report",
+    "go_dashboard": "Go to Dashboard"
   },
   "tabs": {
     "move_left": "Move left",

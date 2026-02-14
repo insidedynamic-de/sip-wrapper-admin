@@ -6,10 +6,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, TextField, Button, Chip,
-  IconButton, Tooltip,
+  IconButton, Tooltip, Alert,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
@@ -33,6 +34,15 @@ interface LicenseEntry {
   bound_to?: string;
 }
 
+interface AvailableLicense {
+  license_key: string;
+  product: string;
+  subproduct: string;
+  license_name: string;
+  max_connections: number;
+  valid_until: string;
+}
+
 const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003', 'DEMO-PREMSUPPORT-0001'];
 
 export default function LicenseTab() {
@@ -40,6 +50,7 @@ export default function LicenseTab() {
   const demo = isDemoMode();
 
   const [licenses, setLicenses] = useState<LicenseEntry[]>([]);
+  const [availableLicenses, setAvailableLicenses] = useState<AvailableLicense[]>([]);
   const [totalConnections, setTotalConnections] = useState(0);
   const [routingCount, setRoutingCount] = useState(0);
   const [serverId, setServerId] = useState('');
@@ -62,14 +73,16 @@ export default function LicenseTab() {
 
   const load = useCallback(async () => {
     try {
-      const [licRes, routeRes] = await Promise.all([
+      const [licRes, routeRes, availRes] = await Promise.all([
         api.get('/license'),
         api.get('/routes'),
+        api.get('/license/available'),
       ]);
       const data = licRes.data || {};
       setLicenses(data.licenses || []);
       setTotalConnections(data.total_connections || 0);
       setServerId(data.server_id || '');
+      setAvailableLicenses(availRes.data || []);
       // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {
@@ -185,6 +198,37 @@ export default function LicenseTab() {
     });
   };
 
+  // Install available license
+  const [confirmInstall, setConfirmInstall] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
+
+  const requestInstall = (al: AvailableLicense) => {
+    setConfirmInstall({
+      open: true,
+      name: `${al.license_name} (${al.license_key})`,
+      action: async () => {
+        try {
+          await api.put('/license', { license_key: al.license_key });
+          showToast(t('status.success'), true);
+          load();
+          notifyLicenseChanged();
+        } catch (err: unknown) {
+          const resp = (err as { response?: { data?: { message?: string } } })?.response?.data;
+          const msgKey = resp?.message;
+          if (msgKey === 'license_duplicate') {
+            showToast(t('license.error_duplicate'), false);
+          } else {
+            showToast(t('status.error'), false);
+          }
+        }
+      },
+    });
+  };
+  const handleConfirmInstall = async () => {
+    const a = confirmInstall.action;
+    setConfirmInstall({ open: false, name: '', action: null });
+    if (a) await a();
+  };
+
   // Confirm handlers
   const handleConfirmSave = async () => {
     const a = confirmSave.action;
@@ -253,6 +297,58 @@ export default function LicenseTab() {
             </Box>
           </CardContent>
         </Card>
+      )}
+
+      {/* Available licenses */}
+      {availableLicenses.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>
+            {t('license.available_licenses')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('license.available_hint')}
+          </Typography>
+          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr 1fr' }, gap: 2 }}>
+            {availableLicenses.map((al) => (
+              <Card key={al.license_key} variant="outlined" sx={{ transition: 'box-shadow 0.2s', '&:hover': { boxShadow: 4 } }}>
+                <CardContent sx={{ pb: '8px !important', pt: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                    <Chip size="small" label={al.license_name} color="primary" />
+                    <Tooltip title={t('license.install')}>
+                      <IconButton size="small" color="success" onClick={() => requestInstall(al)}>
+                        <AddCircleOutlineIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12, color: 'text.secondary', mb: 0.5 }}>
+                    {al.license_key}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {al.product} / {al.subproduct}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', gap: 2, mt: 0.5 }}>
+                    {al.max_connections > 0 && (
+                      <Typography variant="caption" color="text.secondary">
+                        {t('license.connections')}: <strong>{al.max_connections}</strong>
+                      </Typography>
+                    )}
+                    <Typography variant="caption" color="text.secondary">
+                      {t('license.valid_until')}: {al.valid_until}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {availableLicenses.length === 0 && licenses.length > 0 && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          {t('license.no_available')}
+        </Alert>
       )}
 
       {/* Licenses table */}
@@ -347,6 +443,12 @@ export default function LicenseTab() {
         message={t('license.deactivate_message', { name: confirmDeactivate.name })}
         confirmLabel={t('license.deactivate')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmDeactivate} onCancel={() => setConfirmDeactivate({ open: false, name: '', action: null })} />
+
+      <ConfirmDialog open={confirmInstall.open} variant="save"
+        title={t('license.install_title')}
+        message={t('license.install_message', { name: confirmInstall.name })}
+        confirmLabel={t('license.install')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmInstall} onCancel={() => setConfirmInstall({ open: false, name: '', action: null })} />
 
       <ConfirmDialog open={confirmDelete.open} variant="delete"
         title={t('confirm.delete_title')}

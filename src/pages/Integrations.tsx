@@ -53,7 +53,7 @@ export default function Integrations() {
       const res = await api.get('/license');
       const lics: LicenseEntry[] = res.data?.licenses || [];
       const names = lics
-        .filter((l) => l.licensed)
+        .filter((l) => l.licensed && l.license_name)
         .map((l) => l.license_name);
       setLicenseNames(names);
     } catch { /* ignore */ }
@@ -67,7 +67,7 @@ export default function Integrations() {
   }, [load]);
 
   const hasLicense = (integ: Integration) =>
-    licenseNames.some((n) => n.toLowerCase() === integ.requiredLicense.toLowerCase());
+    licenseNames.some((n) => n && n.toLowerCase() === integ.requiredLicense.toLowerCase());
 
   const openDetail = (integ: Integration) => {
     setSelectedInteg(integ);

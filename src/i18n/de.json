@@ -158,7 +158,13 @@
     "deactivate_title": "Lizenz deaktivieren?",
     "deactivate_message": "Möchten Sie die Lizenz \"{{name}}\" wirklich deaktivieren? Die Lizenz wird von diesem Server abgemeldet und kann später wieder aktiviert werden.",
     "deactivate_success": "Lizenz erfolgreich deaktiviert",
-    "error_already_deactivated": "Diese Lizenz ist bereits deaktiviert"
+    "error_already_deactivated": "Diese Lizenz ist bereits deaktiviert",
+    "available_licenses": "Verfügbare Lizenzen",
+    "available_hint": "Diese Lizenzen wurden erworben, sind aber noch nicht auf diesem Server installiert. Klicken Sie +, um sie zu installieren.",
+    "install": "Installieren",
+    "install_title": "Lizenz installieren?",
+    "install_message": "Lizenz {{name}} auf diesem Server installieren?",
+    "no_available": "Alle erworbenen Lizenzen sind bereits auf diesem Server installiert."
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {
@@ -317,7 +323,14 @@
     "not_found_subtitle": "Seite nicht gefunden",
     "not_found_message": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
     "go_back": "Zurück",
-    "go_home": "Zum Dashboard"
+    "go_home": "Zum Dashboard",
+    "boundary_title": "Etwas ist schiefgelaufen",
+    "boundary_message": "Auf dieser Seite ist ein unerwarteter Fehler aufgetreten. Sie können die Seite neu laden oder zu einer anderen Seite navigieren.",
+    "show_details": "Details anzeigen",
+    "hide_details": "Details ausblenden",
+    "reload": "Seite neu laden",
+    "send_report": "Bericht senden",
+    "go_dashboard": "Zum Dashboard"
   },
   "tabs": {
     "move_left": "Nach links",

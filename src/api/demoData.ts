@@ -68,6 +68,14 @@ export interface DemoStore {
     invoice_address: string;
     invoice_email: string;
   };
+  available_licenses: {
+    license_key: string;
+    product: string;
+    subproduct: string;
+    license_name: string;
+    max_connections: number;
+    valid_until: string;
+  }[];
   auditLog: AuditEntry[];
   systemInfo: SystemInfo;
   session: {
@@ -254,6 +262,13 @@ const SEED_DATA: DemoStore = {
   },
   licenses: [
     { license_key: 'DEMO-0000-0000-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
+  ],
+  available_licenses: [
+    { license_key: 'DEMO-0000-0000-0002', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31' },
+    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 8, valid_until: '2026-12-31' },
+    { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support', max_connections: 0, valid_until: '2026-12-31' },
+    { license_key: 'DEMO-VAPI-0001', product: 'Linkify', subproduct: 'VAPI Integration', license_name: 'VAPI', max_connections: 0, valid_until: '2026-12-31' },
+    { license_key: 'DEMO-ODOO-0001', product: 'Linkify', subproduct: 'Odoo Integration', license_name: 'Odoo', max_connections: 0, valid_until: '2026-12-31' },
   ],
   company: {
     company_name: 'Demo Ltd',
