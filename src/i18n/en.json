@@ -168,7 +168,10 @@
     "all_licenses": "All Licenses",
     "all_licenses_hint": "Overview of all purchased licenses across all servers. Licenses can be installed on a server via the License tab.",
     "installed_on": "Installed On",
-    "not_installed": "Not Installed"
+    "not_installed": "Not Installed",
+    "assigned": "Assigned",
+    "available_status": "Available",
+    "expired": "Expired"
   },
   "language": { "language": "Language", "german": "German", "english": "English" },
   "logs": {

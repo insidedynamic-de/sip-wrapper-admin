@@ -8,12 +8,13 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, TextField, Button, Typography, Alert,
   IconButton, ToggleButtonGroup, ToggleButton,
-  Switch, FormControlLabel,
+  Switch, FormControlLabel, Tooltip,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import api, { setDemoAdapter } from '../api/client';
 import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode } from '../store/preferences';
@@ -204,6 +205,15 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
     }
   };
 
+  const handleDemoQuickStart = async () => {
+    savePreferences({ themeMode, colorTheme, language: i18n.language, demoMode: true });
+    setDemoAdapter(true);
+    setDemoMode(true);
+    await saveApiKey(DEMO_API_KEY);
+    setToast({ open: true, message: t('demo.login_success'), severity: 'success' });
+    setTimeout(() => navigate('/'), 800);
+  };
+
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Card sx={{ width: 420, p: 2 }}>
@@ -345,6 +355,39 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
       />
 
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
+
+      {/* Right-side quick actions */}
+      <Box
+        sx={{
+          position: 'fixed',
+          right: 16,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1,
+        }}
+      >
+        <Tooltip title={t('demo.title')} placement="left">
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleDemoQuickStart}
+            sx={{
+              minWidth: 0,
+              px: 1,
+              py: 1,
+              borderRadius: 2,
+              flexDirection: 'column',
+              fontSize: 10,
+              lineHeight: 1.2,
+            }}
+          >
+            <PlayArrowIcon sx={{ fontSize: 20 }} />
+            Demo
+          </Button>
+        </Tooltip>
+      </Box>
     </Box>
   );
 }

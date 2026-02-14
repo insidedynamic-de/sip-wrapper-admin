@@ -9,14 +9,12 @@ import {
   IconButton, Tooltip, Alert,
 } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
 import Toast from '../components/Toast';
-import { isDemoMode } from '../store/preferences';
 
 interface LicenseEntry {
   license_key: string;
@@ -46,11 +44,8 @@ interface AvailableLicense {
   licensed: boolean;
 }
 
-const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003', 'DEMO-PREMSUPPORT-0001'];
-
 export default function LicenseTab() {
   const { t } = useTranslation();
-  const demo = isDemoMode();
 
   const [licenses, setLicenses] = useState<LicenseEntry[]>([]);
   const [availableLicenses, setAvailableLicenses] = useState<AvailableLicense[]>([]);
@@ -85,9 +80,9 @@ export default function LicenseTab() {
       setLicenses(data.licenses || []);
       setTotalConnections(data.total_connections || 0);
       setServerId(data.server_id || '');
-      // Only show licenses that are not bound to any server (free to install)
+      // Only show licenses that are not bound, not licensed, and not expired
       const all: AvailableLicense[] = availRes.data || [];
-      setAvailableLicenses(all.filter((a) => !a.bound_to && !a.licensed));
+      setAvailableLicenses(all.filter((a) => !a.bound_to && !a.licensed && (!a.valid_until || new Date(a.valid_until) >= new Date())));
       // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {
@@ -246,11 +241,6 @@ export default function LicenseTab() {
     if (a) await a();
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    showToast(t('license.key_copied'), true);
-  };
-
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
@@ -282,27 +272,6 @@ export default function LicenseTab() {
           </Box>
         </CardContent>
       </Card>
-
-      {/* Demo keys card */}
-      {demo && (
-        <Card sx={{ mb: 3, bgcolor: 'info.main', color: 'info.contrastText' }}>
-          <CardContent sx={{ px: 4, py: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 1 }}>{t('license.demo_keys_title')}</Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              {DEMO_KEYS.map((key) => (
-                <Box key={key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, bgcolor: 'rgba(255,255,255,0.15)', borderRadius: 1, px: 1.5, py: 0.5 }}>
-                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>{key}</Typography>
-                  <Tooltip title={t('license.copy_key')}>
-                    <IconButton size="small" onClick={() => copyToClipboard(key)} sx={{ color: 'inherit' }}>
-                      <ContentCopyIcon sx={{ fontSize: 16 }} />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              ))}
-            </Box>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Available licenses */}
       {availableLicenses.length > 0 && (
