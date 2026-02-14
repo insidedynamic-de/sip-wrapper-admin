@@ -1,5 +1,5 @@
 /**
- * @file CrudTable — Reusable generic table with status, enabled toggle, actions,
+ * @file CrudTable — Reusable generic table with status, enabled toggle in actions,
  *       draggable column reordering, and search filtering
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
@@ -66,12 +66,12 @@ export interface CrudTableProps<T> {
   /** Header text for status column */
   statusHeader?: string;
 
-  // ── Enabled toggle (optional) ──
-  /** Returns current enabled state. If omitted, no Enabled column. */
+  // ── Enabled toggle (optional — rendered inside Actions column) ──
+  /** Returns current enabled state. If omitted, no toggle in actions. */
   getEnabled?: (row: T) => boolean;
   /** Called when user flips the switch */
   onToggle?: (row: T, index: number) => void;
-  /** Header text for enabled column */
+  /** Header text for enabled column (unused — kept for backward compat) */
   enabledHeader?: string;
 
   // ── Action buttons (each optional) ──
@@ -120,7 +120,6 @@ export default function CrudTable<T>({
   statusHeader,
   getEnabled,
   onToggle,
-  enabledHeader,
   onView,
   onEdit,
   onDelete,
@@ -134,26 +133,51 @@ export default function CrudTable<T>({
   searchable,
 }: CrudTableProps<T>) {
   const { t } = useTranslation();
-  const hasActions = !!(onView || onEdit || onDelete);
+  const hasActions = !!(onView || onEdit || onDelete || getEnabled);
   const shouldDim = dimDisabled ?? !!getEnabled;
   const [search, setSearch] = useState('');
 
-  // Column IDs (stable per render)
-  const columnIds = useMemo(
-    () => columns.map((col, i) => col.id || `col-${i}`),
-    [columns],
-  );
+  // Build full column list on every render (cheap — just spreads + optional push)
+  // This keeps render closures fresh (they capture parent state like registrations, users, etc.)
+  const statusColumn: CrudColumn<T> | null = getStatus ? {
+    id: '__status__',
+    header: statusHeader || t('field.status'),
+    width: 120,
+    render: (row: T) => {
+      const enabled = getEnabled ? getEnabled(row) : true;
+      const s = getEnabled && !enabled
+        ? { label: t('status.deactivated'), color: 'default' as const }
+        : getStatus(row);
+      return <Chip size="small" label={s.label} color={s.color} />;
+    },
+    searchText: (row: T) => {
+      const enabled = getEnabled ? getEnabled(row) : true;
+      const s = getEnabled && !enabled
+        ? { label: t('status.deactivated'), color: 'default' as const }
+        : getStatus(row);
+      return s.label;
+    },
+  } : null;
+
+  const allColumns = statusColumn ? [...columns, statusColumn] : columns;
+
+  // Column IDs — stabilised by joining into a string so inline column arrays
+  // don't cause useColumnOrder to reset on every render
+  const idString = allColumns.map((col, i) => col.id || `col-${i}`).join('\0');
+  const columnIds = useMemo(() => idString.split('\0'), [idString]);
 
   const { order, moveColumn } = useColumnOrder(columnIds, columnOrderKey);
 
-  // Build ordered columns based on persisted order
+  // Build ordered columns using stable order but current column objects
   const orderedColumns = useMemo(() => {
-    if (!columnOrderKey) return columns;
-    const colMap = new Map(columns.map((col, i) => [col.id || `col-${i}`, col]));
+    if (!columnOrderKey) return allColumns;
+    const colMap = new Map(allColumns.map((col, i) => [col.id || `col-${i}`, col]));
     return order
       .map((id) => colMap.get(id))
       .filter(Boolean) as CrudColumn<T>[];
-  }, [columns, order, columnOrderKey]);
+    // allColumns changes identity every render, but order is stable —
+    // this is intentional so render closures stay fresh
+  }, [allColumns, order, columnOrderKey]);
 
   // DnD sensors (same config as TabView)
   const sensors = useSensors(
@@ -181,30 +205,19 @@ export default function CrudTable<T>({
 
   const totalCols =
     orderedColumns.length +
-    (getStatus ? 1 : 0) +
-    (getEnabled ? 1 : 0) +
     (hasActions ? 1 : 0);
 
-  // Header row content
+  // Header row content (just the cells, no wrapper divs inside <tr>)
   const headerCells = columnOrderKey ? (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      modifiers={[restrictToHorizontalAxis]}
-      onDragEnd={handleDragEnd}
-    >
-      <SortableContext items={order} strategy={horizontalListSortingStrategy}>
-        {orderedColumns.map((col, i) => (
-          <SortableHeaderCell
-            key={col.id || `col-${i}`}
-            id={col.id || `col-${i}`}
-            label={col.header}
-            width={col.width}
-            align={col.align}
-          />
-        ))}
-      </SortableContext>
-    </DndContext>
+    orderedColumns.map((col, i) => (
+      <SortableHeaderCell
+        key={col.id || `col-${i}`}
+        id={col.id || `col-${i}`}
+        label={col.header}
+        width={col.width}
+        align={col.align}
+      />
+    ))
   ) : (
     orderedColumns.map((col, i) => (
       <TableCell key={i} sx={col.width ? { width: col.width } : undefined} align={col.align}>
@@ -213,15 +226,13 @@ export default function CrudTable<T>({
     ))
   );
 
-  const table = (
+  const tableContent = (
     <TableContainer sx={maxHeight ? { maxHeight } : undefined}>
       <Table size={size} stickyHeader={stickyHeader}>
         <TableHead>
           <TableRow>
             {headerCells}
-            {getStatus && <TableCell sx={{ width: 120, whiteSpace: 'nowrap' }}>{statusHeader || t('field.status')}</TableCell>}
-            {getEnabled && <TableCell sx={{ width: 80, whiteSpace: 'nowrap' }}>{enabledHeader || t('status.enabled')}</TableCell>}
-            {hasActions && <TableCell align="right" sx={{ width: 110, whiteSpace: 'nowrap' }}>{t('field.actions')}</TableCell>}
+            {hasActions && <TableCell align="center" sx={{ whiteSpace: 'nowrap', width: '1%' }}>{t('field.actions')}</TableCell>}
           </TableRow>
         </TableHead>
         <TableBody>
@@ -237,43 +248,33 @@ export default function CrudTable<T>({
                     {col.render ? col.render(row, i) : String((row as Record<string, unknown>)[col.field as string] ?? '')}
                   </TableCell>
                 ))}
-                {getStatus && (() => {
-                  const s = getEnabled && !enabled
-                    ? { label: t('status.deactivated'), color: 'default' as const }
-                    : getStatus(row);
-                  return (
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                      <Chip size="small" label={s.label} color={s.color} />
-                    </TableCell>
-                  );
-                })()}
-                {getEnabled && (
-                  <TableCell sx={{ whiteSpace: 'nowrap' }}>
-                    <Switch
-                      size="small"
-                      checked={enabled}
-                      onChange={() => onToggle?.(row, i)}
-                      color={enabled ? 'success' : 'default'}
-                    />
-                  </TableCell>
-                )}
                 {hasActions && (
-                  <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                    {onView && (
-                      <IconButton size="small" onClick={() => onView(row)}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                    {onEdit && (
-                      <IconButton size="small" onClick={() => onEdit(row)}>
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    )}
-                    {onDelete && (
-                      <IconButton size="small" color="error" onClick={() => onDelete(row)}>
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    )}
+                  <TableCell sx={{ whiteSpace: 'nowrap', width: '1%' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.25 }}>
+                      {getEnabled && (
+                        <Switch
+                          size="small"
+                          checked={enabled}
+                          onChange={() => onToggle?.(row, i)}
+                          color={enabled ? 'success' : 'default'}
+                        />
+                      )}
+                      {onView && (
+                        <IconButton size="small" onClick={() => onView(row)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {onEdit && (
+                        <IconButton size="small" onClick={() => onEdit(row)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                      {onDelete && (
+                        <IconButton size="small" color="error" onClick={() => onDelete(row)}>
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Box>
                   </TableCell>
                 )}
               </TableRow>
@@ -290,6 +291,20 @@ export default function CrudTable<T>({
       </Table>
     </TableContainer>
   );
+
+  // Wrap with DndContext outside the table to avoid injecting divs into <tr>
+  const table = columnOrderKey ? (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToHorizontalAxis]}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={order} strategy={horizontalListSortingStrategy}>
+        {tableContent}
+      </SortableContext>
+    </DndContext>
+  ) : tableContent;
 
   const searchBar = searchable ? (
     <Box sx={{ px: 2, pt: 2, pb: 1 }}>

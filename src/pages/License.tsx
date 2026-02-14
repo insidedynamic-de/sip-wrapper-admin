@@ -6,7 +6,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, TextField, Button, Chip,
-  Snackbar, Alert, Switch, FormControlLabel, IconButton, Tooltip,
+  Switch, FormControlLabel, IconButton, Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
@@ -16,6 +16,7 @@ import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
+import Toast from '../components/Toast';
 import { isDemoMode } from '../store/preferences';
 
 interface LicenseEntry {
@@ -406,9 +407,7 @@ export default function License() {
         confirmLabel={t('button.delete')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete({ open: false, name: '', action: null })} />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

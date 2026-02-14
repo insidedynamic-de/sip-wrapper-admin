@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, LinearProgress, Dialog, IconButton,
-  CircularProgress,
+  CircularProgress, Tooltip,
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
@@ -17,7 +17,11 @@ import { clearApiKey } from '../store/keyStore';
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
 const MODAL_THRESHOLD = 20;
 
-export default function LogoutCountdown() {
+interface Props {
+  collapsed?: boolean;
+}
+
+export default function LogoutCountdown({ collapsed = false }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
@@ -95,36 +99,45 @@ export default function LogoutCountdown() {
   return (
     <>
       {/* Sidebar indicator */}
-      <Box sx={{ px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <LogoutIcon sx={{ fontSize: 16, color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)' }} />
-          <Typography
-            variant="caption"
+      {collapsed ? (
+        <Tooltip title={t('countdown.logout_in', { seconds: secondsLeft })} placement="right" arrow>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+            <LogoutIcon sx={{ fontSize: 20, color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)' }} />
+          </Box>
+        </Tooltip>
+      ) : (
+        <Box sx={{ px: 1.5, py: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LogoutIcon sx={{ fontSize: 16, color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)' }} />
+            <Typography
+              variant="caption"
+              sx={{
+                color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)',
+                fontWeight: urgent ? 600 : 400,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {t('countdown.logout_in', { seconds: secondsLeft })}
+            </Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={progress}
             sx={{
-              color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)',
-              fontWeight: urgent ? 600 : 400,
-              fontVariantNumeric: 'tabular-nums',
+              height: 3, borderRadius: 2,
+              bgcolor: 'rgba(255,255,255,0.1)',
+              '& .MuiLinearProgress-bar': {
+                bgcolor: urgent ? 'error.main' : 'rgba(255,255,255,0.3)',
+              },
             }}
-          >
-            {t('countdown.logout_in', { seconds: secondsLeft })}
-          </Typography>
+          />
         </Box>
-        <LinearProgress
-          variant="determinate"
-          value={progress}
-          sx={{
-            height: 3, borderRadius: 2,
-            bgcolor: 'rgba(255,255,255,0.1)',
-            '& .MuiLinearProgress-bar': {
-              bgcolor: urgent ? 'error.main' : 'rgba(255,255,255,0.3)',
-            },
-          }}
-        />
-      </Box>
+      )}
 
       {/* Fullscreen modal at 20s */}
       <Dialog
         open={showModal}
+        disableRestoreFocus
         onClose={handleDismissModal}
         slotProps={{
           backdrop: { sx: { bgcolor: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(4px)' } },

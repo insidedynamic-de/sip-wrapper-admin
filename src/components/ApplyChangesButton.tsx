@@ -4,10 +4,11 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button, Snackbar, Alert } from '@mui/material';
+import { Button } from '@mui/material';
 import SyncIcon from '@mui/icons-material/Sync';
 import api from '../api/client';
 import ConfirmDialog from './ConfirmDialog';
+import Toast from './Toast';
 
 export default function ApplyChangesButton() {
   const { t } = useTranslation();
@@ -47,9 +48,7 @@ export default function ApplyChangesButton() {
         onCancel={() => setConfirmOpen(false)}
       />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </>
   );
 }

@@ -215,6 +215,15 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
 
   // ── Routes ──
   if (url === '/routes' && method === 'get') {
+    // Deduplicate inbound routes (same gateway + extension)
+    const seen = new Set<string>();
+    store.routes.inbound = store.routes.inbound.filter((r) => {
+      const key = `${r.gateway}:${r.extension}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    saveDemoStore(store);
     return mock(store.routes, config);
   }
   if (url === '/routes/defaults' && method === 'put') {
@@ -223,6 +232,13 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     return mock(ok(), config);
   }
   if (url === '/routes/inbound' && method === 'post') {
+    const b = body as Record<string, unknown>;
+    // Remove existing duplicate (same gateway + extension) before adding
+    if (b.gateway && b.extension) {
+      store.routes.inbound = store.routes.inbound.filter((r) =>
+        !(r.gateway === b.gateway && r.extension === b.extension),
+      );
+    }
     store.routes.inbound.push(body as never);
     saveDemoStore(store);
     return mock(ok(), config);
@@ -241,13 +257,23 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     const m = matchPath('/routes/inbound/:gateway', url);
     if (m) {
       if (method === 'put') {
-        const idx = store.routes.inbound.findIndex((r) => r.gateway === m.gateway);
+        const ext = (body as Record<string, unknown>)?.extension;
+        const idx = store.routes.inbound.findIndex((r) =>
+          r.gateway === m.gateway && (!ext || r.extension === ext),
+        );
         if (idx >= 0) store.routes.inbound[idx] = { ...store.routes.inbound[idx], ...body } as never;
         saveDemoStore(store);
         return mock(ok(), config);
       }
       if (method === 'delete') {
-        store.routes.inbound = store.routes.inbound.filter((r) => r.gateway !== m.gateway);
+        const ext = (body as Record<string, unknown>)?.extension;
+        if (ext) {
+          store.routes.inbound = store.routes.inbound.filter((r) =>
+            !(r.gateway === m.gateway && r.extension === ext),
+          );
+        } else {
+          store.routes.inbound = store.routes.inbound.filter((r) => r.gateway !== m.gateway);
+        }
         saveDemoStore(store);
         return mock(ok(), config);
       }

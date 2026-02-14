@@ -1,5 +1,5 @@
 /**
- * @file Sidebar — Navigation sidebar with dark/light mode toggle
+ * @file Sidebar — Collapsible navigation sidebar with dark/light mode toggle
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useTranslation } from 'react-i18next';
@@ -18,13 +18,16 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { savePreferences } from '../../store/preferences';
 import type { ThemeMode } from '../../store/preferences';
 import { clearApiKey } from '../../store/keyStore';
 import api from '../../api/client';
 import LogoutCountdown from '../LogoutCountdown';
 
-const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH = 240;
+export const DRAWER_WIDTH_COLLAPSED = 64;
 
 const navItems = [
   { key: '/',              icon: <DashboardIcon />, label: 'nav.dashboard' },
@@ -38,14 +41,18 @@ const navItems = [
 interface Props {
   themeMode: ThemeMode;
   setThemeMode: (v: ThemeMode) => void;
+  collapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
 const modeOrder: ThemeMode[] = ['light', 'dark', 'auto'];
 
-export default function Sidebar({ themeMode, setThemeMode }: Props) {
-  const { t } = useTranslation();
+export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCollapse }: Props) {
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+
+  const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
   const cycleThemeMode = () => {
     const idx = modeOrder.indexOf(themeMode);
@@ -61,6 +68,12 @@ export default function Sidebar({ themeMode, setThemeMode }: Props) {
     navigate('/login');
   };
 
+  const toggleLanguage = () => {
+    const next = i18n.language === 'de' ? 'en' : 'de';
+    i18n.changeLanguage(next);
+    savePreferences({ language: next });
+  };
+
   const themeModeIcon = themeMode === 'dark' ? <LightModeIcon /> : themeMode === 'auto' ? <BrightnessAutoIcon /> : <DarkModeIcon />;
   const themeModeLabel = themeMode === 'dark' ? t('theme.light') : themeMode === 'auto' ? t('theme.light') : t('theme.dark');
 
@@ -68,49 +81,67 @@ export default function Sidebar({ themeMode, setThemeMode }: Props) {
     <Drawer
       variant="permanent"
       sx={{
-        width: DRAWER_WIDTH,
+        width: drawerWidth,
         flexShrink: 0,
-        '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
+        transition: 'width 0.2s ease',
+        '& .MuiDrawer-paper': {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          transition: 'width 0.2s ease',
+          overflowX: 'hidden',
+        },
       }}
     >
-      <Toolbar>
-        <Typography variant="h6" noWrap sx={{ color: '#fff', fontWeight: 700 }}>
-          SIP Wrapper
-        </Typography>
+      <Toolbar sx={{ justifyContent: collapsed ? 'center' : 'space-between', minHeight: 64, px: collapsed ? 0 : 2 }}>
+        {!collapsed && (
+          <Typography variant="h6" noWrap sx={{ color: '#fff', fontWeight: 700 }}>
+            SIP Wrapper
+          </Typography>
+        )}
+        <IconButton
+          onClick={onToggleCollapse}
+          size="small"
+          sx={{ color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#fff' } }}
+        >
+          {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
       </Toolbar>
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-      <List sx={{ px: 1 }}>
+      <List sx={{ px: collapsed ? 0.5 : 1 }}>
         {navItems.map((item) => (
-          <ListItemButton
-            key={item.key}
-            selected={location.pathname === item.key}
-            onClick={() => navigate(item.key)}
-            sx={{
-              borderRadius: 1, mb: 0.5,
-              '&.Mui-selected': {
-                bgcolor: 'primary.main',
-                color: '#fff',
-                '& .MuiListItemIcon-root': { color: '#fff' },
-                '&:hover': { bgcolor: 'primary.dark' },
-              },
-              '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
-            }}
-          >
-            <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText primary={t(item.label)} />
-          </ListItemButton>
+          <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
+            <ListItemButton
+              selected={location.pathname === item.key}
+              onClick={() => navigate(item.key)}
+              sx={{
+                borderRadius: 1, mb: 0.5,
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                px: collapsed ? 1.5 : 2,
+                '&.Mui-selected': {
+                  bgcolor: 'primary.main',
+                  color: '#fff',
+                  '& .MuiListItemIcon-root': { color: '#fff' },
+                  '&:hover': { bgcolor: 'primary.dark' },
+                },
+                '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+              }}
+            >
+              <ListItemIcon sx={{ color: 'inherit', minWidth: collapsed ? 'unset' : 40, justifyContent: 'center' }}>
+                {item.icon}
+              </ListItemIcon>
+              {!collapsed && <ListItemText primary={t(item.label)} />}
+            </ListItemButton>
+          </Tooltip>
         ))}
       </List>
       <Box sx={{ flexGrow: 1 }} />
 
       {/* Auto-logout countdown */}
-      <LogoutCountdown />
+      <LogoutCountdown collapsed={collapsed} />
 
       {/* Theme mode toggle + Logout */}
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1, pb: 1 }}>
-        <Tooltip title={themeModeLabel}>
+      <Box sx={{ display: 'flex', flexDirection: collapsed ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1 }}>
+        <Tooltip title={themeModeLabel} placement={collapsed ? 'right' : 'top'}>
           <IconButton
             onClick={cycleThemeMode}
             sx={{ color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#fff' } }}
@@ -118,7 +149,15 @@ export default function Sidebar({ themeMode, setThemeMode }: Props) {
             {themeModeIcon}
           </IconButton>
         </Tooltip>
-        <Tooltip title={t('auth.logout')}>
+        <Tooltip title={i18n.language === 'de' ? 'English' : 'Deutsch'} placement={collapsed ? 'right' : 'top'}>
+          <IconButton
+            onClick={toggleLanguage}
+            sx={{ color: 'rgba(255,255,255,0.6)', '&:hover': { color: '#fff' }, fontSize: 14, fontWeight: 700, width: 40, height: 40 }}
+          >
+            {i18n.language.toUpperCase()}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t('auth.logout')} placement={collapsed ? 'right' : 'top'}>
           <IconButton
             onClick={handleLogout}
             sx={{ color: 'rgba(255,255,255,0.6)', '&:hover': { color: 'error.main' } }}
@@ -129,9 +168,12 @@ export default function Sidebar({ themeMode, setThemeMode }: Props) {
       </Box>
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-      <Box sx={{ p: 1.5, color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
-        v2.0.0
-      </Box>
+      {!collapsed && (
+        <Box sx={{ p: 1.5, color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
+          v2.0.0
+        </Box>
+      )}
+      {collapsed && <Box sx={{ py: 1 }} />}
     </Drawer>
   );
 }

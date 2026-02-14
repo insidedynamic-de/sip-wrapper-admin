@@ -234,6 +234,8 @@
     "type_inbound": "Inbound",
     "type_outbound": "Outbound",
     "error_duplicate": "This route already exists (same extension, gateway and direction)",
+    "error_duplicate_inbound": "This extension already has an inbound route",
+    "error_duplicate_outbound": "This user already has an outbound route",
     "error_license_limit": "License limit reached. Disable other routes or purchase additional licenses."
   },
   "modal": {

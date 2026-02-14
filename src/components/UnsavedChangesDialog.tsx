@@ -31,7 +31,7 @@ export default function UnsavedChangesDialog({
 
   if (confirmDiscard) {
     return (
-      <Dialog open={open} onClose={() => { setConfirmDiscard(false); onCancel(); }}>
+      <Dialog open={open} disableRestoreFocus onClose={() => { setConfirmDiscard(false); onCancel(); }}>
         <DialogTitle>{t('unsaved.data_loss_title')}</DialogTitle>
         <DialogContent>
           <DialogContentText>{t('unsaved.data_loss_message')}</DialogContentText>
@@ -49,7 +49,7 @@ export default function UnsavedChangesDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onCancel}>
+    <Dialog open={open} disableRestoreFocus onClose={onCancel}>
       <DialogTitle>{title || t('unsaved.title')}</DialogTitle>
       <DialogContent>
         <DialogContentText>{message || t('unsaved.message')}</DialogContentText>

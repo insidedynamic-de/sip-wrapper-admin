@@ -2,11 +2,11 @@
  * @file RoutesPage — Routing configuration: Defaults + unified Extension Routes
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Button,
-  TextField, Snackbar, Alert, Tooltip,
+  TextField, Tooltip,
   RadioGroup, Radio, FormControlLabel, FormLabel,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -18,6 +18,7 @@ import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
+import Toast from '../components/Toast';
 import SearchableSelect from '../components/SearchableSelect';
 import type { Route, Gateway, GatewayStatus, Extension, User, Registration } from '../api/types';
 
@@ -168,14 +169,30 @@ export default function RoutesPage() {
   // ── Save route ──
 
   const doSaveRoute = async () => {
-    // Check for duplicate (same extension + gateway + direction)
-    const isDuplicate = extRoutes.some((r) =>
-      r.extension === form.extension && r.gateway === form.gateway && r.direction === form.direction &&
-      !(editRoute && r.extension === editRoute.extension && r.gateway === editRoute.gateway && r.direction === editRoute.direction)
-    );
-    if (isDuplicate) {
-      setToast({ open: true, message: t('route.error_duplicate'), severity: 'error' });
-      return;
+    // One extension can only have one inbound route
+    if (form.direction === 'inbound') {
+      const existing = extRoutes.find((r) =>
+        r.direction === 'inbound' && r.extension === form.extension &&
+        !(editRoute && editRoute.direction === 'inbound' && editRoute.extension === form.extension),
+      );
+      if (existing) {
+        setToast({ open: true, message: t('route.error_duplicate_inbound'), severity: 'error' });
+        return;
+      }
+    }
+    // One user can only have one outbound route
+    if (form.direction === 'outbound') {
+      const user = users.find((u) => u.extension === form.extension);
+      if (user) {
+        const existing = extRoutes.find((r) =>
+          r.direction === 'outbound' && r.username === user.username &&
+          !(editRoute && editRoute.direction === 'outbound' && editRoute.username === user.username),
+        );
+        if (existing) {
+          setToast({ open: true, message: t('route.error_duplicate_outbound'), severity: 'error' });
+          return;
+        }
+      }
     }
     try {
       const dirChanged = editRoute && editRoute.direction !== form.direction;
@@ -189,7 +206,7 @@ export default function RoutesPage() {
       // If direction or extension changed, delete old route first then create new
       if (editRoute && (dirChanged || extChanged)) {
         if (editRoute.direction === 'inbound') {
-          await api.delete(`/routes/inbound/${editRoute.gateway}`);
+          await api.delete(`/routes/inbound/${editRoute.gateway}`, { data: { extension: editRoute.extension } });
         } else {
           await api.delete(`/routes/user/${editRoute.username}`);
         }
@@ -210,7 +227,7 @@ export default function RoutesPage() {
         // Simple update — same direction and extension
         if (form.direction === 'inbound') {
           await api.put(`/routes/inbound/${editRoute.gateway}`, {
-            gateway: form.gateway, extension: form.extension, description: form.description,
+            extension: editRoute.extension, gateway: form.gateway, description: form.description,
           });
         } else {
           await api.put(`/routes/user/${editRoute.username}`, {
@@ -255,7 +272,7 @@ export default function RoutesPage() {
       name,
       action: async () => {
         if (r.direction === 'inbound') {
-          await api.delete(`/routes/inbound/${r.gateway}`);
+          await api.delete(`/routes/inbound/${r.gateway}`, { data: { extension: r.extension } });
         } else {
           await api.delete(`/routes/user/${r.username}`);
         }
@@ -266,22 +283,29 @@ export default function RoutesPage() {
 
   // ── Toggle enabled ──
 
+  const togglingRef = useRef(false);
+
   const toggleEnabled = async (r: ExtensionRoute) => {
+    if (togglingRef.current) return;
+    togglingRef.current = true;
     const newEnabled = !r.enabled;
     // Block enabling if at license limit
     if (newEnabled && maxConnections > 0 && enabledCount >= maxConnections) {
       setToast({ open: true, message: t('route.error_license_limit'), severity: 'error' });
+      togglingRef.current = false;
       return;
     }
     try {
       if (r.direction === 'inbound') {
-        await api.put(`/routes/inbound/${r.gateway}`, { enabled: newEnabled });
+        await api.put(`/routes/inbound/${r.gateway}`, { extension: r.extension, enabled: newEnabled });
       } else {
         await api.put(`/routes/user/${r.username}`, { enabled: newEnabled });
       }
-      load();
+      await load();
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
+    } finally {
+      togglingRef.current = false;
     }
   };
 
@@ -363,7 +387,7 @@ export default function RoutesPage() {
           </Box>
           <CrudTable<ExtensionRoute>
             rows={extRoutes}
-            getKey={(r) => `${r.direction}-${r.extension}-${r.gateway}`}
+            getKey={(r, i) => `${r.direction}-${r.extension}-${r.gateway}-${i}`}
             columns={[
               {
                 id: 'user',
@@ -425,6 +449,10 @@ export default function RoutesPage() {
             ]}
             columnOrderKey="routes-extension-columns"
             searchable
+            getStatus={(r) => r.enabled
+              ? { label: t('status.active'), color: 'success' as const }
+              : { label: t('status.inactive'), color: 'default' as const }
+            }
             getEnabled={(r) => r.enabled}
             onToggle={toggleEnabled}
             onView={openView}
@@ -489,9 +517,7 @@ export default function RoutesPage() {
         confirmLabel={t('button.delete')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete({ open: false, name: '', action: null })} />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

@@ -26,7 +26,7 @@ export default function ConfirmDialog({
   onConfirm, onCancel,
 }: Props) {
   return (
-    <Dialog open={open} onClose={onCancel}>
+    <Dialog open={open} onClose={onCancel} disableRestoreFocus>
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <DialogContentText>{message}</DialogContentText>

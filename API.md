@@ -121,11 +121,11 @@ All endpoints are under `/api/v1/` (stripped by adapter). Response format: `{ su
 ### Routes
 | Method | URL | Body | Response |
 |--------|-----|------|----------|
-| GET | `/routes` | — | `{ defaults, inbound[], outbound[], user_routes[] }` |
+| GET | `/routes` | — | `{ defaults, inbound[], outbound[], user_routes[] }` — auto-deduplicates inbound routes (same gateway+extension) |
 | PUT | `/routes/defaults` | Partial `RouteDefaults` | `ok()` |
-| POST | `/routes/inbound` | `InboundRoute` | `ok()` |
-| PUT | `/routes/inbound/:gateway` | Partial `InboundRoute` | `ok()` |
-| DELETE | `/routes/inbound/:gateway` | — | `ok()` |
+| POST | `/routes/inbound` | `InboundRoute` | `ok()` — replaces existing route with same gateway+extension (prevents duplicates) |
+| PUT | `/routes/inbound/:gateway` | Partial `InboundRoute` | `ok()` — when `extension` is in body, matches by gateway+extension (required when multiple routes share a gateway) |
+| DELETE | `/routes/inbound/:gateway` | `{ extension? }` | `ok()` — when `extension` is in body, deletes only the matching gateway+extension pair |
 | POST | `/routes/outbound` | `OutboundRoute` | `ok()` |
 | PUT | `/routes/outbound/:index` | Partial `OutboundRoute` | `ok()` |
 | DELETE | `/routes/outbound/:index` | — | `ok()` |
@@ -224,6 +224,7 @@ Any unmatched URL returns `ok()` (status 200).
 
 All interfaces in `src/api/types.ts`:
 
+- `ApiResult` — `{ success, message?, error? }`
 - `User` — `{ username, extension, enabled?, caller_id? }`
 - `AclUser` — `{ username, ip, extension, caller_id? }`
 - `Gateway` — `{ name, description?, type, host, port, username, password, register, transport, auth_username?, enabled? }`
@@ -243,6 +244,7 @@ All interfaces in `src/api/types.ts`:
 - `ESLStatus` — `{ connected, host, running, last_error, connection_attempts, buffer_stats }`
 - `CallLog` — `{ uuid, direction, caller_id, destination, start_time, duration, result, gateway }`
 - `SecurityLog` — `{ timestamp, event, ip, details, level }`
+- `VersionInfo` — `{ version, git_commit, api_version }`
 - `SystemInfo` — `{ cpu, memory, disks[], network[], os, board }`
 
 ---
@@ -273,16 +275,70 @@ All interfaces in `src/api/types.ts`:
 
 | Page | Key Endpoints Used |
 |------|-------------------|
-| **Dashboard** | `/gateways/status`, `/registrations`, `/active-calls`, `/logs/calls`, `/logs/call-stats`, `/logs/security`, `/license`, `/extensions` |
-| **Configuration** (Extensions, Users, Gateways tabs) | `/extensions`, `/users`, `/acl-users`, `/gateways` |
-| **Routes** | `/routes`, `/routes/defaults`, `/routes/inbound/*`, `/routes/user/*`, `/gateways`, `/extensions`, `/users`, `/acl-users`, `/registrations` |
-| **Security** | `/security`, `/security/blacklist/*`, `/security/whitelist/*`, `/security/auto-blacklist`, `/security/fail2ban/*`, `/security/fs-firewall/ban` |
-| **Logs** | `/esl/events`, `/esl/start`, `/esl/stop`, `/esl/clear`, `/logs/calls`, `/logs/call-stats`, `/logs/security` |
-| **License** | `/license`, `/license/:key`, `/license/refresh`, `/company`, `/invoice`, `/routes` (for routing count) |
-| **Settings** | `/settings`, `/config/apply` |
+| **Dashboard** | `/gateways/status`, `/gateways`, `/registrations`, `/active-calls`, `/users`, `/acl-users`, `/logs/calls`, `/logs/call-stats`, `/security`, `/license`, `/extensions`, `/routes` |
+| **Configuration > Users** | `/extensions`, `/users`, `/acl-users` |
+| **Configuration > Gateways** | `/gateways`, `/gateways/status` |
+| **Configuration > Security** | `/security`, `/security/blacklist/*`, `/security/whitelist/*`, `/security/auto-blacklist`, `/security/fail2ban/*`, `/security/fs-firewall/ban` |
+| **Configuration > Settings** | `/settings`, `/config/apply`, `/config/export`, `/config/import` |
+| **Configuration > License** | `/license`, `/license/:key`, `/license/refresh`, `/routes` (for routing count) |
+| **Routes** | `/routes`, `/routes/defaults`, `/routes/inbound/*`, `/routes/user/*`, `/gateways`, `/gateways/status`, `/extensions`, `/users`, `/registrations`, `/license` (for limit enforcement) |
 | **Monitoring** | `/system/info`, `/logs/security`, `/acl-users` |
-| **Profile** | `/profile/password` |
+| **Logs** | `/esl/events`, `/esl/start`, `/esl/stop`, `/esl/clear`, `/logs/calls`, `/logs/call-stats`, `/logs/security` |
+| **Profile > Settings** | `/profile/password` |
+| **Profile > Billing** | `/company`, `/invoice`, `/config/apply` |
 | **Login** | `/auth/login`, `/auth/logout` |
+
+---
+
+## Dashboard Live Features (Demo Mode)
+
+In demo mode the Dashboard auto-refreshes every **5 seconds** (vs 30s in production).
+
+Additionally, these features update **every 1 second** without API calls:
+
+| Feature | How |
+|---------|-----|
+| **Active Calls** | Full call simulation: state transitions (early→ringing→active→ended), random new calls, duration ticking |
+| **Total Calls / Failed** | `demoTotalToday` / `demoFailedToday` counters track calls that ended between refreshes |
+| **Users Online** | `liveRegCount` includes base registrations + users who have active live calls |
+| **Security Events** | Background simulation creates auth_failure→brute_force→blocked→banned escalation per-IP |
+
+When demo calls end, they are saved to `callLogs` in the demo store (max 200 entries).
+
+---
+
+## License Limit Enforcement
+
+The Routes page fetches `/license` to get `total_connections` (max allowed routes).
+
+| Scenario | Behavior |
+|----------|----------|
+| Creating new route when `enabledCount >= maxConnections` | Route is created as **deactivated** (enabled=false), warning toast shown |
+| Toggling disabled→enabled when `enabledCount >= maxConnections` | Blocked with error toast |
+| Toggling enabled→disabled | Always allowed (frees a slot) |
+| Deactivated routes | Not counted towards the limit |
+| Editing existing enabled route | Allowed (doesn't change the count) |
+
+---
+
+## Route Uniqueness Enforcement
+
+The Routes page enforces uniqueness constraints when creating or editing routes:
+
+| Rule | Enforcement |
+|------|-------------|
+| One extension = one inbound route | Creating a second inbound route for the same extension is blocked with error toast |
+| One user = one outbound route | Creating a second outbound route for the same username is blocked with error toast |
+| Editing own route | Allowed (the existing route is excluded from the duplicate check) |
+
+The demo adapter also enforces data integrity:
+
+| Layer | Protection |
+|-------|-----------|
+| `POST /routes/inbound` | Removes existing route with same gateway+extension before inserting (upsert behavior) |
+| `PUT /routes/inbound/:gateway` | Uses `extension` field in body to match the correct route when multiple routes share a gateway |
+| `DELETE /routes/inbound/:gateway` | Uses `extension` field in body to delete only the specific route |
+| `GET /routes` | Auto-deduplicates inbound routes on read (cleans up legacy duplicates) |
 
 ---
 
@@ -290,7 +346,9 @@ All interfaces in `src/api/types.ts`:
 
 These features are handled in localStorage/React state and do NOT call the API:
 
-- **User Preferences** (`src/store/preferences.ts`): theme mode (light/dark/auto), color theme, language (en/de), auto-logout, time format (12h/24h), date format
+- **User Preferences** (`src/store/preferences.ts`): theme mode (light/dark/auto), color theme, language (en/de), auto-logout (enabled, timeout), time format (12h/24h), date format, refresh interval
 - **API Key** (`src/store/keyStore.ts`): stored in localStorage, sent via `X-API-Key` header
 - **Demo Mode Toggle**: stored in preferences, controls whether demoAdapter is active
-- **Dashboard widgets**: customizable card visibility/order, stored in localStorage
+- **Dashboard Widgets**: customizable card visibility, stored in localStorage (`sip-wrapper-dashboard-cards`)
+- **Tab Order**: drag-to-reorder tabs on Configuration/Profile pages, stored per-page in localStorage
+- **Column Order**: drag-to-reorder table columns on CrudTable, stored per-table in localStorage

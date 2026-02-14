@@ -335,7 +335,9 @@ export default function Dashboard() {
 
   useEffect(() => { refresh(); }, [refresh]);
   const prefs = loadPreferences();
-  useAutoRefresh(refresh, prefs.refreshInterval * 1000);
+  // Demo mode: faster refresh so all cards stay current
+  const refreshMs = demo ? 5000 : prefs.refreshInterval * 1000;
+  useAutoRefresh(refresh, refreshMs);
 
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
@@ -350,6 +352,18 @@ export default function Dashboard() {
   const failedCallsBase = callLogs.filter((c) => c.result === 'failed' || c.result === 'missed').length;
   const liveTotalCalls = callLogs.length + demoTotalToday;
   const liveFailedCalls = failedCallsBase + demoFailedToday;
+
+  // Live registration count: base registrations + users with active calls in demo mode
+  const liveRegCount = (() => {
+    const regUsers = new Set(registrations.map((r) => r.user));
+    if (!demo) return regUsers.size;
+    for (const call of liveCalls) {
+      const ext = call.direction === 'inbound' ? call.destination : call.caller_id;
+      const user = userList.find((u) => u.extension === ext);
+      if (user) regUsers.add(user.username);
+    }
+    return regUsers.size;
+  })();
 
   // Dismiss button overlay styles (appears on hover)
   const dismissSx = {
@@ -416,7 +430,7 @@ export default function Dashboard() {
                 <PersonIcon color="primary" sx={{ fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">
-                    {registrations.length}
+                    {liveRegCount}
                     <Typography component="span" variant="h5" color="text.secondary">/{userList.length + aclUserList.length}</Typography>
                   </Typography>
                   <Typography color="text.secondary" variant="body2">{t('dashboard.users_online')}</Typography>
@@ -554,42 +568,33 @@ export default function Dashboard() {
           <Card>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>{t('dashboard.gateway_status')}</Typography>
-              {gateways.length === 0 ? (
-                <Typography color="text.secondary">{t('dashboard.no_gateways')}</Typography>
-              ) : (
-                <TableContainer>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>{t('field.name')}</TableCell>
-                        <TableCell>{t('status.online')}</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {gateways.map((gw) => {
-                        const enabled = isGwEnabled(gw.name);
-                        return (
-                          <TableRow key={gw.name} sx={!enabled ? { opacity: 0.5 } : undefined}>
+              {(() => {
+                const regedGateways = gateways.filter((gw) => gw.state === 'REGED' && isGwEnabled(gw.name));
+                return regedGateways.length === 0 ? (
+                  <Typography color="text.secondary">{t('dashboard.no_gateways')}</Typography>
+                ) : (
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>{t('field.name')}</TableCell>
+                          <TableCell>{t('status.online')}</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {regedGateways.map((gw) => (
+                          <TableRow key={gw.name}>
                             <TableCell>{gw.name}</TableCell>
                             <TableCell>
-                              <Chip
-                                size="small"
-                                label={!enabled ? t('status.deactivated') : (gw.state || gw.status)}
-                                color={
-                                  !enabled ? 'default'
-                                    : gw.state === 'REGED' ? 'success'
-                                      : (gw.state === 'FAIL' || gw.state === 'NOREG') ? 'error'
-                                        : 'warning'
-                                }
-                              />
+                              <Chip size="small" label="REGED" color="success" />
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                );
+              })()}
             </CardContent>
           </Card>
         </Box>

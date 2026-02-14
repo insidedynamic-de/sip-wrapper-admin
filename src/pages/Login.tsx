@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, TextField, Button, Typography, Alert,
-  IconButton, ToggleButtonGroup, ToggleButton, Snackbar,
+  IconButton, ToggleButtonGroup, ToggleButton,
   Switch, FormControlLabel,
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -19,6 +19,7 @@ import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
 import FormDialog from '../components/FormDialog';
+import Toast from '../components/Toast';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { saveApiKey } from '../store/keyStore';
 import i18n from '../i18n';
@@ -343,9 +344,7 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
         onCancel={() => setSessionConflict({ open: false, ip: '', time: '' })}
       />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

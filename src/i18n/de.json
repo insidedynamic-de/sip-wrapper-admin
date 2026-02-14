@@ -234,6 +234,8 @@
     "type_inbound": "Eingehend",
     "type_outbound": "Ausgehend",
     "error_duplicate": "Diese Route existiert bereits (gleiche Nebenstelle, Gateway und Richtung)",
+    "error_duplicate_inbound": "Diese Nebenstelle hat bereits eine eingehende Route",
+    "error_duplicate_outbound": "Dieser Benutzer hat bereits eine ausgehende Route",
     "error_license_limit": "Lizenzlimit erreicht. Deaktivieren Sie andere Routen oder erwerben Sie zus\u00e4tzliche Lizenzen."
   },
   "modal": {

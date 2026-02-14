@@ -6,12 +6,13 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, TextField, Button,
-  Snackbar, Alert, Switch, FormControlLabel,
+  Switch, FormControlLabel,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 
 export default function BillingTab() {
   const { t } = useTranslation();
@@ -160,9 +161,7 @@ export default function BillingTab() {
         confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

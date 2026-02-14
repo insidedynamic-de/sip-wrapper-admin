@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Box, Card, CardContent, Typography, Tabs, Tab,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
-  LinearProgress, Chip, IconButton, Tooltip, Snackbar, Alert, TextField, InputAdornment,
+  LinearProgress, Chip, IconButton, Tooltip, TextField, InputAdornment,
 } from '@mui/material';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -24,6 +24,7 @@ import api from '../api/client';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { loadPreferences, formatDateTime } from '../store/preferences';
 import FormDialog from '../components/FormDialog';
+import Toast from '../components/Toast';
 import type { SystemInfo, SecurityLog, BlacklistEntry, WhitelistEntry } from '../api/types';
 
 /** Format bytes to human-readable */
@@ -595,9 +596,7 @@ export default function Monitoring() {
           onChange={(e) => setAclForm({ ...aclForm, caller_id: e.target.value })} />
       </FormDialog>
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

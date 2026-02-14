@@ -15,6 +15,7 @@ export interface Preferences {
   autoLogoutTimeout: number;
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
+  sidebarCollapsed: boolean;
 }
 
 const STORAGE_KEY = 'sip-wrapper-prefs';
@@ -30,6 +31,7 @@ const defaults: Preferences = {
   autoLogoutTimeout: 300,
   timeFormat: '24h',
   dateFormat: 'DD.MM.YYYY',
+  sidebarCollapsed: false,
 };
 
 export function loadPreferences(): Preferences {

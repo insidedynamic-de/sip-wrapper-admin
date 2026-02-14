@@ -53,7 +53,7 @@ export default function FormDialog({
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} maxWidth={maxWidth} fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth={maxWidth} fullWidth disableRestoreFocus>
         <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {title}
           <IconButton onClick={handleClose} size="small" edge="end">

@@ -6,7 +6,7 @@ import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Button,
-  TextField, Snackbar, Alert, ToggleButtonGroup, ToggleButton,
+  TextField, ToggleButtonGroup, ToggleButton,
   Switch, FormControlLabel,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
@@ -17,6 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode, TimeFormat, DateFormat } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
@@ -243,9 +244,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
         confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }

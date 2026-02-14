@@ -4,10 +4,11 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Button, Snackbar, Alert } from '@mui/material';
+import { Box, Button } from '@mui/material';
 import SaveIcon from '@mui/icons-material/Save';
 import api from '../api/client';
 import ConfirmDialog from '../components/ConfirmDialog';
+import Toast from '../components/Toast';
 import { ServerCard, CodecCard, ImportExportCard } from '../components/settings';
 
 export default function SystemSettings() {
@@ -62,9 +63,7 @@ export default function SystemSettings() {
         confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
         onConfirm={doSave} onCancel={() => setConfirmSave(false)} />
 
-      <Snackbar open={toast.open} autoHideDuration={3000} onClose={() => setToast({ ...toast, open: false })}>
-        <Alert severity={toast.severity}>{toast.message}</Alert>
-      </Snackbar>
+      <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
   );
 }
