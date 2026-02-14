@@ -184,7 +184,7 @@ All endpoints are under `/api/v1/` (stripped by adapter). Response format: `{ su
 ### License (Multi-License CRUD)
 | Method | URL | Body | Response |
 |--------|-----|------|----------|
-| GET | `/license` | — | `{ licenses[], total_connections, licensed, trial, nfr, max_connections, version, server_id }` |
+| GET | `/license` | — | `{ licenses[], total_connections, licensed, max_connections, version, server_id }` |
 | PUT | `/license` | `{ license_key }` | `ok()` on success, **400** (`license_invalid`), **409** (`license_duplicate`) |
 | DELETE | `/license/:key` | — | `ok()` |
 | POST | `/license/refresh` | — | `{ licenses[], total_connections }` |

@@ -8,12 +8,15 @@ import {
   Drawer, List, ListItemButton, ListItemIcon, ListItemText,
   Toolbar, Typography, Divider, Box, IconButton, Tooltip,
 } from '@mui/material';
+import { useEffect, useState, useCallback } from 'react';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import StarIcon from '@mui/icons-material/Star';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
@@ -33,6 +36,7 @@ const navItems = [
   { key: '/',              icon: <DashboardIcon />, label: 'nav.dashboard' },
   { key: '/configuration', icon: <TuneIcon />,      label: 'nav.config' },
   { key: '/routes',        icon: <AltRouteIcon />,  label: 'section.routes' },
+  { key: '/integrations',  icon: <ExtensionIcon />, label: 'nav.integrations' },
   { key: '/monitoring',    icon: <MonitorHeartIcon />, label: 'nav.monitoring' },
   { key: '/logs',          icon: <TerminalIcon />,  label: 'nav.logs' },
   { key: '/profile',       icon: <SettingsIcon />,  label: 'nav.profile' },
@@ -51,6 +55,24 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const [hasVip, setHasVip] = useState(false);
+
+  const checkVipLicense = useCallback(async () => {
+    try {
+      const res = await api.get('/license');
+      const lics: { license_name: string; licensed: boolean }[] = res.data?.licenses || [];
+      setHasVip(lics.some((l) => l.licensed && l.license_name === 'Premium Support'));
+    } catch { setHasVip(false); }
+  }, []);
+
+  useEffect(() => { checkVipLicense(); }, [checkVipLicense]);
+  // Re-check on navigation or when licenses change
+  useEffect(() => { checkVipLicense(); }, [location.pathname, checkVipLicense]);
+  useEffect(() => {
+    const handler = () => checkVipLicense();
+    window.addEventListener('license-changed', handler);
+    return () => window.removeEventListener('license-changed', handler);
+  }, [checkVipLicense]);
 
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
@@ -108,7 +130,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       </Toolbar>
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       <List sx={{ px: collapsed ? 0.5 : 1 }}>
-        {navItems.map((item) => (
+        {[...navItems, ...(hasVip ? [{ key: '/vip', icon: <StarIcon sx={{ color: 'warning.main' }} />, label: 'nav.vip' }] : [])].map((item) => (
           <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
             <ListItemButton
               selected={location.pathname === item.key}

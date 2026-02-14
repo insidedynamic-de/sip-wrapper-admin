@@ -18,13 +18,22 @@ Frontend (SPA) → FastAPI Backend → License Server
                                  → FreeSWITCH
 ```
 
-### License Tiers
+### Product Structure
 
-| Tier | Connections | Duration | Notes |
-|------|-------------|----------|-------|
-| Trial | 2 | 14 days | Auto-generated on first install |
-| NFR (Not for Resale) | 2 | 6–12 months | For partners/demos |
-| Paid | 10+ (packages of 10) | 12 / 24 / 36 months | Production use |
+```
+Linkify (product line)
+└── SIP Wrapper (subproduct)
+    └── Basic (license name — base SIP functionality)
+    └── ... (future integrations)
+```
+
+### Client Types
+
+| Type | Description |
+|------|-------------|
+| `partner` | Reseller / partner |
+| `client` | Direct customer |
+| `internal` | Internal use (NFR) |
 
 **1 Connection = 1 enabled Extension Route** (inbound or outbound). Disabled routes don't count. Active but offline routes DO count.
 
@@ -33,11 +42,13 @@ Frontend (SPA) → FastAPI Backend → License Server
 ```typescript
 interface License {
   license_key: string;       // Unique key, format: "XXXX-XXXX-XXXX-XXXX"
+  product: string;           // Product line, e.g. "Linkify"
+  subproduct: string;        // Subproduct, e.g. "SIP Wrapper"
+  license_name: string;      // License name, e.g. "Basic"
+  type: 'partner' | 'client' | 'internal';  // Client type
   client_name: string;       // Company/client name
   licensed: boolean;         // true = active and valid
-  expires: string;           // ISO date, e.g. "2026-12-31"
-  trial: boolean;            // true = trial license
-  nfr: boolean;              // true = NFR license
+  valid_until: string;       // ISO date, e.g. "2026-12-31"
   days_remaining: number;    // Days until expiration (0 if perpetual/expired)
   max_connections: number;   // Max enabled routes this key allows
   version: string;           // Software version bound to, e.g. "2.0.0"
@@ -64,8 +75,6 @@ These are the endpoints the **FastAPI backend** exposes to the frontend:
   "licenses": [ /* License[] */ ],
   "total_connections": 12,
   "licensed": true,
-  "trial": false,
-  "nfr": false,
   "max_connections": 12,
   "version": "2.0.0",
   "server_id": "srv-a1b2c3d4"
@@ -74,7 +83,6 @@ These are the endpoints the **FastAPI backend** exposes to the frontend:
 
 - `total_connections` — Sum of `max_connections` from all `licensed=true` licenses
 - `licensed` — true if at least one license has `licensed=true`
-- `trial` / `nfr` — true if any license has the respective flag
 - `server_id` — This server's hardware fingerprint
 
 #### PUT /api/v1/license — Activation Flow

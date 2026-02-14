@@ -487,15 +487,10 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   if (url === '/license' && method === 'get') {
     const lics = store.licenses || [];
     const totalConn = lics.reduce((s, l) => s + (l.licensed ? l.max_connections : 0), 0);
-    const hasLicensed = lics.some((l) => l.licensed);
-    const hasTrial = lics.some((l) => l.trial);
-    const hasNfr = lics.some((l) => l.nfr);
     return mock({
       licenses: lics,
       total_connections: totalConn,
-      licensed: hasLicensed,
-      trial: hasTrial,
-      nfr: hasNfr,
+      licensed: lics.some((l) => l.licensed),
       max_connections: totalConn,
       version: lics[0]?.version || '2.0.0',
       server_id: lics[0]?.server_id || '',
@@ -505,32 +500,58 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     // Activate a license key — only accept known demo keys
     const key = String(body.license_key || '');
     if (!key) return mockError({ success: false, message: 'No key provided' }, config, 400);
-    const exists = (store.licenses || []).find((l) => l.license_key === key);
-    if (exists) return mockError({ success: false, message: 'license_duplicate' }, config, 409);
-    // Only accept known demo keys with predefined connection counts
-    const VALID_DEMO_KEYS: Record<string, number> = {
-      'DEMO-0000-0000-0001': 4,
-      'DEMO-0000-0000-0002': 4,
-      'DEMO-0000-0000-0003': 8,
+    const existing = (store.licenses || []).find((l) => l.license_key === key);
+    // If license exists but is deactivated, reactivate it (same checks as new)
+    if (existing && existing.licensed) return mockError({ success: false, message: 'license_duplicate' }, config, 409);
+    const VALID_DEMO_KEYS: Record<string, { connections: number; product: string; subproduct: string; license_name: string }> = {
+      'DEMO-0000-0000-0001': { connections: 4, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
+      'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
+      'DEMO-0000-0000-0003': { connections: 8, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
+      'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support' },
     };
-    const connections = VALID_DEMO_KEYS[key];
-    if (connections === undefined) return mockError({ success: false, message: 'license_invalid' }, config, 400);
-    const expDate = new Date();
-    expDate.setFullYear(expDate.getFullYear() + 1);
-    const newLic = {
-      license_key: key,
-      client_name: 'InsideDynamic Demo',
-      licensed: true,
-      expires: expDate.toISOString().slice(0, 10),
-      trial: false,
-      nfr: false,
-      days_remaining: 0,
-      max_connections: connections,
-      version: '2.0.0',
-      server_id: 'srv-a1b2c3d4',
-      bound_to: 'srv-a1b2c3d4',
-    };
-    store.licenses = [...(store.licenses || []), newLic];
+    const keyInfo = VALID_DEMO_KEYS[key];
+    if (!keyInfo) return mockError({ success: false, message: 'license_invalid' }, config, 400);
+    if (existing) {
+      // Reactivate deactivated license
+      existing.licensed = true;
+      existing.bound_to = existing.server_id || 'srv-a1b2c3d4';
+      const expDate = new Date();
+      expDate.setFullYear(expDate.getFullYear() + 1);
+      existing.valid_until = expDate.toISOString().slice(0, 10);
+    } else {
+      // New license activation
+      const expDate = new Date();
+      expDate.setFullYear(expDate.getFullYear() + 1);
+      const newLic = {
+        license_key: key,
+        product: keyInfo.product,
+        subproduct: keyInfo.subproduct,
+        license_name: keyInfo.license_name,
+        type: 'client' as const,
+        client_name: 'InsideDynamic Demo',
+        licensed: true,
+        valid_until: expDate.toISOString().slice(0, 10),
+        days_remaining: 0,
+        max_connections: keyInfo.connections,
+        version: '2.0.0',
+        server_id: 'srv-a1b2c3d4',
+        bound_to: 'srv-a1b2c3d4',
+      };
+      store.licenses = [...(store.licenses || []), newLic];
+    }
+    saveDemoStore(store);
+    return mock(ok(), config);
+  }
+  // Deactivate license (Abmeldung)
+  if (url === '/license/deactivate' && method === 'post') {
+    const key = String(body.license_key || '');
+    const srvId = String(body.server_id || '');
+    if (!key || !srvId) return mockError({ success: false, message: 'Missing license_key or server_id' }, config, 400);
+    const lic = (store.licenses || []).find((l) => l.license_key === key);
+    if (!lic) return mockError({ success: false, message: 'license_not_found' }, config, 404);
+    if (!lic.licensed) return mockError({ success: false, message: 'license_already_deactivated' }, config, 400);
+    lic.licensed = false;
+    lic.bound_to = undefined;
     saveDemoStore(store);
     return mock(ok(), config);
   }

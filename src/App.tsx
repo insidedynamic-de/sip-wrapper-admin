@@ -13,6 +13,8 @@ import RoutesPage from './pages/Routes';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
 import Monitoring from './pages/Monitoring';
+import Integrations from './pages/Integrations';
+import VIP from './pages/VIP';
 import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -60,6 +62,8 @@ export default function App() {
             <Route path="/gateways" element={<Navigate to="/configuration" replace />} />
             <Route path="/routes" element={<RoutesPage />} />
             <Route path="/security" element={<Navigate to="/configuration" replace />} />
+            <Route path="/integrations" element={<Integrations />} />
+            <Route path="/vip" element={<VIP />} />
             <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Navigate to="/configuration" replace />} />

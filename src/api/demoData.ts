@@ -40,11 +40,13 @@ export interface DemoStore {
   settings: Record<string, unknown>;
   licenses: {
     license_key: string;
+    product: string;
+    subproduct: string;
+    license_name: string;
+    type: 'partner' | 'client' | 'internal';
     client_name: string;
     licensed: boolean;
-    expires: string;
-    trial: boolean;
-    nfr: boolean;
+    valid_until: string;
     days_remaining: number;
     max_connections: number;
     version: string;
@@ -251,7 +253,7 @@ const SEED_DATA: DemoStore = {
     outbound_caller_id: '+4930123456',
   },
   licenses: [
-    { license_key: 'DEMO-0000-0000-0001', client_name: 'InsideDynamic Demo', licensed: true, expires: '2026-12-31', trial: false, nfr: false, days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
+    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
   ],
   company: {
     company_name: 'Demo Ltd',

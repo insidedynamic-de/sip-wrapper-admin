@@ -8,7 +8,6 @@ import {
   Box, Typography, Card, CardContent, TextField, Button, Chip,
   IconButton, Tooltip,
 } from '@mui/material';
-import SaveIcon from '@mui/icons-material/Save';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import api from '../api/client';
@@ -20,11 +19,13 @@ import { isDemoMode } from '../store/preferences';
 
 interface LicenseEntry {
   license_key: string;
+  product: string;
+  subproduct: string;
+  license_name: string;
+  type: 'partner' | 'client' | 'internal';
   client_name: string;
   licensed: boolean;
-  expires: string;
-  trial: boolean;
-  nfr: boolean;
+  valid_until: string;
   days_remaining: number;
   max_connections: number;
   version: string;
@@ -32,7 +33,7 @@ interface LicenseEntry {
   bound_to?: string;
 }
 
-const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003'];
+const DEMO_KEYS = ['DEMO-0000-0000-0001', 'DEMO-0000-0000-0002', 'DEMO-0000-0000-0003', 'DEMO-PREMSUPPORT-0001'];
 
 export default function LicenseTab() {
   const { t } = useTranslation();
@@ -56,6 +57,9 @@ export default function LicenseTab() {
 
   const showToast = (msg: string, ok: boolean) => setToast({ open: true, message: msg, severity: ok ? 'success' : 'error' });
 
+  /** Notify sidebar, integrations page, etc. that licenses changed */
+  const notifyLicenseChanged = () => window.dispatchEvent(new Event('license-changed'));
+
   const load = useCallback(async () => {
     try {
       const [licRes, routeRes] = await Promise.all([
@@ -78,13 +82,8 @@ export default function LicenseTab() {
 
   useEffect(() => { load(); }, [load]);
 
-  // License type label per entry
-  const licType = (l: LicenseEntry) => {
-    if (l.trial) return t('license.trial_mode');
-    if (l.nfr) return 'NFR';
-    if (l.licensed) return t('license.standard');
-    return '\u2014';
-  };
+  // Client type label
+  const typeLabel = (l: LicenseEntry) => t(`license.type_${l.type}`) || l.type;
 
   // Activate license
   const doActivateLicense = async () => {
@@ -93,6 +92,7 @@ export default function LicenseTab() {
       setLicenseKey('');
       showToast(t('status.success'), true);
       load();
+      notifyLicenseChanged();
     } catch (err: unknown) {
       const resp = (err as { response?: { data?: { message?: string } } })?.response?.data;
       const msgKey = resp?.message;
@@ -106,6 +106,23 @@ export default function LicenseTab() {
     }
   };
   const activateLicense = () => setConfirmSave({ open: true, action: doActivateLicense });
+
+  // Reactivate a deactivated license (same flow as activate with existing key)
+  const reactivateLicense = (l: LicenseEntry) => {
+    setConfirmSave({
+      open: true,
+      action: async () => {
+        try {
+          await api.put('/license', { license_key: l.license_key });
+          showToast(t('status.success'), true);
+          load();
+          notifyLicenseChanged();
+        } catch {
+          showToast(t('status.error'), false);
+        }
+      },
+    });
+  };
 
   // Refresh
   const refreshLicense = async () => {
@@ -122,6 +139,39 @@ export default function LicenseTab() {
     setDialogOpen(true);
   };
 
+  // Deactivate license (Abmeldung)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
+
+  const requestDeactivate = (l: LicenseEntry) => {
+    setConfirmDeactivate({
+      open: true,
+      name: l.license_key,
+      action: async () => {
+        try {
+          await api.post('/license/deactivate', {
+            license_key: l.license_key,
+            server_id: serverId || l.server_id || '',
+          });
+          showToast(t('license.deactivate_success'), true);
+          load();
+          notifyLicenseChanged();
+        } catch (err: unknown) {
+          const resp = (err as { response?: { data?: { message?: string } } })?.response?.data;
+          if (resp?.message === 'license_already_deactivated') {
+            showToast(t('license.error_already_deactivated'), false);
+          } else {
+            showToast(t('status.error'), false);
+          }
+        }
+      },
+    });
+  };
+  const handleConfirmDeactivate = async () => {
+    const a = confirmDeactivate.action;
+    setConfirmDeactivate({ open: false, name: '', action: null });
+    if (a) await a();
+  };
+
   // Delete license
   const requestDelete = (l: LicenseEntry) => {
     setConfirmDelete({
@@ -130,6 +180,7 @@ export default function LicenseTab() {
       action: async () => {
         await api.delete(`/license/${encodeURIComponent(l.license_key)}`);
         load();
+        notifyLicenseChanged();
       },
     });
   };
@@ -212,12 +263,17 @@ export default function LicenseTab() {
           { id: 'key', header: t('license.license_key'), render: (l) => (
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{l.license_key}</Typography>
           ), searchText: (l) => l.license_key },
-          { id: 'client', header: t('license.client'), render: (l) => l.client_name || '\u2014', searchText: (l) => l.client_name },
-          { id: 'type', header: t('license.license_type'), render: (l) => (
-            <Chip size="small" label={licType(l)}
-              color={l.trial ? 'warning' : l.nfr ? 'info' : l.licensed ? 'success' : 'default'} />
+          { id: 'product', header: t('license.product'), render: (l) => l.product || '\u2014' },
+          { id: 'subproduct', header: t('license.subproduct'), render: (l) => l.subproduct || '\u2014' },
+          { id: 'license_name', header: t('license.license_name'), render: (l) => (
+            <Chip size="small" label={l.license_name} color="primary" />
           )},
-          { id: 'expires', header: t('license.expires'), render: (l) => l.expires || '\u2014' },
+          { id: 'type', header: t('license.client_type'), render: (l) => (
+            <Chip size="small" label={typeLabel(l)}
+              color={l.type === 'partner' ? 'info' : l.type === 'internal' ? 'warning' : 'success'} />
+          )},
+          { id: 'client', header: t('license.client'), render: (l) => l.client_name || '\u2014', searchText: (l) => l.client_name },
+          { id: 'valid_until', header: t('license.valid_until'), render: (l) => l.valid_until || '\u2014' },
           { id: 'connections', header: t('license.connections'), render: (l) => (
             <Typography component="span" sx={{ fontWeight: 600 }}>{l.max_connections}</Typography>
           )},
@@ -225,9 +281,11 @@ export default function LicenseTab() {
         columnOrderKey="license-columns"
         searchable
         getStatus={(l) => ({
-          label: l.licensed ? t('license.licensed') : '\u2014',
-          color: l.licensed ? 'success' : 'default',
+          label: l.licensed ? t('license.licensed') : t('license.deactivated'),
+          color: l.licensed ? 'success' : 'error',
         })}
+        getEnabled={(l) => l.licensed}
+        onToggle={(l) => l.licensed ? requestDeactivate(l) : reactivateLicense(l)}
         onView={openView}
         onDelete={requestDelete}
       />
@@ -264,14 +322,14 @@ export default function LicenseTab() {
         {dialogLicense && (
           <>
             <TextField label={t('license.license_key')} value={dialogLicense.license_key} disabled />
+            <TextField label={t('license.product')} value={dialogLicense.product} disabled />
+            <TextField label={t('license.subproduct')} value={dialogLicense.subproduct} disabled />
+            <TextField label={t('license.license_name')} value={dialogLicense.license_name} disabled />
+            <TextField label={t('license.client_type')} value={typeLabel(dialogLicense)} disabled />
             <TextField label={t('license.client_name')} value={dialogLicense.client_name} disabled />
-            <TextField label={t('license.license_type')} value={licType(dialogLicense)} disabled />
-            <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
-            <TextField label={t('license.expires')} value={dialogLicense.expires || '\u2014'} disabled />
+            <TextField label={t('license.valid_until')} value={dialogLicense.valid_until || '\u2014'} disabled />
             <TextField label={t('license.connections')} value={dialogLicense.max_connections} disabled />
-            {dialogLicense.trial && (
-              <TextField label={t('license.days_remaining')} value={dialogLicense.days_remaining} disabled />
-            )}
+            <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
             {dialogLicense.server_id && (
               <TextField label={t('license.server_id')} value={dialogLicense.server_id} disabled />
             )}
@@ -283,6 +341,12 @@ export default function LicenseTab() {
         title={t('confirm.save_title')} message={t('confirm.save_message')}
         confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
+
+      <ConfirmDialog open={confirmDeactivate.open} variant="delete"
+        title={t('license.deactivate_title')}
+        message={t('license.deactivate_message', { name: confirmDeactivate.name })}
+        confirmLabel={t('license.deactivate')} cancelLabel={t('button.cancel')}
+        onConfirm={handleConfirmDeactivate} onCancel={() => setConfirmDeactivate({ open: false, name: '', action: null })} />
 
       <ConfirmDialog open={confirmDelete.open} variant="delete"
         title={t('confirm.delete_title')}
