@@ -91,14 +91,14 @@ const SEED_DATA: DemoStore = {
   ],
   // ── Users (8 total: 6 enabled, 2 disabled) ──
   users: [
-    { username: 'alice', extension: '1001', caller_id: 'Alice Johnson', enabled: true },
-    { username: 'bob', extension: '1002', caller_id: 'Bob Smith', enabled: true },
-    { username: 'carol', extension: '1003', caller_id: 'Carol White', enabled: true },
-    { username: 'david', extension: '1004', caller_id: 'David Brown', enabled: false },
-    { username: 'eva', extension: '1005', caller_id: 'Eva Müller', enabled: true },
-    { username: 'frank', extension: '1006', caller_id: 'Frank Weber', enabled: true },
-    { username: 'grace', extension: '1007', caller_id: 'Grace Lee', enabled: false },
-    { username: 'hans', extension: '1008', caller_id: 'Hans Schmidt', enabled: true },
+    { username: 'alice', extension: '1001', caller_id: '+4930111001', enabled: true },
+    { username: 'bob', extension: '1002', caller_id: '+4930111002', enabled: true },
+    { username: 'carol', extension: '1003', caller_id: '+4930111003', enabled: true },
+    { username: 'david', extension: '1004', caller_id: '+4930111004', enabled: false },
+    { username: 'eva', extension: '1005', caller_id: '+4930111005', enabled: true },
+    { username: 'frank', extension: '1006', caller_id: '+4930111006', enabled: true },
+    { username: 'grace', extension: '1007', caller_id: '+4930111007', enabled: false },
+    { username: 'hans', extension: '1008', caller_id: '+4930111008', enabled: true },
   ],
   // ── ACL Users (4 entries) ──
   aclUsers: [
@@ -133,9 +133,9 @@ const SEED_DATA: DemoStore = {
   // ── Active Calls (4 calls: different states, each with gateway) ──
   activeCalls: [
     { uuid: 'ac-1', direction: 'inbound', caller_id: '+4930111111', destination: '1001', state: 'active', duration: '02:15', gateway: 'sipgate' },
-    { uuid: 'ac-2', direction: 'outbound', caller_id: '1002', destination: '+4930999999', state: 'ringing', duration: '00:05', gateway: 'telekom' },
+    { uuid: 'ac-2', direction: 'outbound', caller_id: '+4930111002', destination: '+4930999999', state: 'ringing', duration: '00:05', gateway: 'telekom' },
     { uuid: 'ac-3', direction: 'inbound', caller_id: '+4940555555', destination: '1003', state: 'active', duration: '05:42', gateway: 'sipgate' },
-    { uuid: 'ac-4', direction: 'outbound', caller_id: '1005', destination: '+4930777000', state: 'early', duration: '00:12', gateway: 'plivo-ai' },
+    { uuid: 'ac-4', direction: 'outbound', caller_id: '+4930111005', destination: '+4930777000', state: 'early', duration: '00:12', gateway: 'plivo-ai' },
   ],
   // ── Call Statistics (per-connection aggregated stats) ──
   callStats: [
@@ -180,7 +180,7 @@ const SEED_DATA: DemoStore = {
       ],
     },
     auto_blacklist: { enabled: true, threshold: 5, time_window: 300, block_duration: 3600, trust_proxy: false },
-    fail2ban: { enabled: false, threshold: 50, jail_name: 'sip-jail' },
+    fail2ban: { enabled: true, threshold: 50, jail_name: 'sip-jail' },
   },
   // ── ESL Events (16 entries: diverse FS categories) ──
   eslEvents: [
@@ -209,20 +209,20 @@ const SEED_DATA: DemoStore = {
   // ── Call Logs (15 entries: mix of answered, missed, failed, busy) ──
   callLogs: [
     { uuid: 'c01', direction: 'inbound', caller_id: '+4930111111', destination: '1001', start_time: new Date(Date.now() - 1800000).toISOString(), duration: 245, result: 'answered', gateway: 'sipgate' },
-    { uuid: 'c02', direction: 'outbound', caller_id: '1001', destination: '+4930222222', start_time: new Date(Date.now() - 3600000).toISOString(), duration: 62, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c02', direction: 'outbound', caller_id: '+4930111001', destination: '+4930222222', start_time: new Date(Date.now() - 3600000).toISOString(), duration: 62, result: 'answered', gateway: 'sipgate' },
     { uuid: 'c03', direction: 'inbound', caller_id: '+4930333333', destination: '1002', start_time: new Date(Date.now() - 5400000).toISOString(), duration: 0, result: 'missed', gateway: 'telekom' },
-    { uuid: 'c04', direction: 'outbound', caller_id: '1002', destination: '+4930444444', start_time: new Date(Date.now() - 7200000).toISOString(), duration: 180, result: 'answered', gateway: 'telekom' },
+    { uuid: 'c04', direction: 'outbound', caller_id: '+4930111002', destination: '+4930444444', start_time: new Date(Date.now() - 7200000).toISOString(), duration: 180, result: 'answered', gateway: 'telekom' },
     { uuid: 'c05', direction: 'inbound', caller_id: '+4930555555', destination: '1001', start_time: new Date(Date.now() - 10800000).toISOString(), duration: 0, result: 'failed', gateway: 'sipgate' },
-    { uuid: 'c06', direction: 'outbound', caller_id: '1003', destination: '+4930666666', start_time: new Date(Date.now() - 14400000).toISOString(), duration: 0, result: 'busy', gateway: 'sipgate' },
+    { uuid: 'c06', direction: 'outbound', caller_id: '+4930111003', destination: '+4930666666', start_time: new Date(Date.now() - 14400000).toISOString(), duration: 0, result: 'busy', gateway: 'sipgate' },
     { uuid: 'c07', direction: 'inbound', caller_id: '+4940123456', destination: '1003', start_time: new Date(Date.now() - 18000000).toISOString(), duration: 312, result: 'answered', gateway: 'sipgate' },
-    { uuid: 'c08', direction: 'outbound', caller_id: '1005', destination: '+4930777000', start_time: new Date(Date.now() - 21600000).toISOString(), duration: 95, result: 'answered', gateway: 'plivo-ai' },
+    { uuid: 'c08', direction: 'outbound', caller_id: '+4930111005', destination: '+4930777000', start_time: new Date(Date.now() - 21600000).toISOString(), duration: 95, result: 'answered', gateway: 'plivo-ai' },
     { uuid: 'c09', direction: 'inbound', caller_id: '+4930888111', destination: '1005', start_time: new Date(Date.now() - 28800000).toISOString(), duration: 0, result: 'missed', gateway: 'plivo-ai' },
-    { uuid: 'c10', direction: 'outbound', caller_id: '1001', destination: '+4930999222', start_time: new Date(Date.now() - 43200000).toISOString(), duration: 45, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c10', direction: 'outbound', caller_id: '+4930111001', destination: '+4930999222', start_time: new Date(Date.now() - 43200000).toISOString(), duration: 45, result: 'answered', gateway: 'sipgate' },
     { uuid: 'c11', direction: 'inbound', caller_id: '+4940777888', destination: '1002', start_time: new Date(Date.now() - 50400000).toISOString(), duration: 0, result: 'failed', gateway: 'telekom' },
-    { uuid: 'c12', direction: 'outbound', caller_id: '1006', destination: '+4930111222', start_time: new Date(Date.now() - 57600000).toISOString(), duration: 128, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c12', direction: 'outbound', caller_id: '+4930111006', destination: '+4930111222', start_time: new Date(Date.now() - 57600000).toISOString(), duration: 128, result: 'answered', gateway: 'sipgate' },
     { uuid: 'c13', direction: 'inbound', caller_id: '+4930444555', destination: '1001', start_time: new Date(Date.now() - 72000000).toISOString(), duration: 0, result: 'busy', gateway: 'sipgate' },
     { uuid: 'c14', direction: 'inbound', caller_id: '+4930777777', destination: '1001', start_time: new Date(Date.now() - 86400000).toISOString(), duration: 412, result: 'answered', gateway: 'telekom' },
-    { uuid: 'c15', direction: 'outbound', caller_id: '1001', destination: '+4930888888', start_time: new Date(Date.now() - 90000000).toISOString(), duration: 67, result: 'answered', gateway: 'sipgate' },
+    { uuid: 'c15', direction: 'outbound', caller_id: '+4930111001', destination: '+4930888888', start_time: new Date(Date.now() - 90000000).toISOString(), duration: 67, result: 'answered', gateway: 'sipgate' },
   ],
   // ── Security Logs (12 entries: mix of levels and event types) ──
   securityLogs: [
@@ -338,6 +338,11 @@ export function seedDemoData(): void {
 /** Clear all demo data from localStorage */
 export function clearDemoData(): void {
   localStorage.removeItem(DEMO_STORAGE_KEY);
+}
+
+/** Reset demo data to factory defaults (wipes current data and re-seeds) */
+export function resetDemoData(): void {
+  localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(SEED_DATA));
 }
 
 /** Load entire demo store */

@@ -195,6 +195,30 @@ src/
 
 ---
 
+## Data Storage Architecture
+
+The frontend is a **thin client** — all business data lives on the backend.
+
+### What the Backend Stores (via API)
+All configuration and operational data: users, gateways, routes, security rules, settings, licenses, company info, call logs, ESL events, etc. The frontend fetches and sends this data via `/api/v1/*` endpoints.
+
+### What the Client Stores (localStorage)
+
+| Key | Purpose | Scope |
+|-----|---------|-------|
+| `api_key` / `api_key_enc` | API authentication (encrypted AES-GCM + plain fallback) | Auth |
+| `api_host` | Backend server URL | Auth |
+| `sip-wrapper-prefs` | UI preferences: theme, language, auto-logout, time/date format, sidebar state | Local UI |
+| `language` | Current UI language (read by i18next on startup) | Local UI |
+| `sip-wrapper-dashboard-cards` | Hidden/visible dashboard cards | Local UI |
+| Column/tab order keys | Drag-to-reorder table columns and tabs | Local UI |
+| `sip-wrapper-demo-data` | Full simulated backend store (demo mode only) | Demo only |
+| `sip-wrapper-logout-at` | Logout timestamp for demo data cleanup | Demo only |
+
+**Rule:** The client never caches backend data in localStorage outside of demo mode. In production, every page load fetches fresh data from the API.
+
+---
+
 ## Demo Mode
 
 When enabled on the Login page, the app runs entirely client-side:
@@ -203,6 +227,15 @@ When enabled on the Login page, the app runs entirely client-side:
 - Dashboard simulates live calls (state transitions, random new calls, ended calls saved to logs)
 - Dashboard simulates security events (per-IP escalation: auth failure → brute force → blocked → banned)
 - Error responses (400, 403, 409) use `mockError()` for correct Axios error handling
+
+### Demo Data Lifecycle
+| Event | Behavior |
+|-------|----------|
+| First login with demo mode | Seed data written to `sip-wrapper-demo-data` |
+| Subsequent logins (< 60 min since logout) | Existing demo data preserved (user changes kept) |
+| Login after 60+ min since logout | Demo data reset to factory defaults automatically |
+| "Reset to Default" button (Configuration → Import/Export) | Demo data reset to factory defaults immediately (with confirmation) |
+| Demo mode disabled | Demo adapter detached, API calls go to real backend |
 
 ---
 

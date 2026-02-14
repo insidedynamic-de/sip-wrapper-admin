@@ -1,22 +1,19 @@
 /**
- * @file Profile — User profile with tabs: Settings (appearance, auto-logout, password) and Billing
+ * @file Profile — User profile with tabs: Settings (appearance, auto-logout) and Billing
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Card, CardContent, Button,
+  Box, Typography, Card, CardContent,
   TextField, ToggleButtonGroup, ToggleButton,
   Switch, FormControlLabel,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import api from '../api/client';
-import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode, TimeFormat, DateFormat } from '../store/preferences';
@@ -66,10 +63,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
 
   const dirty = JSON.stringify(local) !== JSON.stringify(snapshot);
 
-  // Password (API-based)
-  const [pw, setPw] = useState({ current: '', newPw: '', confirm: '' });
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
 
   const showToast = (msg: string, ok: boolean) => setToast({ open: true, message: msg, severity: ok ? 'success' : 'error' });
 
@@ -97,25 +91,6 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
     i18n.changeLanguage(snapshot.language);
   }, [snapshot, setThemeMode, setColorTheme]);
 
-  // --- Password (API-based) ---
-  const doChangePassword = async () => {
-    if (pw.newPw !== pw.confirm) {
-      showToast(t('profile.passwords_not_match'), false);
-      return;
-    }
-    try {
-      const res = await api.put('/profile/password', { current_password: pw.current, new_password: pw.newPw });
-      showToast(res.data?.message || t('status.success'), res.data?.success);
-      if (res.data?.success) setPw({ current: '', newPw: '', confirm: '' });
-    } catch { showToast(t('status.error'), false); }
-  };
-  const changePassword = () => setConfirmSave({ open: true, action: doChangePassword });
-
-  const handleConfirmSave = async () => {
-    const a = confirmSave.action;
-    setConfirmSave({ open: false, action: null });
-    if (a) await a();
-  };
 
   // Settings tab content (existing profile content)
   const settingsContent = (
@@ -204,28 +179,6 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
 
       {/* Save / Cancel for preferences */}
       <PageActions dirty={dirty} onSave={handleSavePrefs} onCancel={handleCancelPrefs} />
-
-      {/* Password */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent sx={{ px: 4, py: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>{t('profile.change_password')}</Typography>
-          <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField fullWidth type="password" label={t('profile.current_password')} value={pw.current}
-                onChange={(e) => setPw({ ...pw, current: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField fullWidth type="password" label={t('profile.new_password')} value={pw.newPw}
-                onChange={(e) => setPw({ ...pw, newPw: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 4 }}>
-              <TextField fullWidth type="password" label={t('profile.confirm_password')} value={pw.confirm}
-                onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
-            </Grid>
-          </Grid>
-          <Button variant="contained" sx={{ mt: 2 }} onClick={changePassword}>{t('button.save')}</Button>
-        </CardContent>
-      </Card>
     </Box>
   );
 
@@ -238,11 +191,6 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
     <Box>
       <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.profile')}</Typography>
       <TabView tabs={tabs} storageKey="sip-wrapper-tab-order-profile" sortable />
-
-      <ConfirmDialog open={confirmSave.open} variant="save"
-        title={t('confirm.save_title')} message={t('confirm.save_message')}
-        confirmLabel={t('button.save')} cancelLabel={t('button.cancel')}
-        onConfirm={handleConfirmSave} onCancel={() => setConfirmSave({ open: false, action: null })} />
 
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>

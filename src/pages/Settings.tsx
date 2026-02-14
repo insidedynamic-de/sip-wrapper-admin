@@ -2,13 +2,16 @@ import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Button,
-  TextField,
+  TextField, Divider,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import SaveIcon from '@mui/icons-material/Save';
 import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
+import RestoreIcon from '@mui/icons-material/Restore';
 import api from '../api/client';
+import { isDemoMode } from '../store/preferences';
+import { resetDemoData } from '../api/demoData';
 import ConfirmDialog from '../components/ConfirmDialog';
 import Toast from '../components/Toast';
 
@@ -17,6 +20,8 @@ export default function Settings() {
   const [settings, setSettings] = useState<Record<string, unknown>>({});
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [confirmSave, setConfirmSave] = useState<{ open: boolean; action: (() => Promise<void>) | null }>({ open: false, action: null });
+  const [confirmReset, setConfirmReset] = useState(false);
+  const demo = isDemoMode();
 
   const load = useCallback(async () => {
     const res = await api.get('/settings');
@@ -128,8 +133,32 @@ export default function Settings() {
               <input type="file" hidden accept=".json" onChange={importConfig} />
             </Button>
           </Box>
+
+          {demo && (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {t('demo.reset_desc')}
+              </Typography>
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<RestoreIcon />}
+                onClick={() => setConfirmReset(true)}
+              >
+                {t('demo.reset_default')}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog open={confirmReset}
+        variant="delete"
+        title={t('demo.reset_title')} message={t('demo.reset_message')}
+        confirmLabel={t('demo.reset_confirm')} cancelLabel={t('button.cancel')}
+        onConfirm={() => { resetDemoData(); setConfirmReset(false); setToast({ open: true, message: t('demo.reset_success'), severity: 'success' }); load(); }}
+        onCancel={() => setConfirmReset(false)} />
 
       <ConfirmDialog open={confirmSave.open} variant="save"
         title={t('confirm.save_title')} message={t('confirm.save_message')}

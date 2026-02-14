@@ -100,9 +100,6 @@
     "import_overwrite": "Overwrite"
   },
   "profile": {
-    "change_password": "Change Password", "current_password": "Current Password",
-    "new_password": "New Password", "confirm_password": "Confirm Password",
-    "passwords_not_match": "Passwords do not match",
     "settings": "Settings",
     "appearance": "Appearance", "theme_mode": "Theme Mode", "color_theme": "Color Theme",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Enable Auto-Logout",
@@ -348,6 +345,12 @@
     "enable": "Enable Demo Mode",
     "description": "Run the admin panel with simulated data. No real backend connection needed.",
     "login_success": "Logged in (Demo Mode)",
-    "active_notice": "Demo mode enabled — no real server connection"
+    "active_notice": "Demo mode enabled — no real server connection",
+    "reset_default": "Reset to Default",
+    "reset_desc": "Reset all demo data to factory defaults. All changes will be lost.",
+    "reset_title": "Reset Demo Data?",
+    "reset_message": "All demo data will be reset to factory defaults. All your changes (users, gateways, routes, etc.) will be permanently lost. Are you sure?",
+    "reset_confirm": "Yes, Reset",
+    "reset_success": "Demo data reset to defaults"
   }
 }

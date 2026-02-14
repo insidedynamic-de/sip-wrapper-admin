@@ -17,7 +17,7 @@ interface Props extends ToastState {
 
 export default function Toast({ open, message, severity, onClose, autoHideDuration = 5000 }: Props) {
   return (
-    <Snackbar open={open} autoHideDuration={autoHideDuration} onClose={onClose}>
+    <Snackbar open={open} autoHideDuration={autoHideDuration} onClose={onClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
       <Alert
         severity={severity}
         variant="filled"

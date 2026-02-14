@@ -1,12 +1,17 @@
 /**
- * @file ImportExportCard — Config import/export actions
+ * @file ImportExportCard — Config import/export actions + demo data reset
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Card, CardContent, Typography, Box, Button } from '@mui/material';
+import { Card, CardContent, Typography, Box, Button, Divider } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
 import DownloadIcon from '@mui/icons-material/Download';
+import RestoreIcon from '@mui/icons-material/Restore';
 import api from '../../api/client';
+import { isDemoMode } from '../../store/preferences';
+import { resetDemoData } from '../../api/demoData';
+import ConfirmDialog from '../ConfirmDialog';
 
 interface Props {
   onToast: (message: string, ok: boolean) => void;
@@ -15,6 +20,8 @@ interface Props {
 
 export default function ImportExportCard({ onToast, onReload }: Props) {
   const { t } = useTranslation();
+  const [confirmReset, setConfirmReset] = useState(false);
+  const demo = isDemoMode();
 
   const exportConfig = async () => {
     const res = await api.get('/config/export');
@@ -44,23 +51,60 @@ export default function ImportExportCard({ onToast, onReload }: Props) {
     e.target.value = '';
   };
 
+  const handleResetDemo = () => {
+    resetDemoData();
+    setConfirmReset(false);
+    onToast(t('demo.reset_success'), true);
+    onReload();
+  };
+
   return (
-    <Card>
-      <CardContent sx={{ px: 4, py: 3 }}>
-        <Typography variant="h6" sx={{ mb: 1 }}>{t('config.import_export')}</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('config.export_desc')}
-        </Typography>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportConfig}>
-            {t('config.export_json')}
-          </Button>
-          <Button variant="outlined" component="label" startIcon={<UploadIcon />}>
-            {t('config.import_json')}
-            <input type="file" hidden accept=".json" onChange={importConfig} />
-          </Button>
-        </Box>
-      </CardContent>
-    </Card>
+    <>
+      <Card>
+        <CardContent sx={{ px: 4, py: 3 }}>
+          <Typography variant="h6" sx={{ mb: 1 }}>{t('config.import_export')}</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {t('config.export_desc')}
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button variant="outlined" startIcon={<DownloadIcon />} onClick={exportConfig}>
+              {t('config.export_json')}
+            </Button>
+            <Button variant="outlined" component="label" startIcon={<UploadIcon />}>
+              {t('config.import_json')}
+              <input type="file" hidden accept=".json" onChange={importConfig} />
+            </Button>
+          </Box>
+
+          {demo && (
+            <>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
+                {t('demo.reset_desc')}
+              </Typography>
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<RestoreIcon />}
+                onClick={() => setConfirmReset(true)}
+              >
+                {t('demo.reset_default')}
+              </Button>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <ConfirmDialog
+        open={confirmReset}
+        variant="delete"
+        title={t('demo.reset_title')}
+        message={t('demo.reset_message')}
+        confirmLabel={t('demo.reset_confirm')}
+        cancelLabel={t('button.cancel')}
+        onConfirm={handleResetDemo}
+        onCancel={() => setConfirmReset(false)}
+      />
+    </>
   );
 }

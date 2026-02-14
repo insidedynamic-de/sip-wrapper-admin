@@ -4,9 +4,9 @@
  */
 import axios from 'axios';
 import demoAdapter from './demoAdapter';
-import { seedDemoData } from './demoData';
+import { seedDemoData, resetDemoData } from './demoData';
 import { isDemoMode } from '../store/preferences';
-import { clearApiKey } from '../store/keyStore';
+import { clearApiKey, shouldCleanupDemoData } from '../store/keyStore';
 
 // Restore saved host on startup
 const savedHost = localStorage.getItem('api_host');
@@ -39,7 +39,13 @@ api.interceptors.response.use(
 /** Enable or disable demo mode on the API client */
 export function setDemoAdapter(enabled: boolean): void {
   if (enabled) {
-    seedDemoData();
+    // If 60+ minutes since last logout, reset demo data to defaults
+    if (shouldCleanupDemoData()) {
+      resetDemoData();
+      localStorage.removeItem('sip-wrapper-logout-at');
+    } else {
+      seedDemoData();
+    }
     api.defaults.adapter = demoAdapter as never;
   } else {
     api.defaults.adapter = undefined as never;

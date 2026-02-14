@@ -24,7 +24,7 @@ const defaults: Preferences = {
   darkMode: false,
   themeMode: 'light',
   colorTheme: 'default',
-  language: 'en',
+  language: 'de',
   refreshInterval: 30,
   demoMode: false,
   autoLogout: false,

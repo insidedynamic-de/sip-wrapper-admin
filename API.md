@@ -207,7 +207,6 @@ All endpoints are under `/api/v1/` (stripped by adapter). Response format: `{ su
 ### Profile
 | Method | URL | Body | Response |
 |--------|-----|------|----------|
-| PUT | `/profile/password` | `{ current_password, new_password }` | `{ success: true, message: 'Password changed (demo)' }` |
 | PUT | `/profile/company` | Partial company | `ok()` |
 
 ### System Info (Monitoring)
@@ -284,7 +283,6 @@ All interfaces in `src/api/types.ts`:
 | **Routes** | `/routes`, `/routes/defaults`, `/routes/inbound/*`, `/routes/user/*`, `/gateways`, `/gateways/status`, `/extensions`, `/users`, `/registrations`, `/license` (for limit enforcement) |
 | **Monitoring** | `/system/info`, `/logs/security`, `/acl-users` |
 | **Logs** | `/esl/events`, `/esl/start`, `/esl/stop`, `/esl/clear`, `/logs/calls`, `/logs/call-stats`, `/logs/security` |
-| **Profile > Settings** | `/profile/password` |
 | **Profile > Billing** | `/company`, `/invoice`, `/config/apply` |
 | **Login** | `/auth/login`, `/auth/logout` |
 

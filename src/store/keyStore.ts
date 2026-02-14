@@ -50,8 +50,18 @@ export async function loadApiKey(): Promise<string | null> {
   }
 }
 
-/** Remove the API key from storage */
+/** Remove the API key from storage and record logout time */
 export function clearApiKey(): void {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('api_key');
+  localStorage.setItem('sip-wrapper-logout-at', String(Date.now()));
+}
+
+const CLEANUP_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
+
+/** Check if demo data should be cleared (60 min after last logout) */
+export function shouldCleanupDemoData(): boolean {
+  const loggedOutAt = localStorage.getItem('sip-wrapper-logout-at');
+  if (!loggedOutAt) return false;
+  return Date.now() - Number(loggedOutAt) >= CLEANUP_TIMEOUT_MS;
 }

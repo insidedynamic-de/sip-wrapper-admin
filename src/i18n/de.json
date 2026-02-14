@@ -100,9 +100,6 @@
     "import_overwrite": "\u00dcberschreiben"
   },
   "profile": {
-    "change_password": "Passwort \u00e4ndern", "current_password": "Aktuelles Passwort",
-    "new_password": "Neues Passwort", "confirm_password": "Passwort best\u00e4tigen",
-    "passwords_not_match": "Passw\u00f6rter stimmen nicht \u00fcberein",
     "settings": "Einstellungen",
     "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Auto-Logout aktivieren",
@@ -348,6 +345,12 @@
     "enable": "Demo-Modus aktivieren",
     "description": "Admin-Panel mit simulierten Daten betreiben. Keine echte Backend-Verbindung nötig.",
     "login_success": "Angemeldet (Demo-Modus)",
-    "active_notice": "Demo-Modus aktiv — keine echte Serververbindung"
+    "active_notice": "Demo-Modus aktiv — keine echte Serververbindung",
+    "reset_default": "Auf Standard zurücksetzen",
+    "reset_desc": "Alle Demo-Daten auf Werkseinstellungen zurücksetzen. Alle Änderungen gehen verloren.",
+    "reset_title": "Demo-Daten zurücksetzen?",
+    "reset_message": "Alle Demo-Daten werden auf Werkseinstellungen zurückgesetzt. Alle Ihre Änderungen (Benutzer, Gateways, Routen usw.) gehen dauerhaft verloren. Sind Sie sicher?",
+    "reset_confirm": "Ja, zurücksetzen",
+    "reset_success": "Demo-Daten auf Standard zurückgesetzt"
   }
 }

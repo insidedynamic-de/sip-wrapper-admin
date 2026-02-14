@@ -565,9 +565,6 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   }
 
   // ── Profile ──
-  if (url === '/profile/password' && method === 'put') {
-    return mock({ success: true, message: 'Password changed (demo)' }, config);
-  }
   if (url === '/profile/company' && method === 'put') {
     store.company = { ...store.company, ...body } as never;
     saveDemoStore(store);
