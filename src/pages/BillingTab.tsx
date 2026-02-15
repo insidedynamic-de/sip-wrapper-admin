@@ -18,11 +18,12 @@ export default function BillingTab() {
   const { t } = useTranslation();
 
   const [company, setCompany] = useState({
-    company_name: '', company_email: '', company_phone: '',
+    company_name: '',
     company_address: '', company_zip: '', company_city: '', company_country: '',
   });
   const [invoice, setInvoice] = useState({
-    same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
+    invoice_same_as_company: false, invoice_name: '', invoice_address: '',
+    invoice_zip: '', invoice_city: '', invoice_email: '',
   });
 
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -37,12 +38,13 @@ export default function BillingTab() {
         api.get('/invoice'),
       ]);
       setCompany({
-        company_name: '', company_email: '', company_phone: '',
+        company_name: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
         ...(compRes.data || {}),
       });
       setInvoice({
-        same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
+        invoice_same_as_company: false, invoice_name: '', invoice_address: '',
+        invoice_zip: '', invoice_city: '', invoice_email: '',
         ...(invRes.data || {}),
       });
     } catch { /* ignore */ }
@@ -89,14 +91,6 @@ export default function BillingTab() {
                 onChange={(e) => setCompany({ ...company, company_name: e.target.value })} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Email" value={company.company_email}
-                onChange={(e) => setCompany({ ...company, company_email: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label={t('field.contact')} value={company.company_phone}
-                onChange={(e) => setCompany({ ...company, company_phone: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
               <TextField fullWidth label={t('company.country')} value={company.company_country}
                 onChange={(e) => setCompany({ ...company, company_country: e.target.value })} />
             </Grid>
@@ -126,14 +120,14 @@ export default function BillingTab() {
           <FormControlLabel
             control={
               <Switch
-                checked={invoice.same_as_company}
-                onChange={(e) => setInvoice({ ...invoice, same_as_company: e.target.checked })}
+                checked={invoice.invoice_same_as_company}
+                onChange={(e) => setInvoice({ ...invoice, invoice_same_as_company: e.target.checked })}
               />
             }
             label={t('invoice.same_as_company')}
             sx={{ mb: 2 }}
           />
-          {!invoice.same_as_company && (
+          {!invoice.invoice_same_as_company && (
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField fullWidth label={t('invoice.invoice_name')} value={invoice.invoice_name}
@@ -144,9 +138,17 @@ export default function BillingTab() {
                   onChange={(e) => setInvoice({ ...invoice, invoice_email: e.target.value })}
                   helperText={t('invoice.invoice_email_hint')} />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField fullWidth label={t('invoice.invoice_address')} value={invoice.invoice_address}
                   onChange={(e) => setInvoice({ ...invoice, invoice_address: e.target.value })} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('invoice.invoice_zip')} value={invoice.invoice_zip}
+                  onChange={(e) => setInvoice({ ...invoice, invoice_zip: e.target.value })} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('invoice.invoice_city')} value={invoice.invoice_city}
+                  onChange={(e) => setInvoice({ ...invoice, invoice_city: e.target.value })} />
               </Grid>
             </Grid>
           )}

@@ -4,7 +4,7 @@
  */
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, Typography, Chip, IconButton, Tooltip } from '@mui/material';
+import { Box, Typography, Chip, IconButton, Tooltip, Alert } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import api from '../api/client';
 import CrudTable from '../components/CrudTable';
@@ -31,6 +31,7 @@ const isExpired = (l: AllLicense) => {
 export default function AllLicensesTab() {
   const { t } = useTranslation();
   const [allLicenses, setAllLicenses] = useState<AllLicense[]>([]);
+  const [unavailable, setUnavailable] = useState(false);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
   const [confirmInstall, setConfirmInstall] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
 
@@ -40,7 +41,11 @@ export default function AllLicensesTab() {
     try {
       const res = await api.get('/license/available');
       setAllLicenses(res.data || []);
-    } catch { /* ignore */ }
+      setUnavailable(false);
+    } catch {
+      setAllLicenses([]);
+      setUnavailable(true);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -85,6 +90,12 @@ export default function AllLicensesTab() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {t('license.all_licenses_hint')}
       </Typography>
+
+      {unavailable && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          {t('license.all_licenses_unavailable')}
+        </Alert>
+      )}
 
       <CrudTable<AllLicense>
         rows={allLicenses}

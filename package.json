@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "docker:build": "docker build -t sip-wrapper-admin .",
     "docker:tag": "docker tag sip-wrapper-admin ghcr.io/insidedynamic-de/sip-wrapper-admin:latest",
-    "docker:push": "docker push ghcr.io/insidedynamic-de/sip-wrapper-admin:latest"
+    "docker:push": "docker push ghcr.io/insidedynamic-de/sip-wrapper-admin:latest",
+    "test": "vitest run"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -32,6 +33,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.7.2",
-    "vite": "^6.0.0"
+    "vite": "^6.0.0",
+    "vitest": "^4.0.18"
   }
 }

@@ -34,7 +34,7 @@ export default function Security() {
   const [whitelist, setWhitelist] = useState<WhitelistEntry[]>([]);
   const [whitelistEnabled, setWhitelistEnabled] = useState(false);
   const [externalIp, setExternalIp] = useState('');
-  const [autoBlacklist, setAutoBlacklist] = useState({ enabled: true, threshold: 5, time_window: 300, block_duration: 3600, trust_proxy: false });
+  const [autoBlacklist, setAutoBlacklist] = useState({ enabled: false, max_attempts: 10, time_window: 300, block_duration: 3600 });
   const [fail2ban, setFail2ban] = useState({ enabled: false, threshold: 50, jail_name: 'sip-jail' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'blacklist' | 'whitelist'>('blacklist');
@@ -52,8 +52,8 @@ export default function Security() {
         api.get('/settings'),
       ]);
       setBlacklist(secRes.data?.blacklist || []);
-      setWhitelist(secRes.data?.whitelist?.entries || []);
-      setWhitelistEnabled(secRes.data?.whitelist?.enabled || false);
+      setWhitelist(secRes.data?.whitelist || []);
+      setWhitelistEnabled(secRes.data?.whitelist_enabled || false);
       if (secRes.data?.auto_blacklist) setAutoBlacklist(secRes.data.auto_blacklist);
       if (secRes.data?.fail2ban) setFail2ban(secRes.data.fail2ban);
       setExternalIp(String(settingsRes.data?.external_sip_ip || ''));
@@ -315,8 +315,8 @@ export default function Security() {
             />
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('security.auto_blacklist_desc')}</Typography>
             <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 3 }}>
-              <TextField type="number" label={t('security.max_attempts')} value={autoBlacklist.threshold}
-                onChange={(e) => setAutoBlacklist({ ...autoBlacklist, threshold: parseInt(e.target.value) || 5 })}
+              <TextField type="number" label={t('security.max_attempts')} value={autoBlacklist.max_attempts}
+                onChange={(e) => setAutoBlacklist({ ...autoBlacklist, max_attempts: parseInt(e.target.value) || 10 })}
                 helperText={t('security.block_after_n')} sx={{ width: 200 }} />
               <TextField type="number" label={t('security.time_window')} value={autoBlacklist.time_window}
                 onChange={(e) => setAutoBlacklist({ ...autoBlacklist, time_window: parseInt(e.target.value) || 300 })}
@@ -325,11 +325,6 @@ export default function Security() {
                 onChange={(e) => setAutoBlacklist({ ...autoBlacklist, block_duration: parseInt(e.target.value) || 0 })}
                 helperText={t('security.permanent')} sx={{ width: 200 }} />
             </Box>
-            <FormControlLabel
-              control={<Switch checked={autoBlacklist.trust_proxy || false} onChange={(e) => setAutoBlacklist({ ...autoBlacklist, trust_proxy: e.target.checked })} />}
-              label={t('security.trust_proxy')}
-            />
-            <Typography variant="body2" color="text.secondary">{t('security.trust_proxy_desc')}</Typography>
           </CardContent>
         </Card>
       )}

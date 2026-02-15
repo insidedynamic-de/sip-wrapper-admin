@@ -21,11 +21,13 @@ import { isDemoMode } from '../store/preferences';
 
 interface LicenseEntry {
   license_key: string;
+  product: string;
+  subproduct: string;
+  license_name: string;
+  type: 'partner' | 'client' | 'internal';
   client_name: string;
   licensed: boolean;
-  expires: string;
-  trial: boolean;
-  nfr: boolean;
+  valid_until: string;
   days_remaining: number;
   max_connections: number;
   version: string;
@@ -44,11 +46,12 @@ export default function License() {
   const [routingCount, setRoutingCount] = useState(0);
   const [serverId, setServerId] = useState('');
   const [company, setCompany] = useState({
-    company_name: '', company_email: '', company_phone: '',
+    company_name: '',
     company_address: '', company_zip: '', company_city: '', company_country: '',
   });
   const [invoice, setInvoice] = useState({
-    same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
+    invoice_same_as_company: false, invoice_name: '', invoice_address: '',
+    invoice_zip: '', invoice_city: '', invoice_email: '',
   });
 
   // Activate license
@@ -84,12 +87,13 @@ export default function License() {
         setRoutingCount(inb + usr);
       }
       setCompany({
-        company_name: '', company_email: '', company_phone: '',
+        company_name: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
         ...(compRes.data || {}),
       });
       setInvoice({
-        same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
+        invoice_same_as_company: false, invoice_name: '', invoice_address: '',
+        invoice_zip: '', invoice_city: '', invoice_email: '',
         ...(invRes.data || {}),
       });
     } catch { /* ignore */ }
@@ -97,13 +101,8 @@ export default function License() {
 
   useEffect(() => { load(); }, [load]);
 
-  // License type label per entry
-  const licType = (l: LicenseEntry) => {
-    if (l.trial) return t('license.trial_mode');
-    if (l.nfr) return 'NFR';
-    if (l.licensed) return t('license.standard');
-    return '\u2014';
-  };
+  // Client type label per entry
+  const typeLabel = (l: LicenseEntry) => t(`license.type_${l.type}`) || l.type;
 
   // ── Activate license ──
   const doActivateLicense = async () => {
@@ -252,12 +251,17 @@ export default function License() {
           { id: 'key', header: t('license.license_key'), render: (l) => (
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>{l.license_key}</Typography>
           ), searchText: (l) => l.license_key },
-          { id: 'client', header: t('license.client'), render: (l) => l.client_name || '\u2014', searchText: (l) => l.client_name },
-          { id: 'type', header: t('license.license_type'), render: (l) => (
-            <Chip size="small" label={licType(l)}
-              color={l.trial ? 'warning' : l.nfr ? 'info' : l.licensed ? 'success' : 'default'} />
+          { id: 'product', header: t('license.product'), render: (l) => l.product || '\u2014' },
+          { id: 'subproduct', header: t('license.subproduct'), render: (l) => l.subproduct || '\u2014' },
+          { id: 'license_name', header: t('license.license_name'), render: (l) => (
+            <Chip size="small" label={l.license_name} color="primary" />
           )},
-          { id: 'expires', header: t('license.expires'), render: (l) => l.expires || '\u2014' },
+          { id: 'type', header: t('license.client_type'), render: (l) => (
+            <Chip size="small" label={typeLabel(l)}
+              color={l.type === 'partner' ? 'info' : l.type === 'internal' ? 'warning' : 'success'} />
+          )},
+          { id: 'client', header: t('license.client'), render: (l) => l.client_name || '\u2014', searchText: (l) => l.client_name },
+          { id: 'valid_until', header: t('license.valid_until'), render: (l) => l.valid_until || '\u2014' },
           { id: 'connections', header: t('license.connections'), render: (l) => (
             <Typography component="span" sx={{ fontWeight: 600 }}>{l.max_connections}</Typography>
           )},
@@ -302,14 +306,6 @@ export default function License() {
                 onChange={(e) => setCompany({ ...company, company_name: e.target.value })} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label="Email" value={company.company_email}
-                onChange={(e) => setCompany({ ...company, company_email: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
-              <TextField fullWidth label={t('field.contact')} value={company.company_phone}
-                onChange={(e) => setCompany({ ...company, company_phone: e.target.value })} />
-            </Grid>
-            <Grid size={{ xs: 12, md: 6 }}>
               <TextField fullWidth label={t('company.country')} value={company.company_country}
                 onChange={(e) => setCompany({ ...company, company_country: e.target.value })} />
             </Grid>
@@ -339,14 +335,14 @@ export default function License() {
           <FormControlLabel
             control={
               <Switch
-                checked={invoice.same_as_company}
-                onChange={(e) => setInvoice({ ...invoice, same_as_company: e.target.checked })}
+                checked={invoice.invoice_same_as_company}
+                onChange={(e) => setInvoice({ ...invoice, invoice_same_as_company: e.target.checked })}
               />
             }
             label={t('invoice.same_as_company')}
             sx={{ mb: 2 }}
           />
-          {!invoice.same_as_company && (
+          {!invoice.invoice_same_as_company && (
             <Grid container spacing={2}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <TextField fullWidth label={t('invoice.invoice_name')} value={invoice.invoice_name}
@@ -357,9 +353,17 @@ export default function License() {
                   onChange={(e) => setInvoice({ ...invoice, invoice_email: e.target.value })}
                   helperText={t('invoice.invoice_email_hint')} />
               </Grid>
-              <Grid size={{ xs: 12 }}>
+              <Grid size={{ xs: 12, md: 4 }}>
                 <TextField fullWidth label={t('invoice.invoice_address')} value={invoice.invoice_address}
                   onChange={(e) => setInvoice({ ...invoice, invoice_address: e.target.value })} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('invoice.invoice_zip')} value={invoice.invoice_zip}
+                  onChange={(e) => setInvoice({ ...invoice, invoice_zip: e.target.value })} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('invoice.invoice_city')} value={invoice.invoice_city}
+                  onChange={(e) => setInvoice({ ...invoice, invoice_city: e.target.value })} />
               </Grid>
             </Grid>
           )}
@@ -381,14 +385,14 @@ export default function License() {
         {dialogLicense && (
           <>
             <TextField label={t('license.license_key')} value={dialogLicense.license_key} disabled />
+            <TextField label={t('license.product')} value={dialogLicense.product} disabled />
+            <TextField label={t('license.subproduct')} value={dialogLicense.subproduct} disabled />
+            <TextField label={t('license.license_name')} value={dialogLicense.license_name} disabled />
+            <TextField label={t('license.client_type')} value={typeLabel(dialogLicense)} disabled />
             <TextField label={t('license.client_name')} value={dialogLicense.client_name} disabled />
-            <TextField label={t('license.license_type')} value={licType(dialogLicense)} disabled />
-            <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
-            <TextField label={t('license.expires')} value={dialogLicense.expires || '\u2014'} disabled />
+            <TextField label={t('license.valid_until')} value={dialogLicense.valid_until || '\u2014'} disabled />
             <TextField label={t('license.connections')} value={dialogLicense.max_connections} disabled />
-            {dialogLicense.trial && (
-              <TextField label={t('license.days_remaining')} value={dialogLicense.days_remaining} disabled />
-            )}
+            <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
             {dialogLicense.server_id && (
               <TextField label={t('license.server_id')} value={dialogLicense.server_id} disabled />
             )}

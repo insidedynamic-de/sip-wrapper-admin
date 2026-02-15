@@ -339,7 +339,7 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   if (url === '/security/whitelist' && method === 'post') {
     const ips = String(body.ip || '').split('|').map((s) => s.trim()).filter(Boolean);
     for (const ip of ips) {
-      store.security.whitelist.entries.push({ ip, comment: String(body.comment || '') });
+      store.security.whitelist.push({ ip, comment: String(body.comment || '') });
     }
     saveDemoStore(store);
     return mock(ok(), config);
@@ -351,13 +351,13 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
       if (m.ip === '127.0.0.1') {
         return mockError({ success: false, detail: 'Protected entry cannot be deleted' }, config, 403);
       }
-      store.security.whitelist.entries = store.security.whitelist.entries.filter((e) => e.ip !== m.ip);
+      store.security.whitelist = store.security.whitelist.filter((e) => e.ip !== m.ip);
       saveDemoStore(store);
       return mock(ok(), config);
     }
   }
   if (url === '/security/whitelist/toggle' && method === 'put') {
-    store.security.whitelist.enabled = Boolean(body.enabled);
+    store.security.whitelist_enabled = Boolean(body.enabled);
     saveDemoStore(store);
     return mock(ok(), config);
   }
@@ -394,9 +394,9 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   {
     const m = matchPath('/security/whitelist/:ip', url);
     if (m && method === 'put') {
-      const idx = store.security.whitelist.entries.findIndex((e) => e.ip === m.ip);
+      const idx = store.security.whitelist.findIndex((e) => e.ip === m.ip);
       if (idx >= 0) {
-        store.security.whitelist.entries[idx] = { ...store.security.whitelist.entries[idx], ...body } as never;
+        store.security.whitelist[idx] = { ...store.security.whitelist[idx], ...body } as never;
       }
       saveDemoStore(store);
       return mock(ok(), config);

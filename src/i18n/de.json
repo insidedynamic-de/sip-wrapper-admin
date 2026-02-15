@@ -121,7 +121,8 @@
   "invoice": {
     "invoice_info": "Rechnungsadresse", "same_as_company": "Wie Firmenadresse",
     "invoice_name": "Rechnungsempf\u00e4nger", "invoice_address": "Rechnungsadresse",
-    "invoice_email": "Rechnungs-E-Mail", "invoice_email_hint": "Rechnungen werden an diese Adresse gesendet"
+    "invoice_email": "Rechnungs-E-Mail", "invoice_email_hint": "Rechnungen werden an diese Adresse gesendet",
+    "invoice_zip": "Rechnungs-PLZ", "invoice_city": "Rechnungs-Stadt"
   },
   "license": {
     "license_info": "Lizenzinformationen", "license_key": "Lizenzschl\u00fcssel",
@@ -171,7 +172,8 @@
     "not_installed": "Nicht installiert",
     "assigned": "Vergeben",
     "available_status": "Verfügbar",
-    "expired": "Abgelaufen"
+    "expired": "Abgelaufen",
+    "all_licenses_unavailable": "Lizenzübersicht ist für diesen Server nicht verfügbar. Lizenzen können über den Lizenz-Tab verwaltet werden."
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {

@@ -29,8 +29,9 @@ export interface DemoStore {
   };
   security: {
     blacklist: BlacklistEntry[];
-    whitelist: { enabled: boolean; entries: WhitelistEntry[] };
-    auto_blacklist: { enabled: boolean; threshold: number; time_window: number; block_duration: number; trust_proxy?: boolean };
+    whitelist: WhitelistEntry[];
+    whitelist_enabled: boolean;
+    auto_blacklist: { enabled: boolean; max_attempts: number; time_window: number; block_duration: number };
     fail2ban: { enabled: boolean; threshold: number; jail_name: string };
   };
   eslEvents: ESLEvent[];
@@ -55,17 +56,17 @@ export interface DemoStore {
   }[];
   company: {
     company_name: string;
-    company_email: string;
-    company_phone: string;
     company_address: string;
     company_zip: string;
     company_city: string;
     company_country: string;
   };
   invoice: {
-    same_as_company: boolean;
+    invoice_same_as_company: boolean;
     invoice_name: string;
     invoice_address: string;
+    invoice_zip: string;
+    invoice_city: string;
     invoice_email: string;
   };
   available_licenses: {
@@ -185,16 +186,14 @@ const SEED_DATA: DemoStore = {
       { ip: '91.200.12.88', comment: 'SIP INVITE flood', added_at: '2026-01-20T09:15:00Z', blocked_count: 3, fail2ban_banned: false },
       { ip: '198.51.100.22', comment: 'Port scan detected', added_at: '2026-02-01T11:00:00Z', blocked_count: 1, fail2ban_banned: false },
     ],
-    whitelist: {
-      enabled: false,
-      entries: [
-        { ip: '127.0.0.1', comment: 'Localhost (protected)' },
-        { ip: '192.168.1.0/24', comment: 'Office LAN' },
-        { ip: '10.0.0.0/8', comment: 'Internal network' },
-        { ip: '172.16.0.0/12', comment: 'VPN clients' },
-      ],
-    },
-    auto_blacklist: { enabled: true, threshold: 5, time_window: 300, block_duration: 3600, trust_proxy: false },
+    whitelist: [
+      { ip: '127.0.0.1', comment: 'Localhost (protected)' },
+      { ip: '192.168.1.0/24', comment: 'Office LAN' },
+      { ip: '10.0.0.0/8', comment: 'Internal network' },
+      { ip: '172.16.0.0/12', comment: 'VPN clients' },
+    ],
+    whitelist_enabled: false,
+    auto_blacklist: { enabled: true, max_attempts: 5, time_window: 300, block_duration: 3600 },
     fail2ban: { enabled: true, threshold: 50, jail_name: 'sip-jail' },
   },
   // ── ESL Events (16 entries: diverse FS categories) ──
@@ -278,17 +277,17 @@ const SEED_DATA: DemoStore = {
   ],
   company: {
     company_name: 'Demo Ltd',
-    company_email: 'info@demo-ltd.de',
-    company_phone: '+49 30 123456',
     company_address: 'Musterstrasse 1',
     company_zip: '12345',
     company_city: 'Musterstadt',
     company_country: 'Deutschland',
   },
   invoice: {
-    same_as_company: true,
+    invoice_same_as_company: true,
     invoice_name: 'Demo Ltd',
-    invoice_address: 'Musterstrasse 1, 12345 Musterstadt',
+    invoice_address: 'Musterstrasse 1',
+    invoice_zip: '12345',
+    invoice_city: 'Musterstadt',
     invoice_email: 'billing@demo-ltd.de',
   },
   // ── Audit Log (user actions) ──

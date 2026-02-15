@@ -121,7 +121,8 @@
   "invoice": {
     "invoice_info": "Invoice Address", "same_as_company": "Same as company address",
     "invoice_name": "Invoice Recipient", "invoice_address": "Invoice Address",
-    "invoice_email": "Invoice Email", "invoice_email_hint": "Invoices will be sent to this address"
+    "invoice_email": "Invoice Email", "invoice_email_hint": "Invoices will be sent to this address",
+    "invoice_zip": "Invoice ZIP Code", "invoice_city": "Invoice City"
   },
   "license": {
     "license_info": "License Information", "license_key": "License Key",
@@ -171,7 +172,8 @@
     "not_installed": "Not Installed",
     "assigned": "Assigned",
     "available_status": "Available",
-    "expired": "Expired"
+    "expired": "Expired",
+    "all_licenses_unavailable": "License overview is not available for this server. Licenses can be managed via the License tab."
   },
   "language": { "language": "Language", "german": "German", "english": "English" },
   "logs": {

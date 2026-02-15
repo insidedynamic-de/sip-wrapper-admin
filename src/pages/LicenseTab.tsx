@@ -71,18 +71,14 @@ export default function LicenseTab() {
 
   const load = useCallback(async () => {
     try {
-      const [licRes, routeRes, availRes] = await Promise.all([
+      const [licRes, routeRes] = await Promise.all([
         api.get('/license'),
         api.get('/routes'),
-        api.get('/license/available'),
       ]);
       const data = licRes.data || {};
       setLicenses(data.licenses || []);
       setTotalConnections(data.total_connections || 0);
       setServerId(data.server_id || '');
-      // Only show licenses that are not bound, not licensed, and not expired
-      const all: AvailableLicense[] = availRes.data || [];
-      setAvailableLicenses(all.filter((a) => !a.bound_to && !a.licensed && (!a.valid_until || new Date(a.valid_until) >= new Date())));
       // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {
@@ -91,6 +87,14 @@ export default function LicenseTab() {
         setRoutingCount(inb + usr);
       }
     } catch { /* ignore */ }
+    // Fetch available licenses separately (endpoint may not exist)
+    try {
+      const availRes = await api.get('/license/available');
+      const all: AvailableLicense[] = availRes.data || [];
+      setAvailableLicenses(all.filter((a) => !a.bound_to && !a.licensed && (!a.valid_until || new Date(a.valid_until) >= new Date())));
+    } catch {
+      setAvailableLicenses([]);
+    }
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -161,10 +165,7 @@ export default function LicenseTab() {
       name: l.license_key,
       action: async () => {
         try {
-          await api.post('/license/deactivate', {
-            license_key: l.license_key,
-            server_id: serverId || l.server_id || '',
-          });
+          await api.delete(`/license/${encodeURIComponent(l.license_key)}`);
           showToast(t('license.deactivate_success'), true);
           load();
           notifyLicenseChanged();
