@@ -86,11 +86,11 @@ export default function License() {
       setCompany({
         company_name: '', company_email: '', company_phone: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
-        ...compRes.data,
+        ...(compRes.data || {}),
       });
       setInvoice({
         same_as_company: true, invoice_name: '', invoice_address: '', invoice_email: '',
-        ...invRes.data,
+        ...(invRes.data || {}),
       });
     } catch { /* ignore */ }
   }, []);

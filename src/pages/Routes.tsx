@@ -57,19 +57,21 @@ export default function RoutesPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string; action: (() => Promise<void>) | null }>({ open: false, name: '', action: null });
 
   const load = useCallback(async () => {
-    const [r, g, gs, e, u, reg, lic] = await Promise.all([
-      api.get('/routes'), api.get('/gateways'), api.get('/gateways/status'),
-      api.get('/extensions'), api.get('/users'), api.get('/registrations'),
-      api.get('/license'),
-    ]);
-    setRoutes(r.data);
-    setGateways(g.data || []);
-    setGatewayStatuses(gs.data || []);
-    setExtensions(e.data || []);
-    setUsers(u.data || []);
-    setRegistrations(reg.data || []);
-    if (r.data?.defaults) setDefaults(r.data.defaults);
-    if (lic.data) setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
+    try {
+      const [r, g, gs, e, u, reg, lic] = await Promise.all([
+        api.get('/routes'), api.get('/gateways'), api.get('/gateways/status'),
+        api.get('/extensions'), api.get('/users'), api.get('/registrations'),
+        api.get('/license'),
+      ]);
+      setRoutes(r.data);
+      setGateways(g.data || []);
+      setGatewayStatuses(gs.data || []);
+      setExtensions(e.data || []);
+      setUsers(u.data || []);
+      setRegistrations(reg.data || []);
+      if (r.data?.defaults) setDefaults(r.data.defaults);
+      if (lic.data) setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => { load(); }, [load]);

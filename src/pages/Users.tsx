@@ -65,13 +65,15 @@ export default function Users() {
   const [confirmSave, setConfirmSave] = useState(false);
 
   const load = useCallback(async () => {
-    const [u, a, r, e] = await Promise.all([
-      api.get('/users'), api.get('/acl-users'), api.get('/registrations'), api.get('/extensions'),
-    ]);
-    setUsers(u.data || []);
-    setAclUsers(a.data || []);
-    setRegistrations(r.data || []);
-    setExtensions(e.data || []);
+    try {
+      const [u, a, r, e] = await Promise.all([
+        api.get('/users'), api.get('/acl-users'), api.get('/registrations'), api.get('/extensions'),
+      ]);
+      setUsers(u.data || []);
+      setAclUsers(a.data || []);
+      setRegistrations(r.data || []);
+      setExtensions(e.data || []);
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => { load(); }, [load]);

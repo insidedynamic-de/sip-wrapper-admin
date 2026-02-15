@@ -41,12 +41,14 @@ export default function Gateways() {
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string }>({ open: false, name: '' });
 
   const load = useCallback(async () => {
-    const [gwRes, statusRes] = await Promise.all([
-      api.get('/gateways'),
-      api.get('/gateways/status'),
-    ]);
-    setGateways(gwRes.data || []);
-    setGwStatuses(statusRes.data || []);
+    try {
+      const [gwRes, statusRes] = await Promise.all([
+        api.get('/gateways'),
+        api.get('/gateways/status'),
+      ]);
+      setGateways(gwRes.data || []);
+      setGwStatuses(statusRes.data || []);
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => { load(); }, [load]);
