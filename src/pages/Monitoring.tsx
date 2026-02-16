@@ -88,10 +88,10 @@ export default function Monitoring() {
         api.get('/security'),
         api.get('/logs/security'),
       ]);
-      setInfo(sysRes.data);
+      setInfo(sysRes.data || null);
       setBlacklist(secRes.data?.blacklist || []);
-      setWhitelist(secRes.data?.whitelist?.entries || []);
-      if (secRes.data?.auto_blacklist) setThreshold(secRes.data.auto_blacklist.threshold || 5);
+      setWhitelist(secRes.data?.whitelist || []);
+      if (secRes.data?.auto_blacklist) setThreshold(secRes.data.auto_blacklist.max_attempts || 10);
       setSecurityLogs(logRes.data || []);
     } catch { /* ignore */ }
   }, []);
