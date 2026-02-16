@@ -1,4 +1,4 @@
-# SIP Wrapper Admin — Demo API Reference
+# Linkify TalkHub Admin — Demo API Reference
 
 This document describes the **demo adapter** (`src/api/demoAdapter.ts`) — a custom Axios adapter
 that intercepts all HTTP calls and routes them to localStorage via `src/api/demoData.ts`.

@@ -1,4 +1,4 @@
-# SIP Wrapper Admin Console — Project Overview
+# Linkify TalkHub Admin Console — Project Overview
 
 **Company:** InsideDynamic GmbH
 **Author:** Viktor Nikolayev <viktor.nikolayev@gmail.com>
