@@ -117,7 +117,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       <Toolbar sx={{ justifyContent: collapsed ? 'center' : 'space-between', minHeight: 64, px: collapsed ? 0 : 2 }}>
         {!collapsed && (
           <Typography variant="h6" noWrap sx={{ color: '#fff', fontWeight: 700 }}>
-            SIP Wrapper
+            Linkify TalkHub
           </Typography>
         )}
         <IconButton

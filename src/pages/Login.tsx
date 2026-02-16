@@ -219,7 +219,7 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
       <Card sx={{ width: 420, p: 2 }}>
         <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h5" sx={{ mb: 3, textAlign: 'center' }}>
-            SIP Wrapper
+            Linkify TalkHub
           </Typography>
 
           {demoMode && <Alert severity="info" sx={{ mb: 2 }}>{t('demo.active_notice')}</Alert>}
