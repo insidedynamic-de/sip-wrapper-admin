@@ -507,12 +507,12 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     // If license exists but is deactivated, reactivate it (same checks as new)
     if (existing && existing.licensed) return mockError({ success: false, message: 'license_duplicate' }, config, 409);
     const VALID_DEMO_KEYS: Record<string, { connections: number; product: string; subproduct: string; license_name: string }> = {
-      'DEMO-0000-0000-0001': { connections: 4, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
-      'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
-      'DEMO-0000-0000-0003': { connections: 8, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic' },
-      'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Premium Support' },
-      'DEMO-VAPI-0001': { connections: 0, product: 'Linkify', subproduct: 'VAPI Integration', license_name: 'VAPI' },
-      'DEMO-ODOO-0001': { connections: 0, product: 'Linkify', subproduct: 'Odoo Integration', license_name: 'Odoo' },
+      'DEMO-0000-0000-0001': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
+      'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
+      'DEMO-0000-0000-0003': { connections: 8, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
+      'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Premium Support' },
+      'DEMO-VAPI-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'VAPI Integration', license_name: 'VAPI' },
+      'DEMO-ODOO-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'Odoo Integration', license_name: 'Odoo' },
     };
     // Also check available_licenses as a source of valid keys
     const avail = (store.available_licenses || []).find((a) => a.license_key === key);

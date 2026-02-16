@@ -144,9 +144,9 @@ describe('License API response shape', () => {
   it('license entries use valid_until (not expires), product/subproduct/type (not trial/nfr)', () => {
     const entry = {
       license_key: 'TEST-0000-0000-0001',
-      product: 'SIP Wrapper',
+      product: 'Linkify TalkHub',
       subproduct: 'Base',
-      license_name: 'SIP Wrapper Base',
+      license_name: 'Linkify TalkHub Base',
       type: 'client' as const,
       client_name: 'Test Client',
       licensed: true,

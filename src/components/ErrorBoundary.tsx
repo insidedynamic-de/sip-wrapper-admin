@@ -63,7 +63,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   handleSendReport = () => {
     const { error, errorInfo } = this.state;
-    const subject = encodeURIComponent(`[SIP Wrapper] Error Report: ${error?.message || 'Unknown error'}`);
+    const subject = encodeURIComponent(`[Linkify TalkHub] Error Report: ${error?.message || 'Unknown error'}`);
     const body = encodeURIComponent(
       `Error Report\n` +
       `============\n\n` +
