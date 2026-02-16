@@ -53,7 +53,7 @@ export default function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'sip_wrapper_config.json';
+    a.download = 'talkhub_config.json';
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -1,4 +1,4 @@
-# SIP Wrapper — Backend Feature Specifications
+# Linkify TalkHub — Backend Feature Specifications
 
 **Company:** InsideDynamic GmbH
 **Author:** Viktor Nikolayev <viktor.nikolayev@gmail.com>
@@ -11,7 +11,7 @@ This document describes backend features expected by the frontend. These are spe
 
 ### Overview
 
-Standalone license management service that validates, activates, and enforces software licenses for the SIP Wrapper platform. The backend (FastAPI) communicates with this server; the frontend never talks to the License Server directly.
+Standalone license management service that validates, activates, and enforces software licenses for the Linkify TalkHub platform. The backend (FastAPI) communicates with this server; the frontend never talks to the License Server directly.
 
 ```
 Frontend (SPA) → FastAPI Backend → License Server
@@ -22,8 +22,8 @@ Frontend (SPA) → FastAPI Backend → License Server
 
 ```
 Linkify (product line)
-└── SIP Wrapper (subproduct)
-    └── Basic (license name — base SIP functionality)
+└── TalkHub (subproduct)
+    └── Basic Hub (license name — base SIP functionality)
     └── ... (future integrations)
 ```
 
@@ -43,7 +43,7 @@ Linkify (product line)
 interface License {
   license_key: string;       // Unique key, format: "XXXX-XXXX-XXXX-XXXX"
   product: string;           // Product line, e.g. "Linkify"
-  subproduct: string;        // Subproduct, e.g. "SIP Wrapper"
+  subproduct: string;        // Subproduct, e.g. "Basic Hub"
   license_name: string;      // License name, e.g. "Basic"
   type: 'partner' | 'client' | 'internal';  // Client type
   client_name: string;       // Company/client name

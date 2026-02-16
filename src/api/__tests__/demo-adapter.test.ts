@@ -115,9 +115,9 @@ describe('DemoStore license entries match backend shape', () => {
   it('DemoStore interface accepts valid license entries', () => {
     const entry: DemoStore['licenses'][number] = {
       license_key: 'TEST-KEY',
-      product: 'SIP Wrapper',
+      product: 'Linkify TalkHub',
       subproduct: 'Base',
-      license_name: 'SIP Wrapper Base',
+      license_name: 'Linkify TalkHub Base',
       type: 'client',
       client_name: 'Test',
       licensed: true,
