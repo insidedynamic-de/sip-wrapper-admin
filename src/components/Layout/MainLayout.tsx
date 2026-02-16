@@ -2,12 +2,14 @@
  * @file MainLayout — Main app layout with collapsible sidebar and content area
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Box } from '@mui/material';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import Sidebar, { DRAWER_WIDTH, DRAWER_WIDTH_COLLAPSED } from './Sidebar';
 import ErrorBoundary from '../ErrorBoundary';
+import SetupWizard from '../SetupWizard';
+import api from '../../api/client';
 import { loadPreferences, savePreferences } from '../../store/preferences';
 import type { ThemeMode } from '../../store/preferences';
 
@@ -20,6 +22,22 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
   const { t } = useTranslation();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => loadPreferences().sidebarCollapsed);
+  const [setupRequired, setSetupRequired] = useState(false);
+  const [setupChecked, setSetupChecked] = useState(false);
+
+  const checkSetup = useCallback(async () => {
+    try {
+      const res = await api.get('/company');
+      const companyId = res.data?.company_id || '';
+      setSetupRequired(!companyId);
+    } catch {
+      // If API fails, don't block — user can't do setup without backend anyway
+      setSetupRequired(false);
+    }
+    setSetupChecked(true);
+  }, []);
+
+  useEffect(() => { checkSetup(); }, [checkSetup]);
 
   const handleToggleCollapse = () => {
     const next = !collapsed;
@@ -65,6 +83,13 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
           <Outlet />
         </ErrorBoundary>
       </Box>
+
+      {setupChecked && (
+        <SetupWizard
+          open={setupRequired}
+          onComplete={() => setSetupRequired(false)}
+        />
+      )}
     </Box>
   );
 }

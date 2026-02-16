@@ -18,7 +18,7 @@ export default function BillingTab() {
   const { t } = useTranslation();
 
   const [company, setCompany] = useState({
-    company_name: '',
+    company_id: '', company_name: '', company_email: '',
     company_address: '', company_zip: '', company_city: '', company_country: '',
   });
   const [invoice, setInvoice] = useState({
@@ -38,7 +38,7 @@ export default function BillingTab() {
         api.get('/invoice'),
       ]);
       setCompany({
-        company_name: '',
+        company_id: '', company_name: '', company_email: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
         ...(compRes.data || {}),
       });
@@ -86,9 +86,20 @@ export default function BillingTab() {
         <CardContent sx={{ px: 4, py: 3 }}>
           <Typography variant="h6" sx={{ mb: 2 }}>{t('company.company_info')}</Typography>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12, md: 6 }}>
+            {company.company_id && (
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('setup.company_id')} value={company.company_id}
+                  slotProps={{ input: { readOnly: true } }}
+                  helperText={t('setup.company_id_hint')} />
+              </Grid>
+            )}
+            <Grid size={{ xs: 12, md: company.company_id ? 4 : 6 }}>
               <TextField fullWidth label={t('company.company_name')} value={company.company_name}
                 onChange={(e) => setCompany({ ...company, company_name: e.target.value })} />
+            </Grid>
+            <Grid size={{ xs: 12, md: company.company_id ? 4 : 6 }}>
+              <TextField fullWidth label={t('setup.email')} value={company.company_email}
+                onChange={(e) => setCompany({ ...company, company_email: e.target.value })} />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
               <TextField fullWidth label={t('company.country')} value={company.company_country}

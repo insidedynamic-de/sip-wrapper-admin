@@ -55,7 +55,9 @@ export interface DemoStore {
     bound_to?: string;
   }[];
   company: {
+    company_id: string;
     company_name: string;
+    company_email: string;
     company_address: string;
     company_zip: string;
     company_city: string;
@@ -276,7 +278,9 @@ const SEED_DATA: DemoStore = {
     { license_key: 'DEMO-SIP-EXPIRED-01', product: 'Linkify', subproduct: 'SIP Wrapper', license_name: 'Basic', max_connections: 4, valid_until: '2025-06-30', licensed: false },
   ],
   company: {
+    company_id: 'demo-ltd',
     company_name: 'Demo Ltd',
+    company_email: 'admin@demo-ltd.de',
     company_address: 'Musterstrasse 1',
     company_zip: '12345',
     company_city: 'Musterstadt',

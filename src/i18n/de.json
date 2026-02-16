@@ -438,6 +438,23 @@
     "feature_api": "Erweiterter API-Zugang",
     "feature_api_desc": "Zugang zu erweiterten API-Endpunkten für individuelle Integrationen und Automatisierung."
   },
+  "setup": {
+    "title": "Firmen-Einrichtung",
+    "description": "Bitte geben Sie Ihre Firmendaten ein, um loszulegen. Diese Informationen sind erforderlich und können später nicht mehr geändert werden.",
+    "company_id": "Firmen-ID",
+    "company_id_hint": "Eindeutiger Bezeichner — nur Buchstaben, Zahlen und ein Bindestrich",
+    "company_id_example": "Beispiel: acme-corp, meine-firma1, insidedynamic",
+    "company_id_format": "Nur Buchstaben, Zahlen und max. ein Bindestrich (z.B. meine-firma)",
+    "company_id_max_length": "Maximal 40 Zeichen",
+    "display_name": "Firmenname",
+    "display_name_hint": "Ihr Firmenname zur Anzeige",
+    "email": "Kontakt-E-Mail",
+    "email_hint": "Wir verwenden diese E-Mail für wichtige Benachrichtigungen",
+    "invalid_email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+    "disposable_email": "Einweg-/Temporäre E-Mail-Adressen sind nicht erlaubt",
+    "generate": "ID generieren",
+    "save_continue": "Speichern & Fortfahren"
+  },
   "demo": {
     "title": "Demo-Modus",
     "enable": "Demo-Modus aktivieren",

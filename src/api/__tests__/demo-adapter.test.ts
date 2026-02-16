@@ -44,7 +44,9 @@ beforeAll(async () => {
     settings: {},
     licenses: [],
     company: {
+      company_id: '',
       company_name: '',
+      company_email: '',
       company_address: '',
       company_zip: '',
       company_city: '',
@@ -86,13 +88,10 @@ describe('DemoStore security shape matches backend', () => {
 });
 
 describe('DemoStore company shape matches backend', () => {
-  it('has no company_email or company_phone', () => {
-    expect(store.company).not.toHaveProperty('company_email');
-    expect(store.company).not.toHaveProperty('company_phone');
-  });
-
   it('has required fields', () => {
+    expect(store.company).toHaveProperty('company_id');
     expect(store.company).toHaveProperty('company_name');
+    expect(store.company).toHaveProperty('company_email');
     expect(store.company).toHaveProperty('company_address');
     expect(store.company).toHaveProperty('company_zip');
     expect(store.company).toHaveProperty('company_city');

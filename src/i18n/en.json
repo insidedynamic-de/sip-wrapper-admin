@@ -438,6 +438,23 @@
     "feature_api": "Extended API Access",
     "feature_api_desc": "Access to advanced API endpoints for custom integrations and automation."
   },
+  "setup": {
+    "title": "Company Setup",
+    "description": "Please provide your company details to get started. This information is required and cannot be changed later.",
+    "company_id": "Company ID",
+    "company_id_hint": "Unique identifier — only letters, numbers, and one hyphen",
+    "company_id_example": "Example: acme-corp, my-company1, insidedynamic",
+    "company_id_format": "Only letters, numbers, and max one hyphen (e.g. my-company)",
+    "company_id_max_length": "Maximum 40 characters",
+    "display_name": "Company Name",
+    "display_name_hint": "Your company name for display purposes",
+    "email": "Contact Email",
+    "email_hint": "We will use this email for important notifications",
+    "invalid_email": "Please enter a valid email address",
+    "disposable_email": "Disposable/temporary email addresses are not allowed",
+    "generate": "Generate ID",
+    "save_continue": "Save & Continue"
+  },
   "demo": {
     "title": "Demo Mode",
     "enable": "Enable Demo Mode",
