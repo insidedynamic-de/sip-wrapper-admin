@@ -63,7 +63,7 @@ export default function RoutesPage() {
         api.get('/extensions'), api.get('/users'), api.get('/registrations'),
         api.get('/license'),
       ]);
-      setRoutes(r.data);
+      setRoutes(r.data || null);
       setGateways(g.data || []);
       setGatewayStatuses(gs.data || []);
       setExtensions(e.data || []);

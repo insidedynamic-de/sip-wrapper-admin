@@ -27,7 +27,7 @@ const defaults: Preferences = {
   language: 'de',
   refreshInterval: 30,
   demoMode: false,
-  autoLogout: false,
+  autoLogout: true,
   autoLogoutTimeout: 300,
   timeFormat: '24h',
   dateFormat: 'DD.MM.YYYY',

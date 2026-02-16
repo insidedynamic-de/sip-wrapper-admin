@@ -60,7 +60,7 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
 
     // Collect outbound patterns per gateway
     const outboundPatternsMap = new Map<string, string[]>();
-    for (const ob of routes.outbound) {
+    for (const ob of routes.outbound || []) {
       if (ob.enabled === false) continue;
       const list = outboundPatternsMap.get(ob.gateway) || [];
       list.push(ob.pattern);
@@ -124,7 +124,7 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
     });
 
     // ── Inbound edges: Gateway → Extension (blue) ──
-    for (const ib of routes.inbound) {
+    for (const ib of routes.inbound || []) {
       const gwNodeId = `gw-${ib.gateway}`;
       const extNodeId = `ext-${ib.extension}`;
       const disabled = ib.enabled === false;
@@ -151,7 +151,7 @@ export function useRoutingNodes({ gateways, extensions, users, routes, gatewaySt
 
     // ── User Route edges: Extension/User → Gateway (orange) ──
     const usersWithRoute = new Set<string>();
-    for (const ur of routes.user_routes) {
+    for (const ur of routes.user_routes || []) {
       const user = users.find((u) => u.username === ur.username);
       if (!user) continue;
       usersWithRoute.add(ur.username);
