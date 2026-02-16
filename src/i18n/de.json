@@ -453,7 +453,9 @@
     "invalid_email": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
     "disposable_email": "Einweg-/Temporäre E-Mail-Adressen sind nicht erlaubt",
     "generate": "ID generieren",
-    "save_continue": "Speichern & Fortfahren"
+    "save_continue": "Speichern & Fortfahren",
+    "company_id_taken": "Diese Firmen-ID ist bereits registriert. Bitte wählen Sie eine andere.",
+    "company_id_immutable": "Die Firmen-ID kann nach der Festlegung nicht mehr geändert werden."
   },
   "demo": {
     "title": "Demo-Modus",

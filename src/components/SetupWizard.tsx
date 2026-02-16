@@ -101,11 +101,13 @@ export default function SetupWizard({ open, onComplete }: Props) {
       onComplete();
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      if (detail === 'disposable_email') {
-        setToast({ open: true, message: t('setup.disposable_email'), severity: 'error' });
-      } else {
-        setToast({ open: true, message: t('status.error'), severity: 'error' });
-      }
+      const knownErrors: Record<string, string> = {
+        disposable_email: t('setup.disposable_email'),
+        company_id_taken: t('setup.company_id_taken'),
+        company_id_immutable: t('setup.company_id_immutable'),
+      };
+      const message = (detail && knownErrors[detail]) || t('status.error');
+      setToast({ open: true, message, severity: 'error' });
     } finally {
       setSaving(false);
     }

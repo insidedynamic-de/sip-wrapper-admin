@@ -24,6 +24,7 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
   const [collapsed, setCollapsed] = useState(() => loadPreferences().sidebarCollapsed);
   const [setupRequired, setSetupRequired] = useState(false);
   const [setupChecked, setSetupChecked] = useState(false);
+  const [contentKey, setContentKey] = useState(0);
 
   const checkSetup = useCallback(async () => {
     try {
@@ -69,7 +70,7 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
         }}
       >
         <ErrorBoundary
-          resetKey={location.pathname}
+          resetKey={`${location.pathname}-${contentKey}`}
           labels={{
             title: t('error.boundary_title'),
             message: t('error.boundary_message'),
@@ -80,14 +81,17 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
             goDashboard: t('error.go_dashboard'),
           }}
         >
-          <Outlet />
+          <Outlet key={contentKey} />
         </ErrorBoundary>
       </Box>
 
       {setupChecked && (
         <SetupWizard
           open={setupRequired}
-          onComplete={() => setSetupRequired(false)}
+          onComplete={() => {
+            setSetupRequired(false);
+            setContentKey((k) => k + 1);
+          }}
         />
       )}
     </Box>

@@ -52,6 +52,7 @@ export default function LicenseTab() {
   const [totalConnections, setTotalConnections] = useState(0);
   const [routingCount, setRoutingCount] = useState(0);
   const [serverId, setServerId] = useState('');
+  const [companyId, setCompanyId] = useState('');
 
   // Activate license
   const [licenseKey, setLicenseKey] = useState('');
@@ -71,14 +72,16 @@ export default function LicenseTab() {
 
   const load = useCallback(async () => {
     try {
-      const [licRes, routeRes] = await Promise.all([
+      const [licRes, routeRes, compRes] = await Promise.all([
         api.get('/license'),
         api.get('/routes'),
+        api.get('/company'),
       ]);
       const data = licRes.data || {};
       setLicenses(data.licenses || []);
       setTotalConnections(data.total_connections || 0);
       setServerId(data.server_id || '');
+      setCompanyId(compRes.data?.company_id || '');
       // Count enabled routings (inbound + outbound user routes)
       const rd = routeRes.data;
       if (rd) {
@@ -264,6 +267,12 @@ export default function LicenseTab() {
               <Typography variant="body2" color="text.secondary">{t('license.total_licenses')}</Typography>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>{licenses.length}</Typography>
             </Box>
+            {companyId && (
+              <Box>
+                <Typography variant="body2" color="text.secondary">{t('setup.company_id')}</Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>{companyId}</Typography>
+              </Box>
+            )}
             {serverId && (
               <Box>
                 <Typography variant="body2" color="text.secondary">{t('license.server_id')}</Typography>

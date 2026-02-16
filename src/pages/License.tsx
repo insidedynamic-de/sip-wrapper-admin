@@ -46,7 +46,7 @@ export default function License() {
   const [routingCount, setRoutingCount] = useState(0);
   const [serverId, setServerId] = useState('');
   const [company, setCompany] = useState({
-    company_name: '',
+    company_id: '', company_name: '', company_email: '',
     company_address: '', company_zip: '', company_city: '', company_country: '',
   });
   const [invoice, setInvoice] = useState({
@@ -87,7 +87,7 @@ export default function License() {
         setRoutingCount(inb + usr);
       }
       setCompany({
-        company_name: '',
+        company_id: '', company_name: '', company_email: '',
         company_address: '', company_zip: '', company_city: '', company_country: '',
         ...(compRes.data || {}),
       });
@@ -212,6 +212,12 @@ export default function License() {
               <Typography variant="body2" color="text.secondary">{t('license.total_licenses')}</Typography>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>{licenses.length}</Typography>
             </Box>
+            {company.company_id && (
+              <Box>
+                <Typography variant="body2" color="text.secondary">{t('setup.company_id')}</Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>{company.company_id}</Typography>
+              </Box>
+            )}
             {serverId && (
               <Box>
                 <Typography variant="body2" color="text.secondary">{t('license.server_id')}</Typography>

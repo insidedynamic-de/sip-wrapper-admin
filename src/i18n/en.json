@@ -453,7 +453,9 @@
     "invalid_email": "Please enter a valid email address",
     "disposable_email": "Disposable/temporary email addresses are not allowed",
     "generate": "Generate ID",
-    "save_continue": "Save & Continue"
+    "save_continue": "Save & Continue",
+    "company_id_taken": "This Company ID is already registered. Please choose a different one.",
+    "company_id_immutable": "Company ID cannot be changed once set."
   },
   "demo": {
     "title": "Demo Mode",
