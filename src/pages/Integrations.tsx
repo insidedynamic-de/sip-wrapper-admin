@@ -37,25 +37,16 @@ const INTEGRATIONS: Integration[] = [
   { id: 'premium', name: 'Premium Support', descKey: 'integrations.premium_desc', detailKey: 'integrations.premium_detail', featuresKey: 'integrations.premium_features', icon: 'P', color: '#F1C40F', requiredLicense: 'Premium Support' },
 ];
 
-interface LicenseEntry {
-  license_name: string;
-  licensed: boolean;
-}
-
 export default function Integrations() {
   const { t } = useTranslation();
-  const [licenseNames, setLicenseNames] = useState<string[]>([]);
+  const [activeFeatures, setActiveFeatures] = useState<string[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedInteg, setSelectedInteg] = useState<Integration | null>(null);
 
   const load = useCallback(async () => {
     try {
       const res = await api.get('/license');
-      const lics: LicenseEntry[] = res.data?.licenses || [];
-      const names = lics
-        .filter((l) => l.licensed && l.license_name)
-        .map((l) => l.license_name);
-      setLicenseNames(names);
+      setActiveFeatures(res.data?.active_features || []);
     } catch { /* ignore */ }
   }, []);
 
@@ -67,7 +58,7 @@ export default function Integrations() {
   }, [load]);
 
   const hasLicense = (integ: Integration) =>
-    licenseNames.some((n) => n && n.toLowerCase() === integ.requiredLicense.toLowerCase());
+    activeFeatures.includes(integ.id);
 
   const openDetail = (integ: Integration) => {
     setSelectedInteg(integ);

@@ -9,7 +9,6 @@ import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Configuration from './pages/Configuration';
-import RoutesPage from './pages/Routes';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
 import Monitoring from './pages/Monitoring';
@@ -60,14 +59,14 @@ export default function App() {
             <Route path="/extensions" element={<Navigate to="/configuration" replace />} />
             <Route path="/users" element={<Navigate to="/configuration" replace />} />
             <Route path="/gateways" element={<Navigate to="/configuration" replace />} />
-            <Route path="/routes" element={<RoutesPage />} />
+            <Route path="/routes" element={<Navigate to="/configuration" replace />} />
             <Route path="/security" element={<Navigate to="/configuration" replace />} />
             <Route path="/integrations" element={<Integrations />} />
             <Route path="/vip" element={<VIP />} />
             <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Navigate to="/configuration" replace />} />
-            <Route path="/license" element={<Navigate to="/configuration" replace />} />
+            <Route path="/license" element={<Navigate to="/profile" replace />} />
             <Route
               path="/profile"
               element={

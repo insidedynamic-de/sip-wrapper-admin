@@ -2,7 +2,7 @@
   "app": { "title": "InsideDynamic Wrapper - Admin" },
   "nav": {
     "dashboard": "Dashboard",
-    "config": "Configuration",
+    "config": "Hub Configuration",
     "security": "Security",
     "logs": "Logs",
     "profile": "Profile",

@@ -14,6 +14,8 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import SettingsIcon from '@mui/icons-material/Settings';
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import BadgeIcon from '@mui/icons-material/Badge';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import Toast from '../components/Toast';
 import { loadPreferences, savePreferences } from '../store/preferences';
 import type { ThemeMode, TimeFormat, DateFormat } from '../store/preferences';
@@ -22,6 +24,8 @@ import PageActions from '../components/PageActions';
 import { TabView } from '../components/TabView';
 import type { TabItemConfig } from '../components/TabView';
 import BillingTab from './BillingTab';
+import LicenseTab from './LicenseTab';
+import AllLicensesTab from './AllLicensesTab';
 import i18n from '../i18n';
 
 interface Props {
@@ -183,8 +187,10 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
   );
 
   const tabs: TabItemConfig[] = [
-    { id: 'settings', label: t('profile.settings'), icon: <SettingsIcon />, content: settingsContent },
-    { id: 'billing',  label: t('nav.billing'),      icon: <ReceiptLongIcon />, content: <BillingTab /> },
+    { id: 'settings',      label: t('profile.settings'),       icon: <SettingsIcon />,    content: settingsContent },
+    { id: 'billing',       label: t('nav.billing'),            icon: <ReceiptLongIcon />, content: <BillingTab /> },
+    { id: 'license',       label: t('license.license'),        icon: <BadgeIcon />,       content: <LicenseTab /> },
+    { id: 'all-licenses',  label: t('license.all_licenses'),   icon: <ViewListIcon />,    content: <AllLicensesTab /> },
   ];
 
   return (

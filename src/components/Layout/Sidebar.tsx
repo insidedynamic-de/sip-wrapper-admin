@@ -11,7 +11,6 @@ import {
 import { useEffect, useState, useCallback } from 'react';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import TuneIcon from '@mui/icons-material/Tune';
-import AltRouteIcon from '@mui/icons-material/AltRoute';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -32,10 +31,9 @@ import LogoutCountdown from '../LogoutCountdown';
 export const DRAWER_WIDTH = 240;
 export const DRAWER_WIDTH_COLLAPSED = 64;
 
-const navItems = [
+const baseNavItems = [
   { key: '/',              icon: <DashboardIcon />, label: 'nav.dashboard' },
-  { key: '/configuration', icon: <TuneIcon />,      label: 'nav.config' },
-  { key: '/routes',        icon: <AltRouteIcon />,  label: 'section.routes' },
+  { key: '/configuration', icon: <TuneIcon />,      label: 'nav.config', requiresLicense: true },
   { key: '/integrations',  icon: <ExtensionIcon />, label: 'nav.integrations' },
   { key: '/monitoring',    icon: <MonitorHeartIcon />, label: 'nav.monitoring' },
   { key: '/logs',          icon: <TerminalIcon />,  label: 'nav.logs' },
@@ -56,23 +54,29 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
   const location = useLocation();
   const navigate = useNavigate();
   const [hasVip, setHasVip] = useState(false);
+  const [hasLicense, setHasLicense] = useState(false);
 
-  const checkVipLicense = useCallback(async () => {
+  const checkLicenses = useCallback(async () => {
     try {
       const res = await api.get('/license');
+      const features: string[] = res.data?.active_features || [];
       const lics: { license_name: string; licensed: boolean }[] = res.data?.licenses || [];
+      setHasLicense(features.length > 0);
       setHasVip(lics.some((l) => l.licensed && l.license_name === 'Premium Support'));
-    } catch { setHasVip(false); }
+    } catch {
+      setHasLicense(false);
+      setHasVip(false);
+    }
   }, []);
 
-  useEffect(() => { checkVipLicense(); }, [checkVipLicense]);
+  useEffect(() => { checkLicenses(); }, [checkLicenses]);
   // Re-check on navigation or when licenses change
-  useEffect(() => { checkVipLicense(); }, [location.pathname, checkVipLicense]);
+  useEffect(() => { checkLicenses(); }, [location.pathname, checkLicenses]);
   useEffect(() => {
-    const handler = () => checkVipLicense();
+    const handler = () => checkLicenses();
     window.addEventListener('license-changed', handler);
     return () => window.removeEventListener('license-changed', handler);
-  }, [checkVipLicense]);
+  }, [checkLicenses]);
 
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
 
@@ -130,7 +134,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       </Toolbar>
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       <List sx={{ px: collapsed ? 0.5 : 1 }}>
-        {[...navItems, ...(hasVip ? [{ key: '/vip', icon: <StarIcon sx={{ color: 'warning.main' }} />, label: 'nav.vip' }] : [])].map((item) => (
+        {[...baseNavItems.filter((item) => !('requiresLicense' in item && item.requiresLicense) || hasLicense), ...(hasVip ? [{ key: '/vip', icon: <StarIcon sx={{ color: 'warning.main' }} />, label: 'nav.vip' }] : [])].map((item) => (
           <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
             <ListItemButton
               selected={location.pathname === item.key}
