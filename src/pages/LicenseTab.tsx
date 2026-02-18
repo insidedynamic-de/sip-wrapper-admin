@@ -21,7 +21,7 @@ interface LicenseEntry {
   product: string;
   subproduct: string;
   license_name: string;
-  type: 'partner' | 'client' | 'internal';
+  type: 'partner' | 'client' | 'internal' | 'trial' | 'demo' | 'nfr';
   client_name: string;
   licensed: boolean;
   valid_until: string;
@@ -30,6 +30,8 @@ interface LicenseEntry {
   version: string;
   server_id?: string;
   bound_to?: string;
+  features?: string[];
+  sku?: string;
 }
 
 interface AvailableLicense {
@@ -42,6 +44,9 @@ interface AvailableLicense {
   bound_to?: string;
   server_name?: string;
   licensed: boolean;
+  type?: string;
+  features?: string[];
+  sku?: string;
 }
 
 export default function LicenseTab() {
@@ -357,6 +362,9 @@ export default function LicenseTab() {
           { id: 'connections', header: t('license.connections'), render: (l) => (
             <Typography component="span" sx={{ fontWeight: 600 }}>{l.max_connections}</Typography>
           )},
+          { id: 'sku', header: t('license.sku'), render: (l) => (
+            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12 }}>{l.sku || '\u2014'}</Typography>
+          )},
         ]}
         columnOrderKey="license-columns"
         searchable
@@ -409,6 +417,12 @@ export default function LicenseTab() {
             <TextField label={t('license.client_name')} value={dialogLicense.client_name} disabled />
             <TextField label={t('license.valid_until')} value={dialogLicense.valid_until || '\u2014'} disabled />
             <TextField label={t('license.connections')} value={dialogLicense.max_connections} disabled />
+            {dialogLicense.sku && (
+              <TextField label={t('license.sku')} value={dialogLicense.sku} disabled />
+            )}
+            {dialogLicense.features && dialogLicense.features.length > 0 && (
+              <TextField label={t('license.features')} value={dialogLicense.features.join(', ')} disabled />
+            )}
             <TextField label={t('license.version')} value={dialogLicense.version || '\u2014'} disabled />
             {dialogLicense.server_id && (
               <TextField label={t('license.server_id')} value={dialogLicense.server_id} disabled />

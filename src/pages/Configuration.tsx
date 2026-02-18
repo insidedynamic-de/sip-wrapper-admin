@@ -4,6 +4,7 @@
  */
 import { useTranslation } from 'react-i18next';
 import { Box, Typography } from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
 import PeopleIcon from '@mui/icons-material/People';
 import RouterIcon from '@mui/icons-material/Router';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
@@ -11,6 +12,7 @@ import ShieldIcon from '@mui/icons-material/Shield';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { TabView } from '../components/TabView';
 import type { TabItemConfig } from '../components/TabView';
+import Dashboard from './Dashboard';
 import Users from './Users';
 import Gateways from './Gateways';
 import RoutesPage from './Routes';
@@ -21,6 +23,7 @@ export default function Configuration() {
   const { t } = useTranslation();
 
   const tabs: TabItemConfig[] = [
+    { id: 'dashboard', label: t('nav.dashboard'), icon: <DashboardIcon />, content: <Dashboard /> },
     { id: 'users',    label: t('section.users'),    icon: <PeopleIcon />,   content: <Users /> },
     { id: 'gateways', label: t('section.gateways'), icon: <RouterIcon />,   content: <Gateways /> },
     { id: 'routes',   label: t('section.routes'),   icon: <AltRouteIcon />, content: <RoutesPage /> },

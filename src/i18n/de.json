@@ -2,7 +2,7 @@
   "app": { "title": "InsideDynamic Wrapper - Admin" },
   "nav": {
     "dashboard": "Dashboard",
-    "config": "Hub Konfiguration",
+    "config": "TalkHub",
     "security": "Sicherheit",
     "logs": "Logs",
     "profile": "Profil",
@@ -10,6 +10,7 @@
     "license_billing": "Lizenz / Abrechnung",
     "billing": "Abrechnung",
     "integrations": "Integrationen",
+    "licenses": "Lizenzen",
     "vip": "VIP"
   },
   "auth": {
@@ -72,6 +73,7 @@
     "extensions_active": "Nebenstellen",
     "license_status": "Lizenz",
     "customize": "Dashboard anpassen",
+    "server_info": "Server-Info",
     "connection": "Verbindung",
     "today": "Heute",
     "this_month": "Monat",
@@ -125,6 +127,9 @@
     "invoice_zip": "Rechnungs-PLZ", "invoice_city": "Rechnungs-Stadt"
   },
   "license": {
+    "management_title": "Lizenzverwaltung",
+    "overview": "Lizenzübersicht",
+    "server_license": "Server-Lizenz",
     "license_info": "Lizenzinformationen", "license_key": "Lizenzschl\u00fcssel",
     "client_name": "Kundenname", "version": "Version",
     "update_license": "Lizenz aktualisieren", "activate_license": "Lizenz aktivieren",
@@ -173,7 +178,15 @@
     "assigned": "Vergeben",
     "available_status": "Verfügbar",
     "expired": "Abgelaufen",
-    "all_licenses_unavailable": "Lizenzübersicht ist für diesen Server nicht verfügbar. Lizenzen können über den Lizenz-Tab verwaltet werden."
+    "all_licenses_unavailable": "Lizenzübersicht ist für diesen Server nicht verfügbar. Lizenzen können über den Lizenz-Tab verwaltet werden.",
+    "expired_overlay_title": "Lizenz abgelaufen",
+    "expired_overlay_message": "Ihre Lizenz ist abgelaufen. Die Anwendung ist gesperrt, bis eine gültige Lizenz aktiviert wird. Bitte erneuern Sie Ihre Lizenz oder kontaktieren Sie den Support.",
+    "go_to_license": "Zur Lizenz",
+    "sku": "SKU",
+    "features": "Features",
+    "type_trial": "Testversion",
+    "type_demo": "Demo",
+    "type_nfr": "NFR"
   },
   "language": { "language": "Sprache", "german": "Deutsch", "english": "Englisch" },
   "logs": {
@@ -319,7 +332,11 @@
     "server_desc": "Server-Verbindung und SIP-Konfigurationseinstellungen.",
     "domain_ip": "Domain & IP",
     "ports": "Ports",
-    "country_caller": "Ländercode & Anrufer-ID"
+    "country_caller": "Ländercode & Anrufer-ID",
+    "server_identity": "Server-Identität",
+    "system_hostname": "System-Hostname",
+    "custom_hostname": "Benutzerdefinierter Hostname",
+    "custom_hostname_desc": "Angezeigten Hostnamen überschreiben"
   },
   "countdown": {
     "logout_in": "Logout in {{seconds}}s",
@@ -397,12 +414,20 @@
     "title": "Integrationen",
     "subtitle": "Verbinden Sie Ihren Linkify TalkHub mit Drittanbieter-Diensten und Plattformen.",
     "license_hint": "Integrationen erfordern eine separate Lizenz für jeden Dienst. Kontaktieren Sie den Vertrieb zur Aktivierung.",
+    "has_license_hint": "Sie haben {{count}} aktive Lizenz(en). Nutzen Sie die Karten unten, um Ihre Integrationen zu konfigurieren.",
+    "available_license_hint": "Eine freie Lizenz ist für diese Integration verfügbar. Klicken Sie auf Aktivieren, um sie auf diesem Server zu installieren.",
+    "license_available": "Lizenz verfügbar",
+    "activate_now": "Jetzt aktivieren",
+    "activate_now_tooltip": "Eine Lizenz für diese Integration ist verfügbar — jetzt auf diesem Server aktivieren",
     "active": "Aktiv",
     "no_license": "Keine Lizenz",
     "configure": "Konfigurieren",
     "requires_license": "Lizenz erforderlich",
     "details": "Details",
     "features": "Funktionen",
+    "talkhub_desc": "Kern-SIP-Telefonie-Hub — Benutzerverwaltung, Gateways, Routing und Monitoring.",
+    "talkhub_detail": "Linkify TalkHub ist die Kernplattform zur Verwaltung Ihrer SIP-Infrastruktur. Sie bietet Benutzer- und Gateway-Verwaltung, Anrufrouting, Sicherheitskontrollen, Systemüberwachung und Konfiguration — alles was Sie für den Betrieb Ihres Telefonsystems benötigen.",
+    "talkhub_features": "SIP-Benutzer- & ACL-Verwaltung|Gateway- & Provider-Verwaltung|Ein- & ausgehende Anrufweiterleitung|Sicherheit (Blacklist, Whitelist, Fail2Ban)|Systemüberwachung (CPU, RAM, Festplatte, Netzwerk)|Konfiguration Import & Export|Anrufprotokolle & Audit-Trail",
     "vapi_desc": "KI-Sprachagenten-Plattform für konversationelle KI-Telefonerlebnisse.",
     "vapi_detail": "VAPI ermöglicht die Erstellung intelligenter Sprachagenten, die Telefonanrufe autonom bearbeiten. Integrieren Sie Ihren Linkify TalkHub mit VAPI, um eingehende Anrufe an KI-Agenten weiterzuleiten oder ausgehende KI-gesteuerte Kampagnen zu starten.",
     "vapi_features": "Eingehende Anrufweiterleitung an KI-Agenten|Ausgehende KI-Anrufkampagnen|Echtzeit-Anruftranskription|Individuelle Sprach- & Sprachmodelle|Webhook-basierte Anrufereignisse",
@@ -468,6 +493,10 @@
     "reset_title": "Demo-Daten zurücksetzen?",
     "reset_message": "Alle Demo-Daten werden auf Werkseinstellungen zurückgesetzt. Alle Ihre Änderungen (Benutzer, Gateways, Routen usw.) gehen dauerhaft verloren. Sind Sie sicher?",
     "reset_confirm": "Ja, zurücksetzen",
-    "reset_success": "Demo-Daten auf Standard zurückgesetzt"
+    "reset_success": "Demo-Daten auf Standard zurückgesetzt",
+    "info_title": "Demo-Modus",
+    "info_text_1": "Sie verwenden derzeit die Demo-Version. Alle hier angezeigten Daten sind simuliert und stellen keine echte Serververbindung dar. Dieser Modus dient dazu, die Funktionen und Möglichkeiten des Linkify TalkHub Admin-Panels zu demonstrieren.",
+    "info_text_2": "Bei der Installation des Produkts können Sie alle Funktionen mit einer kostenlosen 7-Tage-Testversion ausprobieren. Keine Kreditkarte erforderlich — einfach installieren und Ihre SIP-Infrastruktur konfigurieren.",
+    "info_text_3": "Um zu einem echten Server zu wechseln, deaktivieren Sie den Demo-Modus in den Login-Einstellungen und geben Sie Ihre Serveradresse und Ihren API-Schlüssel ein."
   }
 }

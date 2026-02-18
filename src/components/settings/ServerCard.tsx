@@ -2,14 +2,17 @@
  * @file ServerCard — Server connection settings (domain, IP, ports, caller ID)
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Card, CardContent, Typography, TextField, Divider, Button, Box,
+  Card, CardContent, Typography, TextField, Divider, Button, Box, Chip,
+  Table, TableBody, TableCell, TableContainer, TableRow,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import NetworkCheckIcon from '@mui/icons-material/NetworkCheck';
+import DnsIcon from '@mui/icons-material/Dns';
 import api from '../../api/client';
+import type { SystemInfo } from '../../api/types';
 
 interface Props {
   settings: Record<string, unknown>;
@@ -20,6 +23,16 @@ interface Props {
 export default function ServerCard({ settings, onChange, onToast }: Props) {
   const { t } = useTranslation();
   const [testing, setTesting] = useState(false);
+  const [sysInfo, setSysInfo] = useState<SystemInfo | null>(null);
+
+  const loadSystemInfo = useCallback(async () => {
+    try {
+      const res = await api.get('/system/info');
+      if (res.data) setSysInfo(res.data);
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => { loadSystemInfo(); }, [loadSystemInfo]);
 
   const testConnection = async () => {
     setTesting(true);
@@ -43,6 +56,46 @@ export default function ServerCard({ settings, onChange, onToast }: Props) {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {t('system.server_desc')}
         </Typography>
+
+        {/* Server Identity (read-only from /system/info) */}
+        {sysInfo && (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+              <DnsIcon color="primary" fontSize="small" />
+              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t('system.server_identity')}</Typography>
+            </Box>
+            <TableContainer sx={{ mb: 2 }}>
+              <Table size="small">
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 600, width: 180 }}>{t('system.system_hostname')}</TableCell>
+                    <TableCell>{sysInfo.os.hostname}</TableCell>
+                  </TableRow>
+                  {sysInfo.network.map((iface) => (
+                    <TableRow key={iface.interface}>
+                      <TableCell sx={{ fontWeight: 600 }}>{iface.interface}</TableCell>
+                      <TableCell>
+                        {iface.ipv4 && <Chip size="small" label={`IPv4: ${iface.ipv4}`} sx={{ mr: 1 }} />}
+                        {iface.ipv6 && <Chip size="small" label={`IPv6: ${iface.ipv6}`} variant="outlined" />}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <Grid container spacing={3} sx={{ mb: 1 }}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label={t('system.custom_hostname')}
+                  value={settings.custom_hostname || ''}
+                  onChange={(e) => onChange('custom_hostname', e.target.value)}
+                  helperText={t('system.custom_hostname_desc')} />
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ my: 3 }} />
+          </>
+        )}
 
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 4 }}>

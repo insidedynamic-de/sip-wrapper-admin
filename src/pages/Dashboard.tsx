@@ -27,7 +27,8 @@ import api from '../api/client';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { loadPreferences, isDemoMode } from '../store/preferences';
 import { loadDemoStore, saveDemoStore } from '../api/demoData';
-import type { Gateway, GatewayStatus, Registration, ActiveCall, CallLog, Extension, CallStatEntry, User, AclUser } from '../api/types';
+import DnsIcon from '@mui/icons-material/Dns';
+import type { Gateway, GatewayStatus, Registration, ActiveCall, CallLog, Extension, CallStatEntry, User, AclUser, SystemInfo } from '../api/types';
 
 // ── Dashboard card visibility persistence ──
 const CARDS_STORAGE_KEY = 'sip-wrapper-dashboard-cards';
@@ -148,6 +149,7 @@ export default function Dashboard() {
   const [licenseInfo, setLicenseInfo] = useState<{ licensed: boolean; trial: boolean; nfr: boolean; max_connections: number }>({ licensed: false, trial: false, nfr: false, max_connections: 0 });
   const [routingCount, setRoutingCount] = useState(0);
   const [callStats, setCallStats] = useState<CallStatEntry[]>([]);
+  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Dashboard card visibility
@@ -294,7 +296,7 @@ export default function Dashboard() {
 
   const refresh = useCallback(async () => {
     try {
-      const [gwRes, gwAllRes, regRes, callRes, usersRes, aclRes, logRes, secRes, extRes, licRes, routeRes, statsRes] = await Promise.all([
+      const [gwRes, gwAllRes, regRes, callRes, usersRes, aclRes, logRes, secRes, extRes, licRes, routeRes, statsRes, sysRes] = await Promise.all([
         api.get('/gateways/status'),
         api.get('/gateways'),
         api.get('/registrations'),
@@ -307,6 +309,7 @@ export default function Dashboard() {
         api.get('/license'),
         api.get('/routes'),
         api.get('/logs/call-stats'),
+        api.get('/system/info'),
       ]);
       setAllGateways(gwAllRes.data || []);
       setGateways(gwRes.data || []);
@@ -322,6 +325,7 @@ export default function Dashboard() {
       setExtensions(extRes.data || []);
       setCallStats(statsRes.data || []);
       if (licRes.data) setLicenseInfo({ licensed: licRes.data.licensed, trial: licRes.data.trial, nfr: !!licRes.data.nfr, max_connections: licRes.data.max_connections || 0 });
+      if (sysRes.data) setSystemInfo(sysRes.data);
       if (routeRes.data) {
         const rd = routeRes.data;
         // Count enabled routes (inbound + outbound user routes)
@@ -376,6 +380,7 @@ export default function Dashboard() {
 
   // All available dashboard cards for the customize dialog
   const allCards = [
+    { id: 'server_info', label: t('dashboard.server_info') },
     { id: 'gateways', label: t('dashboard.gateways_registered') },
     { id: 'users', label: t('dashboard.users_online') },
     { id: 'extensions', label: t('dashboard.extensions_active') },
@@ -400,6 +405,40 @@ export default function Dashboard() {
           </IconButton>
         </Tooltip>
       </Box>
+
+      {/* Server Info Card */}
+      {isVisible('server_info') && systemInfo && (
+        <Box sx={{ ...hoverWrapSx, mb: 3 }}>
+          <IconButton className="dash-x" size="small" onClick={() => hideCard('server_info')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card>
+            <CardContent sx={{ px: 4, py: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <DnsIcon color="primary" />
+                <Typography variant="h6">{t('dashboard.server_info')}</Typography>
+              </Box>
+              <TableContainer>
+                <Table size="small">
+                  <TableBody>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 600 }}>{t('monitoring.hostname')}</TableCell>
+                      <TableCell>{systemInfo.os.hostname}</TableCell>
+                    </TableRow>
+                    {systemInfo.network.map((iface) => (
+                      <TableRow key={iface.interface}>
+                        <TableCell sx={{ fontWeight: 600 }}>{iface.interface}</TableCell>
+                        <TableCell>
+                          {iface.ipv4 && <Chip size="small" label={`IPv4: ${iface.ipv4}`} sx={{ mr: 1 }} />}
+                          {iface.ipv6 && <Chip size="small" label={`IPv6: ${iface.ipv6}`} variant="outlined" />}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </CardContent>
+          </Card>
+        </Box>
+      )}
 
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
         {/* Gateways: registered / total */}

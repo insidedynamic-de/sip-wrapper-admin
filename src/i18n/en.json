@@ -2,7 +2,7 @@
   "app": { "title": "InsideDynamic Wrapper - Admin" },
   "nav": {
     "dashboard": "Dashboard",
-    "config": "Hub Configuration",
+    "config": "TalkHub",
     "security": "Security",
     "logs": "Logs",
     "profile": "Profile",
@@ -10,6 +10,7 @@
     "license_billing": "License / Billing",
     "billing": "Billing",
     "integrations": "Integrations",
+    "licenses": "Licenses",
     "vip": "VIP"
   },
   "auth": {
@@ -72,6 +73,7 @@
     "extensions_active": "Extensions",
     "license_status": "License",
     "customize": "Customize Dashboard",
+    "server_info": "Server Info",
     "connection": "Connection",
     "today": "Today",
     "this_month": "Month",
@@ -125,6 +127,9 @@
     "invoice_zip": "Invoice ZIP Code", "invoice_city": "Invoice City"
   },
   "license": {
+    "management_title": "License Management",
+    "overview": "License Overview",
+    "server_license": "Server License",
     "license_info": "License Information", "license_key": "License Key",
     "client_name": "Client Name", "version": "Version",
     "update_license": "Update License", "activate_license": "Activate License",
@@ -173,7 +178,15 @@
     "assigned": "Assigned",
     "available_status": "Available",
     "expired": "Expired",
-    "all_licenses_unavailable": "License overview is not available for this server. Licenses can be managed via the License tab."
+    "all_licenses_unavailable": "License overview is not available for this server. Licenses can be managed via the License tab.",
+    "expired_overlay_title": "License Expired",
+    "expired_overlay_message": "Your license has expired. The application is locked until a valid license is activated. Please renew your license or contact support.",
+    "go_to_license": "Go to License",
+    "sku": "SKU",
+    "features": "Features",
+    "type_trial": "Trial",
+    "type_demo": "Demo",
+    "type_nfr": "NFR"
   },
   "language": { "language": "Language", "german": "German", "english": "English" },
   "logs": {
@@ -319,7 +332,11 @@
     "server_desc": "Server connection and SIP configuration settings.",
     "domain_ip": "Domain & IP",
     "ports": "Ports",
-    "country_caller": "Country & Caller ID"
+    "country_caller": "Country & Caller ID",
+    "server_identity": "Server Identity",
+    "system_hostname": "System Hostname",
+    "custom_hostname": "Custom Hostname",
+    "custom_hostname_desc": "Override the displayed hostname"
   },
   "countdown": {
     "logout_in": "Logout in {{seconds}}s",
@@ -397,12 +414,20 @@
     "title": "Integrations",
     "subtitle": "Connect your Linkify TalkHub with third-party services and platforms.",
     "license_hint": "Integrations require a separate license for each service. Contact sales to activate.",
+    "has_license_hint": "You have {{count}} active license(s). Use the cards below to configure your integrations.",
+    "available_license_hint": "A free license is available for this integration. Click Activate to install it on this server.",
+    "license_available": "License Available",
+    "activate_now": "Activate Now",
+    "activate_now_tooltip": "A license for this integration is available — activate it on this server now",
     "active": "Active",
     "no_license": "No License",
     "configure": "Configure",
     "requires_license": "License Required",
     "details": "Details",
     "features": "Features",
+    "talkhub_desc": "Core SIP telephony hub — user management, gateways, routing, and monitoring.",
+    "talkhub_detail": "Linkify TalkHub is the core platform for managing your SIP infrastructure. It provides user and gateway management, call routing, security controls, system monitoring, and configuration — everything you need to run your telephony system.",
+    "talkhub_features": "SIP user & ACL management|Gateway & provider management|Inbound & outbound call routing|Security (blacklist, whitelist, Fail2Ban)|System monitoring (CPU, RAM, disk, network)|Configuration import & export|Call logs & audit trail",
     "vapi_desc": "AI voice agent platform for building conversational AI phone experiences.",
     "vapi_detail": "VAPI enables you to create intelligent voice agents that handle phone calls autonomously. Integrate your Linkify TalkHub with VAPI to route inbound calls to AI agents or launch outbound AI-driven campaigns.",
     "vapi_features": "Inbound call routing to AI agents|Outbound AI call campaigns|Real-time call transcription|Custom voice & language models|Webhook-based call events",
@@ -468,6 +493,10 @@
     "reset_title": "Reset Demo Data?",
     "reset_message": "All demo data will be reset to factory defaults. All your changes (users, gateways, routes, etc.) will be permanently lost. Are you sure?",
     "reset_confirm": "Yes, Reset",
-    "reset_success": "Demo data reset to defaults"
+    "reset_success": "Demo data reset to defaults",
+    "info_title": "Demo Mode",
+    "info_text_1": "You are currently using the demo version. All data shown here is simulated and does not represent a real server connection. This mode is intended to showcase the features and capabilities of the Linkify TalkHub admin panel.",
+    "info_text_2": "When you install the product, you can try all features with a free 7-day trial. No credit card required — simply install and start configuring your SIP infrastructure.",
+    "info_text_3": "To switch to a real server, disable demo mode in the login settings and enter your server address and API key."
   }
 }

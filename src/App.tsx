@@ -7,13 +7,13 @@ import type { ThemeMode } from './store/preferences';
 import type { ColorTheme } from './theme/colors';
 import MainLayout from './components/Layout/MainLayout';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
 import Configuration from './pages/Configuration';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
 import Monitoring from './pages/Monitoring';
 import Integrations from './pages/Integrations';
 import VIP from './pages/VIP';
+import LicenseManagement from './pages/LicenseManagement';
 import NotFound from './pages/NotFound';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/" element={<Navigate to="/configuration" replace />} />
             <Route path="/configuration" element={<Configuration />} />
             <Route path="/extensions" element={<Navigate to="/configuration" replace />} />
             <Route path="/users" element={<Navigate to="/configuration" replace />} />
@@ -66,7 +66,8 @@ export default function App() {
             <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/settings" element={<Navigate to="/configuration" replace />} />
-            <Route path="/license" element={<Navigate to="/profile" replace />} />
+            <Route path="/licenses" element={<LicenseManagement />} />
+            <Route path="/license" element={<Navigate to="/licenses" replace />} />
             <Route
               path="/profile"
               element={

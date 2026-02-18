@@ -44,7 +44,7 @@ export interface DemoStore {
     product: string;
     subproduct: string;
     license_name: string;
-    type: 'partner' | 'client' | 'internal';
+    type: 'partner' | 'client' | 'internal' | 'trial' | 'demo' | 'nfr';
     client_name: string;
     licensed: boolean;
     valid_until: string;
@@ -53,6 +53,8 @@ export interface DemoStore {
     version: string;
     server_id?: string;
     bound_to?: string;
+    features?: string[];
+    sku?: string;
   }[];
   company: {
     company_id: string;
@@ -81,6 +83,9 @@ export interface DemoStore {
     bound_to?: string;
     server_name?: string;
     licensed: boolean;
+    type?: string;
+    features?: string[];
+    sku?: string;
   }[];
   auditLog: AuditEntry[];
   systemInfo: SystemInfo;
@@ -263,19 +268,20 @@ const SEED_DATA: DemoStore = {
     codec_prefs: 'OPUS,G722,PCMU,PCMA',
     default_country_code: '49',
     outbound_caller_id: '+4930123456',
+    custom_hostname: '',
   },
   licenses: [
-    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4' },
+    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4', features: ['basic'], sku: 'LTH-BAS-005' },
   ],
   available_licenses: [
-    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31', bound_to: 'srv-a1b2c3d4', server_name: 'sip-wrapper-prod', licensed: true },
-    { license_key: 'DEMO-0000-0000-0002', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic', max_connections: 4, valid_until: '2026-12-31', licensed: false },
-    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic', max_connections: 8, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true },
-    { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Premium Support', max_connections: 0, valid_until: '2026-12-31', licensed: false },
-    { license_key: 'DEMO-VAPI-0001', product: 'Linkify TalkHub', subproduct: 'VAPI Integration', license_name: 'VAPI', max_connections: 0, valid_until: '2026-12-31', licensed: false },
-    { license_key: 'DEMO-ODOO-0001', product: 'Linkify TalkHub', subproduct: 'Odoo Integration', license_name: 'Odoo', max_connections: 0, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true },
-    { license_key: 'DEMO-RETELL-0001', product: 'Linkify TalkHub', subproduct: 'Retell Integration', license_name: 'Retell', max_connections: 0, valid_until: '2026-12-31', licensed: false },
-    { license_key: 'DEMO-SIP-EXPIRED-01', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic', max_connections: 4, valid_until: '2025-06-30', licensed: false },
+    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2026-12-31', bound_to: 'srv-a1b2c3d4', server_name: 'sip-wrapper-prod', licensed: true, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
+    { license_key: 'DEMO-0000-0000-0002', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
+    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify TalkHub', subproduct: 'Premium Hub', license_name: 'Premium Hub', max_connections: 25, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true, type: 'client', features: ['basic', 'premium', 'webrtc'], sku: 'LTH-PRM-025' },
+    { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify Premium Support', subproduct: 'Standard', license_name: 'Premium Support Standard', max_connections: 0, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic'], sku: 'LPS-STD-000' },
+    { license_key: 'DEMO-VAPI-0001', product: 'Linkify VAPI Connect', subproduct: 'Starter', license_name: 'VAPI Starter', max_connections: 2, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic', 'vapi'], sku: 'LVC-STR-002' },
+    { license_key: 'DEMO-ODOO-0001', product: 'Linkify Odoo Bridge', subproduct: 'Business', license_name: 'Odoo Business', max_connections: 10, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true, type: 'client', features: ['basic', 'odoo', 'recording'], sku: 'LOB-BUS-010' },
+    { license_key: 'DEMO-RETELL-0001', product: 'Linkify Retell Connect', subproduct: 'Starter', license_name: 'Retell Starter', max_connections: 2, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic', 'retell'], sku: 'LRC-STR-002' },
+    { license_key: 'DEMO-SIP-EXPIRED-01', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2025-06-30', licensed: false, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
   ],
   company: {
     company_id: 'demo-ltd',
@@ -338,8 +344,8 @@ const SEED_DATA: DemoStore = {
       { mount: '/data', total: 1099511627776, used: 329853488333, free: 769658139443, usage: 30, fs_type: 'xfs' },
     ],
     network: [
-      { interface: 'eth0', rx_bytes: 1258291200, tx_bytes: 524288000, rx_rate: 125000, tx_rate: 82000 },
-      { interface: 'eth1', rx_bytes: 209715200, tx_bytes: 104857600, rx_rate: 15000, tx_rate: 8000 },
+      { interface: 'eth0', ipv4: '185.232.68.42', ipv6: '2a01:4f8:c17:1::1', rx_bytes: 1258291200, tx_bytes: 524288000, rx_rate: 125000, tx_rate: 82000 },
+      { interface: 'eth1', ipv4: '10.0.0.1', ipv6: 'fe80::1', rx_bytes: 209715200, tx_bytes: 104857600, rx_rate: 15000, tx_rate: 8000 },
     ],
     os: {
       name: 'Debian GNU/Linux',

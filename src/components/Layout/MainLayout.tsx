@@ -9,8 +9,10 @@ import { useTranslation } from 'react-i18next';
 import Sidebar, { DRAWER_WIDTH, DRAWER_WIDTH_COLLAPSED } from './Sidebar';
 import ErrorBoundary from '../ErrorBoundary';
 import SetupWizard from '../SetupWizard';
+import LicenseOverlay from '../LicenseOverlay';
+import DemoRibbon from '../DemoRibbon';
 import api from '../../api/client';
-import { loadPreferences, savePreferences } from '../../store/preferences';
+import { loadPreferences, savePreferences, isDemoMode } from '../../store/preferences';
 import type { ThemeMode } from '../../store/preferences';
 
 interface Props {
@@ -25,6 +27,7 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
   const [setupRequired, setSetupRequired] = useState(false);
   const [setupChecked, setSetupChecked] = useState(false);
   const [contentKey, setContentKey] = useState(0);
+  const [licenseExpired, setLicenseExpired] = useState(false);
 
   const checkSetup = useCallback(async () => {
     try {
@@ -39,6 +42,16 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
   }, []);
 
   useEffect(() => { checkSetup(); }, [checkSetup]);
+
+  // Listen for license status from Sidebar
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setLicenseExpired(detail?.hasExpired === true);
+    };
+    window.addEventListener('license-status', handler);
+    return () => window.removeEventListener('license-status', handler);
+  }, []);
 
   const handleToggleCollapse = () => {
     const next = !collapsed;
@@ -94,6 +107,9 @@ export default function MainLayout({ themeMode, setThemeMode }: Props) {
           }}
         />
       )}
+
+      <LicenseOverlay active={licenseExpired} />
+      {isDemoMode() && <DemoRibbon />}
     </Box>
   );
 }

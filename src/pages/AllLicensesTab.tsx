@@ -21,6 +21,9 @@ interface AllLicense {
   bound_to?: string;
   server_name?: string;
   licensed: boolean;
+  type?: string;
+  features?: string[];
+  sku?: string;
 }
 
 const isExpired = (l: AllLicense) => {
@@ -109,8 +112,14 @@ export default function AllLicensesTab() {
           { id: 'license_name', header: t('license.license_name'), render: (l) => (
             <Chip size="small" label={l.license_name} color={l.bound_to ? 'default' : 'primary'} />
           )},
+          { id: 'type', header: t('license.client_type'), render: (l) => (
+            <Chip size="small" label={t(`license.type_${l.type || 'client'}`)} variant="outlined" />
+          )},
           { id: 'connections', header: t('license.connections'), render: (l) => (
             <Typography component="span" sx={{ fontWeight: 600 }}>{l.max_connections}</Typography>
+          )},
+          { id: 'sku', header: t('license.sku'), render: (l) => (
+            <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12 }}>{l.sku || '\u2014'}</Typography>
           )},
           { id: 'valid_until', header: t('license.valid_until'), render: (l) => (
             <Typography variant="body2" color={isExpired(l) ? 'error.main' : 'text.primary'} sx={isExpired(l) ? { fontWeight: 600 } : undefined}>

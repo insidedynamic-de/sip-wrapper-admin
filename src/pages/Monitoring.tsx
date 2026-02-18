@@ -8,6 +8,7 @@ import {
   Box, Card, CardContent, Typography, Tabs, Tab,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TablePagination,
   LinearProgress, Chip, IconButton, Tooltip, TextField, InputAdornment,
+  Dialog, DialogTitle, DialogContent, FormControlLabel, Checkbox,
 } from '@mui/material';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import MemoryIcon from '@mui/icons-material/Memory';
@@ -20,6 +21,8 @@ import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
+import TuneIcon from '@mui/icons-material/Tune';
 import api from '../api/client';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { loadPreferences, formatDateTime } from '../store/preferences';
@@ -62,6 +65,21 @@ function usageColor(pct: number): 'success' | 'warning' | 'error' {
   return 'success';
 }
 
+// ── Monitoring card visibility persistence ──
+const MON_CARDS_KEY = 'sip-wrapper-monitoring-cards';
+
+function loadHiddenMonCards(): Set<string> {
+  try {
+    const raw = localStorage.getItem(MON_CARDS_KEY);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch { /* ignore */ }
+  return new Set();
+}
+
+function saveHiddenMonCards(hidden: Set<string>) {
+  localStorage.setItem(MON_CARDS_KEY, JSON.stringify([...hidden]));
+}
+
 export default function Monitoring() {
   const { t } = useTranslation();
   const [tab, setTab] = useState(0);
@@ -76,6 +94,27 @@ export default function Monitoring() {
   const [secSearch, setSecSearch] = useState('');
   const [secPage, setSecPage] = useState(0);
   const [secRowsPerPage, setSecRowsPerPage] = useState(10);
+
+  // Card visibility (overview tab)
+  const [hiddenCards, setHiddenCards] = useState<Set<string>>(loadHiddenMonCards);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+
+  const hideCard = (id: string) => {
+    const next = new Set(hiddenCards);
+    next.add(id);
+    setHiddenCards(next);
+    saveHiddenMonCards(next);
+  };
+
+  const toggleCard = (id: string) => {
+    const next = new Set(hiddenCards);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setHiddenCards(next);
+    saveHiddenMonCards(next);
+  };
+
+  const isVisible = (id: string) => !hiddenCards.has(id);
 
   const showToast = (success: boolean) => {
     setToast({ open: true, message: success ? t('status.success') : t('status.error'), severity: success ? 'success' : 'error' });
@@ -98,7 +137,10 @@ export default function Monitoring() {
 
   useEffect(() => { refresh(); }, [refresh]);
   const prefs = loadPreferences();
-  useAutoRefresh(refresh, prefs.refreshInterval * 1000);
+  const demo = prefs.demoMode;
+  // Demo mode: faster refresh (5s) for live-feeling gauges
+  const refreshMs = demo ? 5000 : prefs.refreshInterval * 1000;
+  useAutoRefresh(refresh, refreshMs);
 
   if (!info) {
     return (
@@ -120,10 +162,38 @@ export default function Monitoring() {
       </Tabs>
 
       {/* Overview — live gauges */}
-      {tab === 0 && (
+      {tab === 0 && (() => {
+        const dismissSx = {
+          position: 'absolute', top: 2, right: 2, zIndex: 1,
+          opacity: 0, transition: 'opacity 0.2s',
+          bgcolor: 'background.paper',
+          '&:hover': { bgcolor: 'action.hover' },
+        } as const;
+        const hoverWrapSx = { position: 'relative', '&:hover .mon-x': { opacity: 1 }, flex: '1 1 300px', minWidth: 300 } as const;
+
+        const allMonCards = [
+          { id: 'cpu', label: 'CPU' },
+          { id: 'ram', label: 'RAM' },
+          { id: 'disk', label: t('monitoring.storage') },
+          { id: 'network', label: t('monitoring.network') },
+          { id: 'os', label: t('monitoring.os') },
+        ];
+
+        return (
+        <>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+          <Tooltip title={t('dashboard.customize')}>
+            <IconButton onClick={() => setCustomizeOpen(true)}>
+              <TuneIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
           {/* CPU */}
-          <Card sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          {isVisible('cpu') && (
+          <Box sx={hoverWrapSx}>
+          <IconButton className="mon-x" size="small" onClick={() => hideCard('cpu')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card sx={{ width: '100%' }}>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <MemoryIcon color="primary" />
@@ -154,9 +224,14 @@ export default function Monitoring() {
               )}
             </CardContent>
           </Card>
+          </Box>
+          )}
 
           {/* RAM */}
-          <Card sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          {isVisible('ram') && (
+          <Box sx={hoverWrapSx}>
+          <IconButton className="mon-x" size="small" onClick={() => hideCard('ram')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card sx={{ width: '100%' }}>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <MemoryIcon color="primary" />
@@ -182,9 +257,14 @@ export default function Monitoring() {
               </Typography>
             </CardContent>
           </Card>
+          </Box>
+          )}
 
           {/* Disk(s) */}
-          <Card sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          {isVisible('disk') && (
+          <Box sx={hoverWrapSx}>
+          <IconButton className="mon-x" size="small" onClick={() => hideCard('disk')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card sx={{ width: '100%' }}>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <StorageIcon color="primary" />
@@ -208,9 +288,14 @@ export default function Monitoring() {
               ))}
             </CardContent>
           </Card>
+          </Box>
+          )}
 
           {/* Network */}
-          <Card sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          {isVisible('network') && (
+          <Box sx={hoverWrapSx}>
+          <IconButton className="mon-x" size="small" onClick={() => hideCard('network')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card sx={{ width: '100%' }}>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <NetworkCheckIcon color="primary" />
@@ -237,9 +322,14 @@ export default function Monitoring() {
               ))}
             </CardContent>
           </Card>
+          </Box>
+          )}
 
           {/* OS / Uptime */}
-          <Card sx={{ flex: '1 1 300px', minWidth: 300 }}>
+          {isVisible('os') && (
+          <Box sx={hoverWrapSx}>
+          <IconButton className="mon-x" size="small" onClick={() => hideCard('os')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
+          <Card sx={{ width: '100%' }}>
             <CardContent sx={{ px: 4, py: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
                 <ComputerIcon color="primary" />
@@ -275,8 +365,30 @@ export default function Monitoring() {
               </TableContainer>
             </CardContent>
           </Card>
+          </Box>
+          )}
         </Box>
-      )}
+
+        {/* Customize Monitoring Dialog */}
+        <Dialog open={customizeOpen} onClose={() => setCustomizeOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {t('dashboard.customize')}
+            <IconButton size="small" onClick={() => setCustomizeOpen(false)}><CloseIcon /></IconButton>
+          </DialogTitle>
+          <DialogContent>
+            {allMonCards.map((card) => (
+              <FormControlLabel
+                key={card.id}
+                control={<Checkbox checked={isVisible(card.id)} onChange={() => toggleCard(card.id)} />}
+                label={card.label}
+                sx={{ display: 'block' }}
+              />
+            ))}
+          </DialogContent>
+        </Dialog>
+        </>
+        );
+      })()}
 
       {/* Hardware tab */}
       {tab === 1 && (

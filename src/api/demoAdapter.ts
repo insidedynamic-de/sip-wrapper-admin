@@ -490,11 +490,13 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
   if (url === '/license' && method === 'get') {
     const lics = store.licenses || [];
     const totalConn = lics.reduce((s, l) => s + (l.licensed ? l.max_connections : 0), 0);
+    const activeFeatures = lics.filter((l) => l.licensed).map((l) => l.license_name);
     return mock({
       licenses: lics,
       total_connections: totalConn,
       licensed: lics.some((l) => l.licensed),
       max_connections: totalConn,
+      active_features: activeFeatures,
       version: lics[0]?.version || '2.0.0',
       server_id: lics[0]?.server_id || '',
     }, config);
@@ -506,17 +508,17 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     const existing = (store.licenses || []).find((l) => l.license_key === key);
     // If license exists but is deactivated, reactivate it (same checks as new)
     if (existing && existing.licensed) return mockError({ success: false, message: 'license_duplicate' }, config, 409);
-    const VALID_DEMO_KEYS: Record<string, { connections: number; product: string; subproduct: string; license_name: string }> = {
-      'DEMO-0000-0000-0001': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
-      'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
-      'DEMO-0000-0000-0003': { connections: 8, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic' },
-      'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Premium Support' },
-      'DEMO-VAPI-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'VAPI Integration', license_name: 'VAPI' },
-      'DEMO-ODOO-0001': { connections: 0, product: 'Linkify TalkHub', subproduct: 'Odoo Integration', license_name: 'Odoo' },
+    const VALID_DEMO_KEYS: Record<string, { connections: number; product: string; subproduct: string; license_name: string; features: string[]; sku: string }> = {
+      'DEMO-0000-0000-0001': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', features: ['basic'], sku: 'LTH-BAS-005' },
+      'DEMO-0000-0000-0002': { connections: 4, product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', features: ['basic'], sku: 'LTH-BAS-005' },
+      'DEMO-0000-0000-0003': { connections: 25, product: 'Linkify TalkHub', subproduct: 'Premium Hub', license_name: 'Premium Hub', features: ['basic', 'premium', 'webrtc'], sku: 'LTH-PRM-025' },
+      'DEMO-PREMSUPPORT-0001': { connections: 0, product: 'Linkify Premium Support', subproduct: 'Standard', license_name: 'Premium Support Standard', features: ['basic'], sku: 'LPS-STD-000' },
+      'DEMO-VAPI-0001': { connections: 2, product: 'Linkify VAPI Connect', subproduct: 'Starter', license_name: 'VAPI Starter', features: ['basic', 'vapi'], sku: 'LVC-STR-002' },
+      'DEMO-ODOO-0001': { connections: 10, product: 'Linkify Odoo Bridge', subproduct: 'Business', license_name: 'Odoo Business', features: ['basic', 'odoo', 'recording'], sku: 'LOB-BUS-010' },
     };
     // Also check available_licenses as a source of valid keys
     const avail = (store.available_licenses || []).find((a) => a.license_key === key);
-    const keyInfo = VALID_DEMO_KEYS[key] || (avail ? { connections: avail.max_connections, product: avail.product, subproduct: avail.subproduct, license_name: avail.license_name } : null);
+    const keyInfo = VALID_DEMO_KEYS[key] || (avail ? { connections: avail.max_connections, product: avail.product, subproduct: avail.subproduct, license_name: avail.license_name, features: avail.features || ['basic'], sku: avail.sku || '' } : null);
     if (!keyInfo) return mockError({ success: false, message: 'license_invalid' }, config, 400);
     if (existing) {
       // Reactivate deactivated license
@@ -543,6 +545,8 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
         version: '2.0.0',
         server_id: 'srv-a1b2c3d4',
         bound_to: 'srv-a1b2c3d4',
+        features: keyInfo.features,
+        sku: keyInfo.sku,
       };
       store.licenses = [...(store.licenses || []), newLic];
     }
@@ -654,6 +658,48 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
       rx_rate: Math.max(1000, n.rx_rate + Math.floor(Math.random() * 20001 - 10000)),
       tx_rate: Math.max(500, n.tx_rate + Math.floor(Math.random() * 10001 - 5000)),
     }));
+
+    // Detect real platform from browser and enrich demo data
+    const ua = navigator.userAgent;
+    sys.os = { ...sys.os };
+    sys.cpu = { ...sys.cpu };
+    if (typeof navigator.hardwareConcurrency === 'number') {
+      sys.cpu.cores = Math.max(1, Math.floor(navigator.hardwareConcurrency / 2));
+      sys.cpu.threads = navigator.hardwareConcurrency;
+    }
+    // Detect OS from user agent
+    if (ua.includes('Windows')) {
+      const winMatch = ua.match(/Windows NT (\d+\.\d+)/);
+      const winVer = winMatch ? winMatch[1] : '10.0';
+      const winName = parseFloat(winVer) >= 10.0 ? 'Windows 10/11' : `Windows NT ${winVer}`;
+      sys.os.name = 'Microsoft Windows';
+      sys.os.version = winName;
+      sys.os.kernel = `NT ${winVer}`;
+      sys.os.arch = ua.includes('Win64') || ua.includes('x64') ? 'x86_64' : 'x86';
+    } else if (ua.includes('Linux')) {
+      // Could be plain Linux, Ubuntu, Debian, Docker, etc.
+      sys.os.name = ua.includes('Android') ? 'Android' : 'Linux';
+      sys.os.arch = ua.includes('x86_64') || ua.includes('x64') ? 'x86_64' : ua.includes('aarch64') || ua.includes('arm64') ? 'aarch64' : 'x86_64';
+    } else if (ua.includes('Mac OS X') || ua.includes('macOS')) {
+      sys.os.name = 'macOS';
+      const macMatch = ua.match(/Mac OS X (\d+[._]\d+[._]?\d*)/);
+      sys.os.version = macMatch ? macMatch[1].replace(/_/g, '.') : '';
+      sys.os.arch = ua.includes('ARM') || ua.includes('arm64') ? 'aarch64' : 'x86_64';
+      sys.os.kernel = 'Darwin';
+    }
+    // Use real device memory if available
+    if ('deviceMemory' in navigator) {
+      const devMem = (navigator as Record<string, unknown>).deviceMemory as number;
+      if (devMem) {
+        sys.memory = { ...sys.memory };
+        sys.memory.total = devMem * 1073741824; // GB to bytes
+        sys.memory.used = Math.round(sys.memory.total * (sys.memory.usage / 100));
+        sys.memory.free = sys.memory.total - sys.memory.used;
+      }
+    }
+    // Tick uptime
+    sys.os.uptime = sys.os.uptime + Math.floor(Math.random() * 5 + 1);
+
     return mock(sys, config);
   }
 

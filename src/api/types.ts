@@ -206,6 +206,8 @@ export interface SystemInfo {
   }[];
   network: {
     interface: string;
+    ipv4?: string;
+    ipv6?: string;
     rx_bytes: number;
     tx_bytes: number;
     rx_rate: number;
