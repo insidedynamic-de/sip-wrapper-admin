@@ -5,7 +5,7 @@
 import axios from 'axios';
 import {
   getAccessToken, getRefreshToken, setTokens, clearTokens,
-  isTokenExpired, getActiveTenantId,
+  isTokenExpired, getActiveTenantId, getImpersonateUser,
 } from '../store/auth';
 
 const api = axios.create({
@@ -18,6 +18,10 @@ api.interceptors.request.use((config) => {
   const token = getAccessToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const imp = getImpersonateUser();
+  if (imp) {
+    config.headers['X-Impersonate-User-Id'] = String(imp.user_id);
   }
   const tenantId = getActiveTenantId();
   if (tenantId) {
