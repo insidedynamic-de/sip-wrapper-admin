@@ -39,8 +39,12 @@ export default function AdminClients() {
   const [editTenant, setEditTenant] = useState<Record<string, string | number | null>>({});
   const [linking, setLinking] = useState<number | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [importStep, setImportStep] = useState<'server' | 'clients'>('server');
+  const [licServers, setLicServers] = useState<{ id: number; name: string; product_type: string }[]>([]);
+  const [selectedServer, setSelectedServer] = useState<number>(0);
   const [unlinked, setUnlinked] = useState<Record<string, unknown>[]>([]);
   const [importing, setImporting] = useState<number | null>(null);
+  const [loadingUnlinked, setLoadingUnlinked] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
 
   const fetchTenants = useCallback(async () => {
@@ -53,20 +57,36 @@ export default function AdminClients() {
 
   useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
-  const fetchUnlinked = async () => {
+  const openImportDialog = async () => {
     try {
-      const res = await api.get('/admin/licserver/unlinked');
-      setUnlinked(res.data || []);
+      const res = await api.get('/admin/licservers');
+      setLicServers((res.data || []).filter((s: { is_active: boolean }) => s.is_active));
+      setImportStep('server');
+      setSelectedServer(0);
+      setUnlinked([]);
       setImportOpen(true);
     } catch {
-      setToast({ open: true, message: 'Failed to load LicServer clients', severity: 'error' });
+      setToast({ open: true, message: 'Failed to load LicServers', severity: 'error' });
     }
+  };
+
+  const loadUnlinked = async (serverId: number) => {
+    setSelectedServer(serverId);
+    setLoadingUnlinked(true);
+    try {
+      const res = await api.get(`/admin/licservers/${serverId}/unlinked`);
+      setUnlinked(res.data || []);
+      setImportStep('clients');
+    } catch {
+      setToast({ open: true, message: 'Failed to load clients', severity: 'error' });
+    }
+    setLoadingUnlinked(false);
   };
 
   const handleImport = async (licClientId: number) => {
     setImporting(licClientId);
     try {
-      const res = await api.post('/admin/licserver/import', { lic_client_id: licClientId });
+      const res = await api.post('/admin/licserver/import', { lic_server_id: selectedServer, lic_client_id: licClientId });
       setToast({ open: true, message: `Imported: ${res.data.name} → tenant #${res.data.tenant_id}`, severity: 'success' });
       setUnlinked((prev) => prev.filter((c) => c.id !== licClientId));
       fetchTenants();
@@ -77,11 +97,24 @@ export default function AdminClients() {
     setImporting(null);
   };
 
-  const handleLink = async (tenantId: number) => {
-    setLinking(tenantId);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkTenantId, setLinkTenantId] = useState(0);
+
+  const openLinkDialog = async (tenantId: number) => {
+    setLinkTenantId(tenantId);
     try {
-      const res = await api.post(`/admin/tenants/${tenantId}/link-licserver`);
-      setToast({ open: true, message: `Linked: lic_client_id=${res.data.lic_client_id}`, severity: 'success' });
+      const res = await api.get('/admin/licservers');
+      setLicServers((res.data || []).filter((s: { is_active: boolean }) => s.is_active));
+      setLinkOpen(true);
+    } catch { /* */ }
+  };
+
+  const handleLink = async (serverId: number) => {
+    setLinking(serverId);
+    try {
+      const res = await api.post(`/admin/tenants/${linkTenantId}/link-licserver`, { lic_server_id: serverId });
+      setToast({ open: true, message: `Linked to ${res.data.lic_server}: client #${res.data.lic_client_id}`, severity: 'success' });
+      setLinkOpen(false);
       fetchTenants();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
@@ -117,7 +150,7 @@ export default function AdminClients() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('admin.clients')}</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" size="small" startIcon={<CloudDownloadIcon />} onClick={() => window.location.hash = '#/admin/licservers'}>
+          <Button variant="outlined" size="small" startIcon={<CloudDownloadIcon />} onClick={openImportDialog}>
             Import from LicServer
           </Button>
           <IconButton onClick={fetchTenants}><RefreshIcon /></IconButton>
@@ -159,7 +192,7 @@ export default function AdminClients() {
                   </Tooltip>
                   {!t.lic_client_id && (
                     <Tooltip title="Link to LicServer">
-                      <IconButton size="small" color="primary" onClick={() => handleLink(t.id)} disabled={linking === t.id}>
+                      <IconButton size="small" color="primary" onClick={() => openLinkDialog(t.id)} disabled={linking !== null}>
                         {linking === t.id ? <CircularProgress size={16} /> : <LinkIcon fontSize="small" />}
                       </IconButton>
                     </Tooltip>
@@ -204,45 +237,87 @@ export default function AdminClients() {
         </DialogActions>
       </Dialog>
 
+      {/* Link to LicServer Dialog */}
+      <Dialog open={linkOpen} onClose={() => setLinkOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Link to LicServer</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+            {licServers.map((s) => (
+              <Button key={s.id} variant="outlined" fullWidth onClick={() => handleLink(s.id)}
+                disabled={linking !== null} sx={{ justifyContent: 'flex-start', textTransform: 'none' }}>
+                {s.name} {s.product_type && <Chip label={s.product_type} size="small" sx={{ ml: 1 }} />}
+                {linking === s.id && <CircularProgress size={16} sx={{ ml: 'auto' }} />}
+              </Button>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions><Button onClick={() => setLinkOpen(false)}>Cancel</Button></DialogActions>
+      </Dialog>
+
       {/* Import from LicServer Dialog */}
       <Dialog open={importOpen} onClose={() => setImportOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Import from LicServer</DialogTitle>
         <DialogContent>
-          {unlinked.length === 0 ? (
-            <Alert severity="info" sx={{ mt: 1 }}>All LicServer clients are already linked.</Alert>
-          ) : (
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>ID</TableCell>
-                    <TableCell>Name</TableCell>
-                    <TableCell>Email</TableCell>
-                    <TableCell>Licenses</TableCell>
-                    <TableCell></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {unlinked.map((c) => (
-                    <TableRow key={c.id as number}>
-                      <TableCell>{c.id as number}</TableCell>
-                      <TableCell><strong>{c.name as string}</strong></TableCell>
-                      <TableCell>{c.email as string}</TableCell>
-                      <TableCell>{c.license_count as number}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="small" variant="contained" startIcon={importing === c.id ? <CircularProgress size={14} /> : <AddIcon />}
-                          disabled={importing !== null}
-                          onClick={() => handleImport(c.id as number)}
-                        >
-                          Import
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+          {importStep === 'server' && (
+            <>
+              {licServers.length === 0 ? (
+                <Alert severity="warning" sx={{ mt: 1 }}>No LicServers configured. Add one in Admin → LicServer.</Alert>
+              ) : (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mt: 1 }}>
+                  {licServers.map((s) => (
+                    <Button key={s.id} variant="outlined" fullWidth onClick={() => loadUnlinked(s.id)}
+                      disabled={loadingUnlinked}
+                      sx={{ justifyContent: 'flex-start', textTransform: 'none', py: 1.5 }}>
+                      <Box sx={{ textAlign: 'left' }}>
+                        <Typography variant="subtitle2">{s.name}</Typography>
+                        {s.product_type && <Chip label={s.product_type} size="small" sx={{ ml: 1 }} />}
+                      </Box>
+                      {loadingUnlinked && selectedServer === s.id && <CircularProgress size={16} sx={{ ml: 'auto' }} />}
+                    </Button>
                   ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                </Box>
+              )}
+            </>
+          )}
+          {importStep === 'clients' && (
+            <>
+              <Button size="small" onClick={() => setImportStep('server')} sx={{ mb: 1 }}>← Back</Button>
+              {unlinked.length === 0 ? (
+                <Alert severity="info">All clients on this server are already linked.</Alert>
+              ) : (
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>ID</TableCell>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Email</TableCell>
+                        <TableCell>Licenses</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {unlinked.map((c) => (
+                        <TableRow key={c.id as number}>
+                          <TableCell>{c.id as number}</TableCell>
+                          <TableCell><strong>{c.name as string}</strong></TableCell>
+                          <TableCell>{c.email as string}</TableCell>
+                          <TableCell>{c.license_count as number}</TableCell>
+                          <TableCell>
+                            <Button size="small" variant="contained"
+                              startIcon={importing === c.id ? <CircularProgress size={14} /> : <AddIcon />}
+                              disabled={importing !== null}
+                              onClick={() => handleImport(c.id as number)}>
+                              Import
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              )}
+            </>
           )}
         </DialogContent>
         <DialogActions>
