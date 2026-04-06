@@ -250,6 +250,31 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
         </Tooltip>
       )}
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+      {/* Impersonate banner */}
+      {activeTenant && activeTenant.id !== getUserFromToken()?.tenant_id && (
+        <Box sx={{
+          mx: collapsed ? 0.5 : 1, my: 0.5, px: collapsed ? 0.5 : 1.5, py: 0.75,
+          bgcolor: 'warning.main', borderRadius: 1,
+          display: 'flex', alignItems: collapsed ? 'center' : 'row',
+          flexDirection: collapsed ? 'column' : 'row',
+          gap: 0.5,
+        }}>
+          {!collapsed && (
+            <Typography variant="caption" sx={{ color: 'warning.contrastText', fontWeight: 600, flex: 1, lineHeight: 1.2 }}>
+              {activeTenant.name}
+            </Typography>
+          )}
+          <Tooltip title="Zurück zu meinem Account" placement={collapsed ? 'right' : 'top'}>
+            <IconButton size="small" onClick={() => {
+              const user = getUserFromToken();
+              const own = availableTenants.find((t) => t.id === user?.tenant_id);
+              if (own) handleTenantSwitch(own);
+            }} sx={{ color: 'warning.contrastText', p: 0.25 }}>
+              <LogoutIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
       <List sx={{ px: collapsed ? 0.5 : 1 }}>
         {baseNavItems.filter((item) => {
           if (item.requiresHub && !hasHub) return false;
