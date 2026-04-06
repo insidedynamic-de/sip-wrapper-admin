@@ -152,6 +152,33 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
         </IconButton>
       </Toolbar>
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+      {/* User info */}
+      {!collapsed && (() => {
+        const u = getUserFromToken();
+        if (!u) return null;
+        const typeLabel: Record<string, string> = { provider: 'Provider', partner: 'Partner', company: 'Kunde' };
+        const roleLabel: Record<string, string> = { owner: 'Owner', superadmin: 'Superadmin', manager: 'Manager', user: 'User' };
+        return (
+          <Box sx={{ px: 2, py: 1.5 }}>
+            <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600, lineHeight: 1.2 }} noWrap>
+              {u.email}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+              <Typography variant="caption" sx={{
+                color: u.tenant_type === 'provider' ? '#818cf8' : u.tenant_type === 'partner' ? '#fbbf24' : 'rgba(255,255,255,0.5)',
+                fontWeight: 600,
+              }}>
+                {typeLabel[u.tenant_type] || u.tenant_type}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)' }}>·</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)' }}>
+                {roleLabel[u.user_type] || u.user_type}
+              </Typography>
+            </Box>
+          </Box>
+        );
+      })()}
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       <List sx={{ px: collapsed ? 0.5 : 1 }}>
         {baseNavItems.filter((item) => {
           if (item.requiresHub && !hasHub) return false;
