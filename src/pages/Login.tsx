@@ -152,10 +152,13 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
       await api.post('/auth/mfa/verify', { code: mfaCode }, {
         headers: { Authorization: `Bearer ${tempToken}` },
       });
-      // MFA activated — now login again with MFA
+      // MFA activated — login directly with same code
+      const res = await api.post('/auth/login', {
+        email, password, mfa_code: mfaCode, captcha_token: '',
+      });
+      setTokens(res.data.access_token, res.data.refresh_token);
       setToast({ open: true, message: 'MFA activated!', severity: 'success' });
-      setStep('mfa');
-      setMfaCode('');
+      setTimeout(() => navigate('/'), 600);
     } catch {
       setError(t('auth.invalid_credentials'));
     }
@@ -223,7 +226,7 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
           {/* Step 2b: MFA setup (first time, NIS2) */}
           {step === 'mfa_setup' && (
             <>
-              <Alert severity="warning" sx={{ mb: 2 }}>{t('auth.mfa_setup_required')}</Alert>
+              <Alert severity="warning" sx={{ mb: 2 }}>{t('auth.mfa_setup_required')} ({email})</Alert>
               <Typography variant="body2" sx={{ mb: 2 }}>{t('auth.mfa_setup_desc')}</Typography>
               {qrCode && (
                 <Box sx={{ textAlign: 'center', mb: 2 }}>
