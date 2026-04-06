@@ -35,7 +35,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import BusinessIcon from '@mui/icons-material/Business';
 import PeopleIcon from '@mui/icons-material/People';
-import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import StorageIcon from '@mui/icons-material/Storage';
 import api from '../../api/client';
 import { clearTokens, getUserFromToken } from '../../store/auth';
 import LogoutCountdown from '../LogoutCountdown';
@@ -247,8 +247,9 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
           )}
           <List sx={{ px: collapsed ? 0.5 : 1 }}>
             {[
-              { key: '/admin/clients', icon: <BusinessIcon />, label: 'admin.clients' },
-              { key: '/admin/users',   icon: <PeopleIcon />,   label: 'admin.users' },
+              { key: '/admin/clients',    icon: <BusinessIcon />, label: 'admin.clients' },
+              { key: '/admin/users',      icon: <PeopleIcon />,   label: 'admin.users' },
+              { key: '/admin/licservers', icon: <StorageIcon />,  label: 'admin.licservers' },
             ].map((item) => (
               <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
                 <ListItemButton

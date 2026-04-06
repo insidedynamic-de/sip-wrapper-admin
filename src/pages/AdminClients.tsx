@@ -117,7 +117,7 @@ export default function AdminClients() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('admin.clients')}</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button variant="outlined" size="small" startIcon={<CloudDownloadIcon />} onClick={fetchUnlinked}>
+          <Button variant="outlined" size="small" startIcon={<CloudDownloadIcon />} onClick={() => window.location.hash = '#/admin/licservers'}>
             Import from LicServer
           </Button>
           <IconButton onClick={fetchTenants}><RefreshIcon /></IconButton>

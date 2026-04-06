@@ -13,6 +13,7 @@ import SaasDashboard from './pages/SaasDashboard';
 import ProductCatalog from './pages/ProductCatalog';
 import AdminClients from './pages/AdminClients';
 import AdminUsers from './pages/AdminUsers';
+import AdminLicServers from './pages/AdminLicServers';
 import Configuration from './pages/Configuration';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
@@ -62,6 +63,7 @@ export default function App() {
             {/* Superadmin */}
             <Route path="/admin/clients" element={<AdminClients />} />
             <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/licservers" element={<AdminLicServers />} />
 
             {/* TalkHub product config (legacy pages, kept working) */}
             <Route path="/configuration" element={<Configuration />} />

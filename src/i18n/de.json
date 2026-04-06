@@ -131,7 +131,8 @@
   },
   "admin": {
     "clients": "Kunden",
-    "users": "Benutzer"
+    "users": "Benutzer",
+    "licservers": "LicServer"
   },
   "catalog": {
     "title": "Produktkatalog",
