@@ -238,6 +238,24 @@ export default function SaasDashboard() {
                       </Box>
                     )}
 
+                    {/* Suspended / Grace warning */}
+                    {product.status === 'suspended' && (
+                      <Alert severity="error" sx={{ mb: 1, py: 0.5 }}>
+                        <Typography variant="caption">
+                          Lizenz abgelaufen und Karenzzeit überschritten. Produkt gesperrt.
+                          Bitte erneuern Sie Ihre Lizenz um fortzufahren.
+                        </Typography>
+                      </Alert>
+                    )}
+                    {product.status === 'grace' && (
+                      <Alert severity="warning" sx={{ mb: 1, py: 0.5 }}>
+                        <Typography variant="caption">
+                          Lizenz abgelaufen — Karenzzeit läuft ({daysLeft !== null ? `noch ${daysLeft} Tage` : ''}).
+                          Bitte erneuern Sie Ihre Lizenz.
+                        </Typography>
+                      </Alert>
+                    )}
+
                     {/* Actions */}
                     <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
                       <Tooltip title={t('dashboard.configure')}>
