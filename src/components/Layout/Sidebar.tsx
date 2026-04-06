@@ -421,7 +421,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       <Box sx={{ flexGrow: 1 }} />
 
       {/* Auto-logout countdown */}
-      <LogoutCountdown collapsed={collapsed} />
+      {/* TODO: LogoutCountdown needs rework for JWT auth */}
 
       {/* Theme mode toggle + Logout */}
       <Box sx={{ display: 'flex', flexDirection: collapsed ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1 }}>
