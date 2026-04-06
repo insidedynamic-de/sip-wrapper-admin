@@ -53,6 +53,7 @@ const baseNavItems = [
   { key: '/licenses',      icon: <VpnKeyIcon />,       label: 'nav.licenses',     requiresHub: true },
   { key: '/monitoring',    icon: <MonitorHeartIcon />,  label: 'nav.monitoring',   requiresHub: true },
   { key: '/logs',          icon: <TerminalIcon />,     label: 'nav.logs',         requiresHub: true },
+  { key: '/logs',           icon: <TerminalIcon />,     label: 'nav.logs',         requiresHub: false },
   { key: '/profile',       icon: <SettingsIcon />,     label: 'nav.profile',      requiresHub: false },
 ];
 

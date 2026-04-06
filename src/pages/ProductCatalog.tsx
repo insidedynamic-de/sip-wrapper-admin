@@ -75,7 +75,7 @@ export default function ProductCatalog() {
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState('');
-  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'success' });
 
   const fetchCatalog = useCallback(() => {
     setLoading(true);
@@ -130,6 +130,23 @@ export default function ProductCatalog() {
         message: axiosErr?.response?.data?.detail || t('status.error'),
         severity: 'error',
       });
+    }
+    setActivating('');
+  };
+
+  const handleActivateProduct = async (product: string) => {
+    setActivating(product);
+    try {
+      const res = await api.post('/products/activate', { product, days: 365 });
+      if (res.data.already_active) {
+        setToast({ open: true, message: `${product} already active (${res.data.license_key})`, severity: 'info' });
+      } else {
+        setToast({ open: true, message: `${product} activated — ${res.data.license_key} (1 Jahr)`, severity: 'success' });
+        setOwnedProducts((prev) => new Set([...prev, product]));
+      }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { detail?: string } } };
+      setToast({ open: true, message: axiosErr?.response?.data?.detail || t('status.error'), severity: 'error' });
     }
     setActivating('');
   };
@@ -294,6 +311,15 @@ export default function ProductCatalog() {
                       {isOwned ? (
                         <Button variant="outlined" fullWidth sx={{ textTransform: 'none', fontWeight: 500 }}>
                           {t('catalog.upgrade') || 'Upgrade / Ändern'}
+                        </Button>
+                      ) : !hasTrial && clientPlans.length > 0 && clientPlans[0].max_connections === 0 ? (
+                        /* Instant-activate products (Logs, Support, etc.) */
+                        <Button variant="contained" fullWidth
+                          startIcon={activating === productName ? <CircularProgress size={16} color="inherit" /> : <RocketLaunchIcon />}
+                          disabled={!!activating}
+                          onClick={() => handleActivateProduct(productName)}
+                          sx={{ bgcolor: accent, '&:hover': { bgcolor: alpha(accent, 0.85) }, textTransform: 'none', fontWeight: 600 }}>
+                          Jetzt aktivieren · 1 Jahr
                         </Button>
                       ) : hasTrial ? (
                         <Button

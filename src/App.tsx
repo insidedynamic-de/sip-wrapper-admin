@@ -14,6 +14,7 @@ import ProductCatalog from './pages/ProductCatalog';
 import AdminClients from './pages/AdminClients';
 import AdminUsers from './pages/AdminUsers';
 import AdminLicServers from './pages/AdminLicServers';
+import SaasLogs from './pages/SaasLogs';
 import Configuration from './pages/Configuration';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
@@ -69,6 +70,8 @@ export default function App() {
           }>
             <Route path="/" element={<SaasDashboard />} />
             <Route path="/catalog" element={<ProductCatalog />} />
+
+            <Route path="/logs" element={<SaasLogs />} />
 
             {/* Admin routes — role protected */}
             <Route path="/admin/clients" element={<RoleGuard minRole="manager"><AdminClients /></RoleGuard>} />
