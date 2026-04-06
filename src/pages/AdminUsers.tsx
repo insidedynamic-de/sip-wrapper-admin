@@ -13,10 +13,11 @@ import EditIcon from '@mui/icons-material/Edit';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import KeyIcon from '@mui/icons-material/Key';
 import InputAdornment from '@mui/material/InputAdornment';
 import api from '../api/client';
-import { getUserFromToken } from '../store/auth';
+import { getUserFromToken, setActiveTenant } from '../store/auth';
 import Toast from '../components/Toast';
 
 /** Generate NIS2-compliant password: 14 chars, upper+lower+digit+special */
@@ -156,6 +157,16 @@ export default function AdminUsers() {
                 <TableCell>{u.is_active ? <Chip label="Active" size="small" color="success" /> : <Chip label="Inactive" size="small" />}</TableCell>
                 <TableCell sx={{ fontSize: 12 }}>{u.last_login_at ? new Date(u.last_login_at).toLocaleString() : '—'}</TableCell>
                 <TableCell>
+                  <Tooltip title="Switch to tenant">
+                    <IconButton size="small" color="success" onClick={() => {
+                      const tenant = tenants.find((t) => t.id === u.tenant_id);
+                      if (tenant) {
+                        setActiveTenant({ id: tenant.id, name: tenant.name, tenant_type: '' });
+                        window.dispatchEvent(new Event('tenant-switched'));
+                        window.location.hash = '#/';
+                      }
+                    }}><SwapHorizIcon fontSize="small" /></IconButton>
+                  </Tooltip>
                   <Tooltip title="Edit">
                     <IconButton size="small" onClick={() => { setEditUser({ ...u } as Record<string, string | number | boolean | null>); setEditOpen(true); }}><EditIcon fontSize="small" /></IconButton>
                   </Tooltip>
