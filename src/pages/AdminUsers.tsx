@@ -155,6 +155,12 @@ export default function AdminUsers() {
           <TextField size="small" label={t('auth.email')} value={editUser.email || ''} onChange={(e) => setEditUser({ ...editUser, email: e.target.value })} />
           <TextField size="small" label="Name" value={editUser.name || ''} onChange={(e) => setEditUser({ ...editUser, name: e.target.value })} />
           <FormControl size="small">
+            <InputLabel>Tenant</InputLabel>
+            <Select value={editUser.tenant_id || ''} label="Tenant" onChange={(e) => setEditUser({ ...editUser, tenant_id: Number(e.target.value) })}>
+              {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+            </Select>
+          </FormControl>
+          <FormControl size="small">
             <InputLabel>Role</InputLabel>
             <Select value={editUser.user_type || 'user'} label="Role" onChange={(e) => setEditUser({ ...editUser, user_type: e.target.value })}>
               <MenuItem value="user">User (Client)</MenuItem>
