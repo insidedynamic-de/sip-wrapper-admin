@@ -13,9 +13,32 @@ import EditIcon from '@mui/icons-material/Edit';
 import PersonOffIcon from '@mui/icons-material/PersonOff';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import KeyIcon from '@mui/icons-material/Key';
+import InputAdornment from '@mui/material/InputAdornment';
 import api from '../api/client';
 import { getUserFromToken } from '../store/auth';
 import Toast from '../components/Toast';
+
+/** Generate NIS2-compliant password: 14 chars, upper+lower+digit+special */
+function generatePassword(): string {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghjkmnpqrstuvwxyz';
+  const digits = '23456789';
+  const special = '!@#$%&*?';
+  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
+  // Guarantee at least one of each
+  const parts = [pick(upper), pick(upper), pick(lower), pick(lower), pick(lower), pick(lower),
+    pick(digits), pick(digits), pick(special), pick(special)];
+  // Fill to 14
+  const all = upper + lower + digits + special;
+  while (parts.length < 14) parts.push(pick(all));
+  // Shuffle
+  for (let i = parts.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [parts[i], parts[j]] = [parts[j], parts[i]];
+  }
+  return parts.join('');
+}
 
 interface UserRow {
   id: number;
@@ -32,7 +55,7 @@ interface UserRow {
 export default function AdminUsers() {
   const { t } = useTranslation();
   const [users, setUsers] = useState<UserRow[]>([]);
-  const [tenants, setTenants] = useState<{ id: number; name: string }[]>([]);
+  const [tenants, setTenants] = useState<{ id: number; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -46,7 +69,7 @@ export default function AdminUsers() {
     try {
       const [uRes, tRes] = await Promise.all([api.get('/admin/users'), api.get('/admin/tenants')]);
       setUsers(uRes.data);
-      setTenants(tRes.data.map((t: { id: number; name: string }) => ({ id: t.id, name: t.name })));
+      setTenants(tRes.data.map((t: { id: number; name: string; email: string }) => ({ id: t.id, name: t.name, email: t.email || '' })));
     } catch { /* */ }
     setLoading(false);
   }, []);
@@ -169,7 +192,24 @@ export default function AdminUsers() {
               {isOwner && <MenuItem value="owner">Owner</MenuItem>}
             </Select>
           </FormControl>
-          <TextField size="small" label="New Password (optional)" type="password" onChange={(e) => setEditUser({ ...editUser, password: e.target.value || null })} helperText="Leave empty to keep current" />
+          <TextField size="small" label="New Password (optional)"
+            value={(editUser.password as string) || ''}
+            onChange={(e) => setEditUser({ ...editUser, password: e.target.value || null })}
+            helperText="Leave empty to keep current"
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title="Generate NIS2 password">
+                      <IconButton size="small" onClick={() => setEditUser({ ...editUser, password: generatePassword() })}>
+                        <KeyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditOpen(false)}>{t('button.cancel')}</Button>
@@ -181,15 +221,40 @@ export default function AdminUsers() {
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>{t('button.add')} User</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
-          <TextField size="small" label={t('auth.email')} type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
-          <TextField size="small" label="Name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
-          <TextField size="small" label={t('auth.password')} type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required />
           <FormControl size="small">
             <InputLabel>Tenant</InputLabel>
-            <Select value={newUser.tenant_id} label="Tenant" onChange={(e) => setNewUser({ ...newUser, tenant_id: Number(e.target.value) })}>
-              {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.name}</MenuItem>)}
+            <Select value={newUser.tenant_id} label="Tenant" onChange={(e) => {
+              const tid = Number(e.target.value);
+              const tenant = tenants.find((t) => t.id === tid);
+              setNewUser({
+                ...newUser,
+                tenant_id: tid,
+                email: newUser.email || tenant?.email || '',
+                name: newUser.name || tenant?.name || '',
+              });
+            }}>
+              {tenants.map((t) => <MenuItem key={t.id} value={t.id}>{t.name} {t.email ? `(${t.email})` : ''}</MenuItem>)}
             </Select>
           </FormControl>
+          <TextField size="small" label={t('auth.email')} type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} required />
+          <TextField size="small" label="Name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} />
+          <TextField size="small" label={t('auth.password')} value={newUser.password}
+            onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} required
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title="Generate NIS2 password">
+                      <IconButton size="small" onClick={() => setNewUser({ ...newUser, password: generatePassword() })}>
+                        <KeyIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            helperText={newUser.password ? `${newUser.password.length} chars` : 'Min 12 chars, upper+lower+digit+special'}
+          />
           <FormControl size="small">
             <InputLabel>Role</InputLabel>
             <Select value={newUser.user_type} label="Role" onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value })}>
