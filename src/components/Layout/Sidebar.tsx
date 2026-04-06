@@ -110,19 +110,17 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
     if (reload) window.location.reload();
   };
 
-  // Check which products the active tenant has licensed
+  // Load features from backend — single source of truth
   const [hasLogs, setHasLogs] = useState(false);
 
   useEffect(() => {
     setHasLicense(true);
     setHasHub(false);
     setActiveLicenseNames([]);
-    // Check active products for active tenant
-    api.get('/products').then((res) => {
-      const products = res.data || [];
-      const activeProducts = products.filter((p: { status: string }) => p.status === 'active' || p.status === 'grace').map((p: { product: string }) => p.product);
-      setHasLogs(activeProducts.includes('Logs'));
-      setHasHub(false);
+    api.get('/features').then((res) => {
+      const sidebar = res.data?.sidebar || {};
+      setHasLogs(!!sidebar.logs);
+      setHasHub(!!sidebar.talkhub);
     }).catch(() => {});
   }, []);
 

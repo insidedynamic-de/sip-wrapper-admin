@@ -29,18 +29,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** Require active license for a product */
+/** Require active license for a product — checks backend /features */
 function LicenseGuard({ product, children }: { product: string; children: React.ReactNode }) {
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
     import('./api/client').then(({ default: api }) => {
-      api.get('/products').then((res) => {
-        const has = (res.data || []).some((p: { product: string; status: string }) => p.product === product && (p.status === 'active' || p.status === 'grace'));
-        setOk(has);
+      api.get('/features').then((res) => {
+        const products = res.data?.products || {};
+        setOk(!!products[product]?.accessible);
       }).catch(() => setOk(false));
     });
   }, [product]);
-  if (ok === null) return null; // loading
+  if (ok === null) return null;
   if (!ok) return <Navigate to="/catalog" replace />;
   return <>{children}</>;
 }
