@@ -201,7 +201,7 @@ export default function SaasDashboard() {
                       <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                         <Chip icon={cfg.icon} label={t(cfg.label)} color={cfg.color} size="small" sx={{ fontWeight: 600 }} />
                         {expiringSoon && (
-                          <Chip label={`${daysLeft}d`} color="warning" size="small" sx={{ fontWeight: 600, fontSize: 11 }} />
+                          <Chip label={daysLeft === 0 ? 'Letzter Tag' : `Noch ${daysLeft} Tage`} color="warning" size="small" sx={{ fontWeight: 600, fontSize: 11 }} />
                         )}
                       </Box>
                     </Box>
@@ -228,9 +228,11 @@ export default function SaasDashboard() {
                               sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
                             />
                             <Typography variant="caption" color={isGrace || expiringSoon ? 'warning.main' : 'text.secondary'}>
-                              {daysLeft > 0
-                                ? `${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'} — ${new Date(bestLicense.expires_at!).toLocaleDateString()}`
-                                : t('dashboard.status_suspended')
+                              {daysLeft === 0
+                                ? `Letzter Tag — ${new Date(bestLicense.expires_at!).toLocaleDateString()}`
+                                : daysLeft !== null && daysLeft > 0
+                                  ? `${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'} — ${new Date(bestLicense.expires_at!).toLocaleDateString()}`
+                                  : `Abgelaufen — ${new Date(bestLicense.expires_at!).toLocaleDateString()}`
                               }
                             </Typography>
                           </Box>
