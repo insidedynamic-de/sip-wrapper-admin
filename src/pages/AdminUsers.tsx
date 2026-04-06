@@ -187,7 +187,7 @@ export default function AdminUsers() {
             <InputLabel>Role</InputLabel>
             <Select value={editUser.user_type || 'user'} label="Role" onChange={(e) => setEditUser({ ...editUser, user_type: e.target.value })}>
               <MenuItem value="user">User (Client)</MenuItem>
-              <MenuItem value="manager">Manager</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
               {isOwner && <MenuItem value="superadmin">Superadmin</MenuItem>}
               {isOwner && <MenuItem value="owner">Owner</MenuItem>}
             </Select>
@@ -259,7 +259,7 @@ export default function AdminUsers() {
             <InputLabel>Role</InputLabel>
             <Select value={newUser.user_type} label="Role" onChange={(e) => setNewUser({ ...newUser, user_type: e.target.value })}>
               <MenuItem value="user">User (Client)</MenuItem>
-              <MenuItem value="manager">Manager</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
               {isOwner && <MenuItem value="superadmin">Superadmin</MenuItem>}
               {isOwner && <MenuItem value="owner">Owner</MenuItem>}
             </Select>

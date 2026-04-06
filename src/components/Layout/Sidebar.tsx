@@ -157,7 +157,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
         const u = getUserFromToken();
         if (!u) return null;
         const typeLabel: Record<string, string> = { provider: 'Provider', partner: 'Partner', company: 'Kunde' };
-        const roleLabel: Record<string, string> = { owner: 'Owner', superadmin: 'Superadmin', manager: 'Manager', user: 'User' };
+        const roleLabel: Record<string, string> = { owner: 'Owner', superadmin: 'Superadmin', admin: 'Admin', user: 'User' };
         return (
           <Box sx={{ px: 2, py: 1.5 }}>
             <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600, lineHeight: 1.2 }} noWrap>
@@ -264,7 +264,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       </List>
 
       {/* Superadmin section */}
-      {['manager', 'superadmin', 'owner'].includes(getUserFromToken()?.user_type || '') && (
+      {['admin', 'superadmin', 'owner'].includes(getUserFromToken()?.user_type || '') && (
         <>
           <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mx: 1 }} />
           {!collapsed && (
