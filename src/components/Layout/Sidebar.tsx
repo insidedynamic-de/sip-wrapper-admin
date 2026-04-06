@@ -117,12 +117,11 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
     setHasLicense(true);
     setHasHub(false);
     setActiveLicenseNames([]);
-    // Check products for active tenant
+    // Check active products for active tenant
     api.get('/products').then((res) => {
       const products = res.data || [];
-      const productNames = products.map((p: { product: string }) => p.product);
-      setHasLogs(productNames.includes('Logs'));
-      // TalkHub pages need a connected instance, not just license — disabled until instance management is built
+      const activeProducts = products.filter((p: { status: string }) => p.status === 'active').map((p: { product: string }) => p.product);
+      setHasLogs(activeProducts.includes('Logs'));
       setHasHub(false);
     }).catch(() => {});
   }, []);
