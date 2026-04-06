@@ -35,6 +35,8 @@ interface ProductLicense {
   expires_at: string | null;
   status: string;
   effective_status: string;
+  days_left: number | null;
+  expiring_soon: boolean;
 }
 
 interface Product {
@@ -151,14 +153,11 @@ export default function SaasDashboard() {
             const isActive = product.status === 'active';
             const isGrace = product.status === 'grace';
 
-            // Days until expiry
-            let daysLeft: number | null = null;
-            if (bestLicense?.expires_at) {
-              const diff = new Date(bestLicense.expires_at).getTime() - Date.now();
-              daysLeft = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
-            }
+            // Days left from API
+            const daysLeft = bestLicense?.days_left ?? null;
+            const expiringSoon = bestLicense?.expiring_soon ?? false;
 
-            // Progress bar: days left out of total license period
+            // Progress bar
             const progressValue = daysLeft !== null ? Math.min(100, Math.max(0, (daysLeft / 30) * 100)) : 100;
 
             return (
@@ -199,13 +198,12 @@ export default function SaasDashboard() {
                           </Typography>
                         )}
                       </Box>
-                      <Chip
-                        icon={cfg.icon}
-                        label={t(cfg.label)}
-                        color={cfg.color}
-                        size="small"
-                        sx={{ fontWeight: 600 }}
-                      />
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                        <Chip icon={cfg.icon} label={t(cfg.label)} color={cfg.color} size="small" sx={{ fontWeight: 600 }} />
+                        {expiringSoon && (
+                          <Chip label={`${daysLeft}d`} color="warning" size="small" sx={{ fontWeight: 600, fontSize: 11 }} />
+                        )}
+                      </Box>
                     </Box>
 
                     {/* License details */}
@@ -226,10 +224,10 @@ export default function SaasDashboard() {
                             <LinearProgress
                               variant="determinate"
                               value={progressValue}
-                              color={isGrace ? 'warning' : daysLeft < 7 ? 'error' : 'primary'}
+                              color={isGrace ? 'warning' : expiringSoon ? 'error' : 'primary'}
                               sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
                             />
-                            <Typography variant="caption" color={isGrace || daysLeft < 7 ? 'warning.main' : 'text.secondary'}>
+                            <Typography variant="caption" color={isGrace || expiringSoon ? 'warning.main' : 'text.secondary'}>
                               {daysLeft > 0
                                 ? `${daysLeft} ${daysLeft === 1 ? 'Tag' : 'Tage'} — ${new Date(bestLicense.expires_at!).toLocaleDateString()}`
                                 : t('dashboard.status_suspended')
