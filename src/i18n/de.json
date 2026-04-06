@@ -10,6 +10,8 @@
     "license_billing": "Lizenz / Abrechnung",
     "billing": "Abrechnung",
     "catalog": "Produkte",
+    "admin_clients": "Kunden",
+    "admin_users": "Benutzer",
     "integrations": "Integrationen",
     "licenses": "Lizenzen",
     "vip": "VIP"
@@ -126,6 +128,10 @@
   "calls": {
     "call_flow": "Verbindung", "direction": "Richtung", "from": "Von",
     "to": "Zu", "duration": "Dauer", "result": "Ergebnis", "time": "Zeit"
+  },
+  "admin": {
+    "clients": "Kunden",
+    "users": "Benutzer"
   },
   "catalog": {
     "title": "Produktkatalog",

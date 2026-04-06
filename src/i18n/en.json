@@ -10,6 +10,8 @@
     "license_billing": "License / Billing",
     "billing": "Billing",
     "catalog": "Products",
+    "admin_clients": "Clients",
+    "admin_users": "Users",
     "integrations": "Integrations",
     "licenses": "Licenses",
     "vip": "VIP"
@@ -126,6 +128,10 @@
   "calls": {
     "call_flow": "Connection", "direction": "Direction", "from": "From",
     "to": "To", "duration": "Duration", "result": "Result", "time": "Time"
+  },
+  "admin": {
+    "clients": "Clients",
+    "users": "Users"
   },
   "catalog": {
     "title": "Product Catalog",

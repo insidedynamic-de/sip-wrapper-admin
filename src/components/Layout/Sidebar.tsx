@@ -33,8 +33,11 @@ import type { ThemeMode } from '../../store/preferences';
 import { clearApiKey } from '../../store/keyStore';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import BusinessIcon from '@mui/icons-material/Business';
+import PeopleIcon from '@mui/icons-material/People';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import api from '../../api/client';
-import { clearTokens } from '../../store/auth';
+import { clearTokens, getUserFromToken } from '../../store/auth';
 import LogoutCountdown from '../LogoutCountdown';
 
 export const DRAWER_WIDTH = 240;
@@ -232,6 +235,44 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
           );
         })}
       </List>
+
+      {/* Superadmin section */}
+      {getUserFromToken()?.user_type === 'superadmin' && (
+        <>
+          <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)', mx: 1 }} />
+          {!collapsed && (
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.3)', px: 2, py: 0.5, display: 'block' }}>
+              Admin
+            </Typography>
+          )}
+          <List sx={{ px: collapsed ? 0.5 : 1 }}>
+            {[
+              { key: '/admin/clients', icon: <BusinessIcon />, label: 'admin.clients' },
+              { key: '/admin/users',   icon: <PeopleIcon />,   label: 'admin.users' },
+            ].map((item) => (
+              <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
+                <ListItemButton
+                  selected={location.pathname === item.key}
+                  onClick={() => navigate(item.key)}
+                  sx={{
+                    borderRadius: 1, mb: 0.5,
+                    justifyContent: collapsed ? 'center' : 'flex-start',
+                    px: collapsed ? 1.5 : 2,
+                    '&.Mui-selected': { bgcolor: 'error.main', color: '#fff', '& .MuiListItemIcon-root': { color: '#fff' }, '&:hover': { bgcolor: 'error.dark' } },
+                    '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                  }}
+                >
+                  <ListItemIcon sx={{ color: 'inherit', minWidth: collapsed ? 'unset' : 40, justifyContent: 'center' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  {!collapsed && <ListItemText primary={t(item.label)} />}
+                </ListItemButton>
+              </Tooltip>
+            ))}
+          </List>
+        </>
+      )}
+
       <Box sx={{ flexGrow: 1 }} />
 
       {/* Auto-logout countdown */}

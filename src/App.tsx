@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import SaasDashboard from './pages/SaasDashboard';
 import ProductCatalog from './pages/ProductCatalog';
+import AdminClients from './pages/AdminClients';
+import AdminUsers from './pages/AdminUsers';
 import Configuration from './pages/Configuration';
 import Logs from './pages/Logs';
 import Profile from './pages/Profile';
@@ -56,6 +58,10 @@ export default function App() {
           }>
             <Route path="/" element={<SaasDashboard />} />
             <Route path="/catalog" element={<ProductCatalog />} />
+
+            {/* Superadmin */}
+            <Route path="/admin/clients" element={<AdminClients />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
 
             {/* TalkHub product config (legacy pages, kept working) */}
             <Route path="/configuration" element={<Configuration />} />
