@@ -255,15 +255,18 @@ export default function SaasDashboard() {
                         </Button>
                       ) : (
                         <>
-                          <Tooltip title={t('dashboard.configure')}>
-                            <IconButton size="small" onClick={() => navigate(`/products/${product.product.toLowerCase().replace(/\s+/g, '-')}`)} sx={{ color: 'text.secondary' }}>
-                              <SettingsIcon fontSize="small" />
+                          {/* Open product page */}
+                          <Tooltip title={product.product}>
+                            <IconButton size="small" color="primary"
+                              onClick={() => navigate(`/products/${product.product.toLowerCase().replace(/\s+/g, '-')}`)}>
+                              <PlayArrowIcon fontSize="small" />
                             </IconButton>
                           </Tooltip>
-                          {isActive && (
-                            <Tooltip title={t('dashboard.launch_instance')}>
-                              <IconButton size="small" color="success">
-                                <PlayArrowIcon fontSize="small" />
+                          {/* Settings — only for products with config (e.g. TalkHub) */}
+                          {product.product.includes('TalkHub') && (
+                            <Tooltip title={t('dashboard.configure')}>
+                              <IconButton size="small" onClick={() => navigate('/configuration')} sx={{ color: 'text.secondary' }}>
+                                <SettingsIcon fontSize="small" />
                               </IconButton>
                             </Tooltip>
                           )}
@@ -271,7 +274,7 @@ export default function SaasDashboard() {
                             <Button size="small" variant="outlined" color="warning"
                               onClick={() => navigate('/catalog')}
                               sx={{ textTransform: 'none', fontSize: 11, ml: 'auto' }}>
-                              Verlängern
+                              Neue Lizenz kaufen
                             </Button>
                           )}
                         </>
