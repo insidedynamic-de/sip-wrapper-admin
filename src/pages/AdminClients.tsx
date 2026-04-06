@@ -143,7 +143,15 @@ export default function AdminClients() {
 
   const handleSave = async () => {
     try {
-      await api.put(`/admin/tenants/${editTenant.id}`, editTenant);
+      // Send only editable fields
+      const { name, email, phone, address, zip, city, country, vat_id, contact_person,
+        website, invoice_name, invoice_address, invoice_zip, invoice_city,
+        invoice_country, invoice_email, tenant_type, parent_id } = editTenant;
+      await api.put(`/admin/tenants/${editTenant.id}`, {
+        name, email, phone, address, zip, city, country, vat_id, contact_person,
+        website, invoice_name, invoice_address, invoice_zip, invoice_city,
+        invoice_country, invoice_email, tenant_type, parent_id,
+      });
       setToast({ open: true, message: 'Saved', severity: 'success' });
       setEditOpen(false);
       fetchTenants();
