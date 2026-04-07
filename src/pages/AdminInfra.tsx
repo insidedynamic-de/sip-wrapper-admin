@@ -90,21 +90,24 @@ export default function AdminInfra() {
   const [editTemplate, setEditTemplate] = useState<any>({});
   const [templateDialog, setTemplateDialog] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<string[]>([]);
+  const [tenantList, setTenantList] = useState<{ id: number; name: string; tenant_type: string }[]>([]);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [nRes, iRes, sRes, tRes] = await Promise.all([
+      const [nRes, iRes, sRes, tRes, tenantsRes] = await Promise.all([
         api.get('/admin/infra/nodes').catch(() => ({ data: [] })),
         api.get('/admin/infra/instances').catch(() => ({ data: [] })),
         api.get('/admin/infra/settings').catch(() => ({ data: [] })),
         api.get('/admin/infra/templates').catch(() => ({ data: [] })),
+        api.get('/admin/tenants').catch(() => ({ data: [] })),
       ]);
       setNodes(nRes.data || []);
       setInstances(iRes.data || []);
       setSettings(sRes.data || []);
       setTemplates(tRes.data || []);
+      setTenantList((tenantsRes.data || []).map((t: any) => ({ id: t.id, name: t.name, tenant_type: t.tenant_type })));
     } catch { /* */ }
     setLoading(false);
   }, []);
@@ -797,6 +800,20 @@ export default function AdminInfra() {
               .{editInstance._domain_prefix || 'product'}.{settings.find((s: SettingRow) => s.category === 'cloudflare' && s.key === 'root_domain')?.value_full || 'flxo.cloud'}
             </Typography>
           </Box>
+
+          {/* Kunde */}
+          <FormControl size="small">
+            <InputLabel>Kunde</InputLabel>
+            <Select value={editInstance.tenant_id || ''} label="Kunde" onChange={(e) => {
+              const tid = Number(e.target.value);
+              const tenant = tenantList.find((t) => t.id === tid);
+              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], name: editInstance.name || (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) });
+            }}>
+              {tenantList.map((t) => (
+                <MenuItem key={t.id} value={t.id}>{t.name} ({t.tenant_type})</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           {/* Full domain preview */}
           {editInstance.name && (
