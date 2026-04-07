@@ -524,36 +524,35 @@ export default function AdminInfra() {
               }}>+ Port</Button>
             </Box>
             {(Array.isArray(editTemplate.ports) ? editTemplate.ports as { port: string; protocol: string; description: string }[] : []).map((p, i) => (
-              <Box key={i} sx={{ display: 'flex', gap: 1, mb: 1, alignItems: 'center' }}>
-                <TextField size="small" label="Port" value={p.port} sx={{ width: 130 }}
-                  placeholder="5060 / 16384-16484"
+              <Box key={i} sx={{ display: 'flex', gap: 0.5, mb: 0.5, alignItems: 'center' }}>
+                <TextField size="small" value={p.port} sx={{ width: 100, '& input': { fontSize: 12, py: 0.5 } }}
+                  placeholder="5060"
                   onChange={(e) => {
                     const ports = [...editTemplate.ports as { port: string; protocol: string; description: string }[]];
                     ports[i] = { ...ports[i], port: e.target.value };
                     setEditTemplate({ ...editTemplate, ports });
                   }} />
-                <FormControl size="small" sx={{ width: 90 }}>
-                  <Select value={p.protocol} onChange={(e) => {
+                <Select size="small" value={p.protocol} sx={{ width: 70, fontSize: 12, '& .MuiSelect-select': { py: 0.5 } }} onChange={(e) => {
                     const ports = [...editTemplate.ports as { port: string; protocol: string; description: string }[]];
                     ports[i] = { ...ports[i], protocol: e.target.value };
                     setEditTemplate({ ...editTemplate, ports });
                   }}>
-                    <MenuItem value="tcp">TCP</MenuItem>
-                    <MenuItem value="udp">UDP</MenuItem>
-                    <MenuItem value="tcp+udp">Both</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField size="small" label="Beschreibung" value={p.description} fullWidth
+                  <MenuItem value="tcp" sx={{ fontSize: 12 }}>TCP</MenuItem>
+                  <MenuItem value="udp" sx={{ fontSize: 12 }}>UDP</MenuItem>
+                  <MenuItem value="tcp+udp" sx={{ fontSize: 12 }}>Both</MenuItem>
+                </Select>
+                <TextField size="small" value={p.description} sx={{ flex: 1, '& input': { fontSize: 12, py: 0.5 } }}
+                  placeholder="SIP"
                   onChange={(e) => {
                     const ports = [...editTemplate.ports as { port: string; protocol: string; description: string }[]];
                     ports[i] = { ...ports[i], description: e.target.value };
                     setEditTemplate({ ...editTemplate, ports });
                   }} />
-                <IconButton size="small" color="error" onClick={() => {
+                <IconButton size="small" sx={{ p: 0.25 }} color="error" onClick={() => {
                   const ports = [...editTemplate.ports as { port: string; protocol: string; description: string }[]];
                   ports.splice(i, 1);
                   setEditTemplate({ ...editTemplate, ports });
-                }}><DeleteIcon fontSize="small" /></IconButton>
+                }}><DeleteIcon sx={{ fontSize: 14 }} /></IconButton>
               </Box>
             ))}
           </Box>
