@@ -85,18 +85,13 @@ export default function ProductConfig() {
         <Chip label={instance.status} size="small" color="success" />
       </Box>
 
-      {proxyApi && (
-        <InstanceApiContext.Provider value={{ api: proxyApi, instance }}>
-          <ProductDashboard />
-        </InstanceApiContext.Provider>
-      )}
+      {proxyApi && <ProductDashboard instanceApi={proxyApi} instance={instance} />}
     </Box>
   );
 }
 
 /** Simple product dashboard — shows health + basic info from instance API */
-function ProductDashboard() {
-  const { api: instanceApi, instance } = useInstanceApi();
+function ProductDashboard({ instanceApi, instance }: { instanceApi: ReturnType<typeof axios.create>; instance: InstanceInfo | null }) {
   const [health, setHealth] = useState<Record<string, unknown> | null>(null);
   const [gateways, setGateways] = useState<unknown[]>([]);
   const [users, setUsers] = useState<unknown[]>([]);
