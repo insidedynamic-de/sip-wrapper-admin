@@ -145,20 +145,23 @@ export default function AdminInfra() {
   };
 
   // ── Instance CRUD ──
+  const [deploying, setDeploying] = useState(false);
   const saveInstance = async () => {
+    setDeploying(true);
     try {
       if (editInstance.id) {
         await api.put(`/admin/infra/instances/${editInstance.id}`, editInstance);
       } else {
-        await api.post('/admin/infra/instances', editInstance);
+        const res = await api.post('/admin/infra/instances', editInstance);
+        setToast({ open: true, message: `Deployed: ${res.data.domain} (${res.data.status})`, severity: 'success' });
       }
-      setToast({ open: true, message: 'Saved', severity: 'success' });
       setInstanceDialog(false);
       fetchAll();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setToast({ open: true, message: e?.response?.data?.detail || 'Error', severity: 'error' });
     }
+    setDeploying(false);
   };
 
   // ── Settings ──
@@ -957,11 +960,12 @@ export default function AdminInfra() {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setInstanceDialog(false)}>{t('button.cancel')}</Button>
+          <Button onClick={() => setInstanceDialog(false)} disabled={deploying}>{t('button.cancel')}</Button>
           <Button variant="contained" color="success"
-            disabled={!editInstance.tenant_id || !editInstance.node_id || !editInstance.product || !editInstance.license_key || !Number(editInstance.max_connections) || !editInstance.name}
-            onClick={saveInstance}>
-            {editInstance.id ? t('button.save') : 'Erstellen & Deployen'}
+            disabled={deploying || !editInstance.tenant_id || !editInstance.node_id || !editInstance.product || !editInstance.license_key || !Number(editInstance.max_connections) || !editInstance.name}
+            onClick={saveInstance}
+            startIcon={deploying ? <CircularProgress size={16} color="inherit" /> : undefined}>
+            {deploying ? 'Deploying...' : editInstance.id ? t('button.save') : 'Erstellen & Deployen'}
           </Button>
         </DialogActions>
       </Dialog>
