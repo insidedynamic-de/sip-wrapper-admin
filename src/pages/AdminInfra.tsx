@@ -8,7 +8,7 @@ import {
   TableRow, TableCell, TableContainer, Chip, IconButton, Tooltip,
   CircularProgress, Button, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Select, MenuItem, FormControl, InputLabel,
-  Alert, Tabs, Tab, Grid2 as Grid, alpha, useTheme, LinearProgress, Autocomplete,
+  Alert, Tabs, Tab, Grid2 as Grid, alpha, useTheme, LinearProgress, Autocomplete, Checkbox,
   InputAdornment,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -827,33 +827,52 @@ export default function AdminInfra() {
             if (productLics.length === 0) return null;
             return (
               <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>4. Lizenz wählen</Typography>
-                {productLics.map((l: any) => (
-                  <Box key={l.license_key} sx={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    mb: 0.5, py: 0.75, px: 1.5, borderRadius: 1, cursor: 'pointer',
-                    border: 1, borderColor: editInstance.license_key === l.license_key ? 'primary.main' : 'transparent',
-                    bgcolor: editInstance.license_key === l.license_key ? 'action.selected' : 'transparent',
-                    '&:hover': { bgcolor: 'action.hover' },
-                  }} onClick={() => setEditInstance({ ...editInstance, license_key: l.license_key, max_connections: l.max_connections || 0 })}>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600 }}>{l.license_name}</Typography>
-                      <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{l.license_key}</Typography>
+                {(() => {
+                  const selectedKeys: string[] = editInstance._selected_licenses || [];
+                  const totalConn = productLics.filter((l: any) => selectedKeys.includes(l.license_key)).reduce((sum: number, l: any) => sum + (l.max_connections || 0), 0);
+                  return (<>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="subtitle2">4. Lizenzen wählen</Typography>
+                      {totalConn > 0 && <Chip label={`${totalConn} conn gesamt`} size="small" color="primary" />}
                     </Box>
-                    <Box sx={{ textAlign: 'right' }}>
-                      {l.max_connections > 0 && <Typography variant="body2">{l.max_connections} conn</Typography>}
-                      <Typography variant="caption" color={l.effective_status === 'grace' ? 'warning.main' : 'text.secondary'}>
-                        {l.expires_at ? `bis ${new Date(l.expires_at).toLocaleDateString()}` : 'unbegrenzt'}
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
+                    {productLics.map((l: any) => {
+                      const selected = selectedKeys.includes(l.license_key);
+                      return (
+                        <Box key={l.license_key} sx={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          mb: 0.5, py: 0.5, px: 1, borderRadius: 1, cursor: 'pointer',
+                          border: 1, borderColor: selected ? 'primary.main' : 'divider',
+                          bgcolor: selected ? 'action.selected' : 'transparent',
+                          '&:hover': { bgcolor: 'action.hover' },
+                        }} onClick={() => {
+                          const newKeys = selected ? selectedKeys.filter((k: string) => k !== l.license_key) : [...selectedKeys, l.license_key];
+                          const newConn = productLics.filter((li: any) => newKeys.includes(li.license_key)).reduce((s: number, li: any) => s + (li.max_connections || 0), 0);
+                          setEditInstance({ ...editInstance, _selected_licenses: newKeys, license_key: newKeys[0] || '', max_connections: newConn });
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Checkbox size="small" checked={selected} sx={{ p: 0 }} />
+                            <Box>
+                              <Typography variant="body2" sx={{ fontWeight: 500, fontSize: 13 }}>{l.license_name}</Typography>
+                              <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', fontSize: 10 }}>{l.license_key}</Typography>
+                            </Box>
+                          </Box>
+                          <Box sx={{ textAlign: 'right' }}>
+                            {l.max_connections > 0 && <Typography variant="body2" sx={{ fontSize: 13 }}>{l.max_connections} conn</Typography>}
+                            <Typography variant="caption" color={l.effective_status === 'grace' ? 'warning.main' : 'text.secondary'} sx={{ fontSize: 11 }}>
+                              {l.expires_at ? `bis ${new Date(l.expires_at).toLocaleDateString()}` : '∞'}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </>);
+                })()}
               </Box>
             );
           })()}
 
           {/* 5. Subdomain */}
-          {editInstance.license_key && (
+          {(editInstance._selected_licenses?.length > 0 || editInstance.license_key) && (
             <>
               <Box sx={{ display: 'flex', gap: 0, alignItems: 'center' }}>
                 <TextField size="small" label="5. Subdomain" value={editInstance.name || ''}
@@ -890,7 +909,7 @@ export default function AdminInfra() {
         <DialogActions>
           <Button onClick={() => setInstanceDialog(false)}>{t('button.cancel')}</Button>
           <Button variant="contained" color="success"
-            disabled={!editInstance.tenant_id || !editInstance.node_id || !editInstance.product || !editInstance.license_key || !editInstance.name}
+            disabled={!editInstance.tenant_id || !editInstance.node_id || !editInstance.product || (!editInstance.license_key && !editInstance._selected_licenses?.length) || !editInstance.name}
             onClick={saveInstance}>
             {editInstance.id ? t('button.save') : 'Erstellen & Deployen'}
           </Button>
