@@ -868,10 +868,21 @@ export default function AdminInfra() {
             return (
               <Box sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1.5 }}>
                 {(() => {
-                  const totalAvailable = productLics.reduce((s: number, l: any) => s + (l.max_connections || 0), 0);
+                  const totalLicensed = productLics.reduce((s: number, l: any) => s + (l.max_connections || 0), 0);
+                  // Subtract already used by other instances of same product for this tenant
+                  const usedByOthers = instances
+                    .filter((inst) => inst.product === editInstance.product && inst.is_active && inst.id !== editInstance.id
+                      && inst.tenants.some((t) => t.tenant_id === editInstance.tenant_id))
+                    .reduce((s, inst) => s + inst.max_connections, 0);
+                  const totalAvailable = Math.max(0, totalLicensed - usedByOthers);
                   const allocated = Number(editInstance.max_connections) || 0;
                   return (<>
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>4. Connections zuweisen</Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography variant="subtitle2">4. Connections zuweisen</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Lizenziert: {totalLicensed} · Belegt: {usedByOthers} · Verfügbar: {totalAvailable}
+                      </Typography>
+                    </Box>
                     {/* License overview */}
                     {productLics.map((l: any) => (
                       <Box key={l.license_key} sx={{ display: 'flex', justifyContent: 'space-between', py: 0.25, px: 1 }}>
