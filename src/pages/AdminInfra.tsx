@@ -8,7 +8,7 @@ import {
   TableRow, TableCell, TableContainer, Chip, IconButton, Tooltip,
   CircularProgress, Button, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Select, MenuItem, FormControl, InputLabel,
-  Alert, Tabs, Tab, Grid2 as Grid, alpha, useTheme, LinearProgress,
+  Alert, Tabs, Tab, Grid2 as Grid, alpha, useTheme, LinearProgress, Autocomplete,
   InputAdornment,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -88,6 +88,7 @@ export default function AdminInfra() {
   const [editInstance, setEditInstance] = useState<Record<string, unknown>>({});
   const [editTemplate, setEditTemplate] = useState<Record<string, unknown>>({});
   const [templateDialog, setTemplateDialog] = useState(false);
+  const [catalogProducts, setCatalogProducts] = useState<string[]>([]);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
   const fetchAll = useCallback(async () => {
@@ -291,6 +292,12 @@ export default function AdminInfra() {
           <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
             <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => {
               setEditTemplate({ product: '', docker_image: '', ports: [], cf_proxy: true, domain_prefix: '', description: '' });
+              if (catalogProducts.length === 0) {
+                api.get('/catalog').then((res) => {
+                  const names = [...new Set((res.data || []).map((p: { product: string }) => p.product))] as string[];
+                  setCatalogProducts(names);
+                }).catch(() => {});
+              }
               setTemplateDialog(true);
             }}>Template hinzufügen</Button>
             <Button variant="outlined" size="small" onClick={async () => {
@@ -503,7 +510,12 @@ export default function AdminInfra() {
       <Dialog open={templateDialog} onClose={() => setTemplateDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editTemplate.id ? 'Template bearbeiten' : 'Template hinzufügen'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
-          <TextField size="small" label="Product" value={editTemplate.product || ''} onChange={(e) => setEditTemplate({ ...editTemplate, product: e.target.value })} />
+          <Autocomplete size="small" freeSolo
+            options={catalogProducts}
+            value={(editTemplate.product as string) || ''}
+            onInputChange={(_, v) => setEditTemplate({ ...editTemplate, product: v })}
+            renderInput={(params) => <TextField {...params} label="Product" />}
+          />
           <TextField size="small" label="Docker Image" value={editTemplate.docker_image || ''} onChange={(e) => setEditTemplate({ ...editTemplate, docker_image: e.target.value })} placeholder="ghcr.io/..." />
           <TextField size="small" label="Domain Prefix" value={editTemplate.domain_prefix || ''} onChange={(e) => setEditTemplate({ ...editTemplate, domain_prefix: e.target.value })} placeholder="talkhub → {client}.talkhub.flxo.cloud" />
           <FormControl size="small">
