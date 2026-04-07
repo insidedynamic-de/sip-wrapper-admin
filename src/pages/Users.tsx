@@ -327,7 +327,7 @@ export default function Users() {
           if (row.type === 'acl') {
             return { label: `ACL ${row.ip}`, color: 'info' };
           }
-          const isReg = registrations.some((r) => r.user === row.username);
+          const isReg = registrations.some((r) => r.user === row.username || r.user.split('@')[0] === row.username);
           return isReg
             ? { label: t('status.registered'), color: 'success' }
             : { label: t('status.not_registered'), color: 'error' };
