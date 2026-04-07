@@ -36,8 +36,9 @@ export interface Gateway {
 
 export interface GatewayStatus {
   name: string;
-  state: string;
-  status: string;
+  state?: string;
+  status?: string;
+  registered?: boolean;
 }
 
 export interface Extension {

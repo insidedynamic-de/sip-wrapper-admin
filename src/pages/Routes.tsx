@@ -135,9 +135,12 @@ export default function RoutesPage() {
     label: g.description ? `${g.name} \u2014 ${g.description}` : g.name,
     value: g.name,
   }));
-  const extOptions = extensions
-    .filter((e) => e.enabled !== false)
-    .map((e) => ({ label: `${e.extension} \u2014 ${e.description}`, value: e.extension }));
+  const extOptions = [
+    { label: '\u2014', value: '' },
+    ...extensions
+      .filter((e) => e.enabled !== false)
+      .map((e) => ({ label: `${e.extension} \u2014 ${e.description}`, value: e.extension })),
+  ];
 
   // ── Open Add / View / Edit ──
 

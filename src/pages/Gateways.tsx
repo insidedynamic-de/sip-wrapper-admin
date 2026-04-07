@@ -21,8 +21,8 @@ const TRANSPORT_OPTIONS = ['udp', 'tcp', 'tls'];
 const TYPE_OPTIONS = ['provider', 'pbx', 'ai_platform', 'other'];
 
 function gwChipColor(state: string): 'success' | 'error' | 'warning' {
-  if (state === 'REGED') return 'success';
-  if (state === 'FAIL' || state === 'NOREG') return 'error';
+  if (state === 'REGED' || state === 'online') return 'success';
+  if (state === 'FAIL' || state === 'NOREG' || state === 'offline') return 'error';
   return 'warning';
 }
 
@@ -141,9 +141,10 @@ export default function Gateways() {
         columnOrderKey="gateways-columns"
         searchable
         getStatus={(gw) => {
-          const st = gwStatuses.find((s) => s.name === gw.name);
+          const st = gwStatuses.find((s) => s.name === gw.name || s.name === `external::${gw.name}` || s.name.endsWith(`::${gw.name}`));
+          const label = st?.state || st?.status || '';
           return st
-            ? { label: st.state, color: gwChipColor(st.state) }
+            ? { label: st.registered ? 'REGED' : label, color: gwChipColor(st.registered ? 'REGED' : label) }
             : { label: '\u2014', color: 'default' };
         }}
         getEnabled={(gw) => gw.enabled !== false}
