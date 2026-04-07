@@ -230,6 +230,7 @@ export default function AdminInfra() {
                           color={usage > 80 ? 'error' : usage > 60 ? 'warning' : 'primary'}
                           sx={{ height: 6, borderRadius: 3 }} />
                       </Box>
+                      {n.coolify_server_id && <Chip label={`Coolify: ${n.coolify_server_id}`} size="small" variant="outlined" sx={{ mb: 0.5, fontSize: 10 }} />}
                       {n.tenant_name && <Chip label={`Dedicated: ${n.tenant_name}`} size="small" color="info" sx={{ mb: 1 }} />}
                       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
                         <Button size="small" onClick={async () => {
