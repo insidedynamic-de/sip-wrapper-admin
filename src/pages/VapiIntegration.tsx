@@ -233,18 +233,17 @@ export default function VapiIntegration() {
             {config.connected ? (
               <Box sx={{ mb: 2 }}>
                 <Alert severity="success" sx={{ mb: 1 }}>
-                  SIP Trunk: <code>{config.credential_id}</code>
+                  Verbunden — Gateway: <strong>{(config as VapiConfig & { gateway_name?: string }).gateway_name || 'vapi'}</strong>
+                  {' \u2022 '} Domain: <code>{(config as VapiConfig & { sip_domain?: string }).sip_domain}</code>
                 </Alert>
-                <Typography variant="caption" color="text.secondary">
-                  SIP URI: <code>{'{nummer}'}@{config.credential_id}.sip.vapi.ai</code>
-                  {' \u2022 '} ACL: {config.sip_ips?.join(', ')}
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  Eingehend: VAPI IPs {config.sip_ips?.join(', ')} &rarr; ACL erlaubt
+                  {' \u2022 '} Ausgehend: Gateway &quot;vapi&quot; &rarr; {(config as VapiConfig & { sip_domain?: string }).sip_domain}
                 </Typography>
-                <Box sx={{ mt: 1 }}>
-                  <Button size="small" variant="outlined" color="error" startIcon={<LinkOffIcon />}
-                    onClick={() => setConfirmDisconnect(true)}>
-                    Trennen
-                  </Button>
-                </Box>
+                <Button size="small" variant="outlined" color="error" startIcon={<LinkOffIcon />}
+                  onClick={() => setConfirmDisconnect(true)}>
+                  Trennen
+                </Button>
               </Box>
             ) : (
               <Box sx={{ mb: 2 }}>
