@@ -23,9 +23,12 @@ api.interceptors.request.use((config) => {
   if (imp) {
     config.headers['X-Impersonate-User-Id'] = String(imp.user_id);
   }
-  const tenantId = getActiveTenantId();
-  if (tenantId) {
-    config.headers['X-Tenant-Id'] = String(tenantId);
+  // Only set if not explicitly provided in the request
+  if (!config.headers['X-Tenant-Id']) {
+    const tenantId = getActiveTenantId();
+    if (tenantId) {
+      config.headers['X-Tenant-Id'] = String(tenantId);
+    }
   }
   return config;
 });
