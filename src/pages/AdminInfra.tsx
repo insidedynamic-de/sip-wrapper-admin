@@ -262,7 +262,8 @@ export default function AdminInfra() {
         <>
           <Box sx={{ mb: 2 }}>
             <Button variant="contained" size="small" startIcon={<AddIcon />} onClick={() => {
-              setEditInstance({ product: 'TalkHub', name: '', node_id: nodes[0]?.id || 0, domain: '', docker_image: 'ghcr.io/insidedynamic-de/sip-wrapper-allinone:latest', max_connections: 10, infra_type: 'shared', tenant_ids: [] });
+              setEditInstance({ product: '', name: '', node_id: '', domain: '', docker_image: '', max_connections: 0, infra_type: 'shared', tenant_ids: [], tenant_id: '', license_key: '', _domain_prefix: '' });
+              setTenantLicenses([]);
               setInstanceDialog(true);
             }}>Instanz erstellen</Button>
           </Box>
@@ -808,7 +809,16 @@ export default function AdminInfra() {
             <Select value={editInstance.tenant_id || ''} label="1. Kunde" onChange={(e) => {
               const tid = Number(e.target.value);
               const tenant = tenantList.find((t) => t.id === tid);
-              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], license_key: '', product: '', _domain_prefix: '', name: (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) });
+              // Auto-generate unique subdomain
+              const baseName = (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 12);
+              const existingNames = instances.filter((inst) => inst.is_active).map((inst) => inst.name);
+              let subName = baseName;
+              let counter = 2;
+              while (existingNames.includes(subName)) {
+                subName = `${baseName}${counter}`;
+                counter++;
+              }
+              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], license_key: '', product: '', _domain_prefix: '', max_connections: 0, name: subName });
               setTenantLicenses([]);
               api.get('/products', { headers: { 'X-Tenant-Id': String(tid) } }).then((res) => {
                 const lics: any[] = [];
