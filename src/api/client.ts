@@ -120,12 +120,10 @@ function prefixUrl(url: string): string {
   if (!_instancePrefix || url.startsWith('/auth') || url.startsWith('/admin') ||
       url.startsWith('/instance') || url.startsWith('/tenants') || url.startsWith('/features') ||
       url.startsWith('/my-instances') || url.startsWith('/products') || url.startsWith('/catalog') ||
-      url.startsWith('/categories') || url.startsWith('/logs')) {
+      url.startsWith('/categories') || url === '/logs') {
     return url;
   }
-  const result = `${_instancePrefix}${url}`;
-  console.debug('[API Proxy]', url, '→', result);
-  return result;
+  return `${_instancePrefix}${url}`;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
