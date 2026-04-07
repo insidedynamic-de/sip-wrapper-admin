@@ -104,6 +104,7 @@ export default function Produkte() {
   const [ownedProducts, setOwnedProducts] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [activating, setActivating] = useState('');
+  const [showExpired, setShowExpired] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'success' });
 
   const fetchAll = useCallback(() => {
@@ -157,6 +158,10 @@ export default function Produkte() {
     setActivating('');
   };
 
+  // Expired filter
+  const expiredCount = products.filter((p) => p.status === 'suspended' || p.status === 'expired').length;
+  const visibleProducts = showExpired ? products : products.filter((p) => p.status !== 'suspended' && p.status !== 'expired');
+
   // Catalog grouping + filtering
   const filtered = activeCategory ? catalog.filter((p) => p.category_slugs?.includes(activeCategory)) : catalog;
   const grouped = filtered.reduce<Record<string, CatalogProduct[]>>((acc, p) => {
@@ -171,14 +176,22 @@ export default function Produkte() {
     <Box>
       <Typography variant="h5" sx={{ mb: 2 }}>{t('nav.catalog')}</Typography>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 3 }}>
-        <Tab label={`Meine Produkte (${products.length})`} />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 0 }}>
         <Tab label={`Alle Produkte (${Object.keys(grouped).length})`} />
-      </Tabs>
+        </Tabs>
+        {tab === 0 && expiredCount > 0 && (
+          <Button variant="text" size="small" onClick={() => setShowExpired(!showExpired)}
+            sx={{ textTransform: 'none', fontSize: 12, color: 'text.secondary' }}>
+            {showExpired ? 'Abgelaufene ausblenden' : `+ ${expiredCount} abgelaufen`}
+          </Button>
+        )}
+      </Box>
+      <Box sx={{ mb: 3 }} />
 
       {/* ── Tab 0: Meine Produkte ── */}
       {tab === 0 && (
-        products.length === 0 ? (
+        visibleProducts.length === 0 && expiredCount === 0 ? (
           <Card sx={{ textAlign: 'center' }}>
             <CardContent sx={{ py: 6 }}>
               <ShoppingCartIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 2 }} />
@@ -190,7 +203,7 @@ export default function Produkte() {
           </Card>
         ) : (
           <Grid container spacing={3}>
-            {products.map((product) => {
+            {visibleProducts.map((product) => {
               const cfg = statusConfig[product.status] || statusConfig.pending;
               const bestLicense = product.licenses[0];
               const daysLeft = bestLicense?.days_left ?? null;

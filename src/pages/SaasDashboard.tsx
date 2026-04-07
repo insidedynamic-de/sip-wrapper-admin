@@ -1,99 +1,49 @@
 /**
- * @file SaasDashboard — Product cards with license statuses (styled)
- * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
+ * @file SaasDashboard — Instances overview
  */
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Card, CardContent, Typography, Chip, Grid2 as Grid,
-  CircularProgress, Alert, IconButton, Tooltip, LinearProgress,
-  Button, alpha, useTheme,
+  CircularProgress, Button,
 } from '@mui/material';
-import SettingsIcon from '@mui/icons-material/Settings';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import BlockIcon from '@mui/icons-material/Block';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import PhoneInTalkIcon from '@mui/icons-material/PhoneInTalk';
 import HubIcon from '@mui/icons-material/Hub';
-import StorefrontIcon from '@mui/icons-material/Storefront';
-import SupportAgentIcon from '@mui/icons-material/SupportAgent';
-import AnalyticsIcon from '@mui/icons-material/Analytics';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import DevicesIcon from '@mui/icons-material/Devices';
 import api from '../api/client';
 import { getUserFromToken } from '../store/auth';
 
-interface ProductLicense {
+interface Instance {
   id: number;
-  license_key: string;
   product: string;
-  subproduct: string;
-  license_name: string;
+  name: string;
+  domain: string;
+  instance_url: string;
+  status: string;
   max_connections: number;
-  expires_at: string | null;
-  status: string;
-  effective_status: string;
-  days_left: number | null;
-  expiring_soon: boolean;
-  status_label: string;
-  status_color: string;
 }
 
-interface Product {
-  product: string;
-  status: string;
-  licenses: ProductLicense[];
-}
-
-const statusConfig: Record<string, { color: 'success' | 'default' | 'warning' | 'error'; icon: React.ReactElement; label: string }> = {
-  active:    { color: 'success'  as const, icon: <CheckCircleIcon />,    label: 'dashboard.status_active' },
-  pending:   { color: 'default'  as const, icon: <HourglassEmptyIcon />, label: 'dashboard.status_pending' },
-  grace:     { color: 'warning'  as const, icon: <WarningAmberIcon />,   label: 'dashboard.status_grace' },
-  suspended: { color: 'error'    as const, icon: <BlockIcon />,          label: 'dashboard.status_suspended' },
-};
-
-/** Map product name to an icon */
-function getProductIcon(name: string) {
-  const lower = name.toLowerCase();
-  if (lower.includes('talkhub'))   return <PhoneInTalkIcon sx={{ fontSize: 40 }} />;
-  if (lower.includes('vapi'))      return <HubIcon sx={{ fontSize: 40 }} />;
-  if (lower.includes('odoo'))      return <StorefrontIcon sx={{ fontSize: 40 }} />;
-  if (lower.includes('crm'))       return <HubIcon sx={{ fontSize: 40 }} />;
-  if (lower.includes('support'))   return <SupportAgentIcon sx={{ fontSize: 40 }} />;
-  if (lower.includes('analytics')) return <AnalyticsIcon sx={{ fontSize: 40 }} />;
-  return <HubIcon sx={{ fontSize: 40 }} />;
-}
-
-/** Status color for MUI theme */
-function getStatusColor(status: string): string {
-  switch (status) {
-    case 'active':    return 'success.main';
-    case 'grace':     return 'warning.main';
-    case 'suspended': return 'error.main';
-    default:          return 'text.disabled';
-  }
+function getIcon(name: string) {
+  const l = name.toLowerCase();
+  if (l.includes('talkhub')) return <PhoneInTalkIcon sx={{ fontSize: 32 }} />;
+  if (l.includes('vapi') || l.includes('crm') || l.includes('hub')) return <HubIcon sx={{ fontSize: 32 }} />;
+  return <DevicesIcon sx={{ fontSize: 32 }} />;
 }
 
 export default function SaasDashboard() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const theme = useTheme();
-  const [products, setProducts] = useState<Product[]>([]);
-  const [instances, setInstances] = useState<{ id: number; product: string; name: string; domain: string; instance_url: string; status: string; max_connections: number }[]>([]);
+  const [instances, setInstances] = useState<Instance[]>([]);
   const [loading, setLoading] = useState(true);
   const user = getUserFromToken();
 
   const fetchData = useCallback(() => {
     setLoading(true);
-    Promise.all([
-      api.get('/products').catch(() => ({ data: [] })),
-      api.get('/my-instances').catch(() => ({ data: [] })),
-    ]).then(([prodRes, instRes]) => {
-      setProducts(prodRes.data || []);
-      setInstances(instRes.data || []);
-    }).finally(() => setLoading(false));
+    api.get('/my-instances').then((res) => {
+      setInstances(res.data || []);
+    }).catch(() => setInstances([])).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -104,16 +54,8 @@ export default function SaasDashboard() {
     return () => window.removeEventListener('tenant-switched', handler);
   }, [fetchData]);
 
-  const [showAll, setShowAll] = useState(false);
-  const expiredCount = useMemo(() => products.filter((p) => p.status === 'suspended' || p.status === 'expired').length, [products]);
-  const visibleProducts = useMemo(() => showAll ? products : products.filter((p) => p.status !== 'suspended' && p.status !== 'expired'), [products, showAll]);
-
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-        <CircularProgress />
-      </Box>
-    );
+    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}><CircularProgress /></Box>;
   }
 
   return (
@@ -121,218 +63,81 @@ export default function SaasDashboard() {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
           <Typography variant="h5">{t('dashboard.title')}</Typography>
-          {user && (
-            <Typography variant="body2" color="text.secondary">
-              {user.email}
-            </Typography>
-          )}
+          {user && <Typography variant="body2" color="text.secondary">{user.email}</Typography>}
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          {expiredCount > 0 && (
-            <Button variant="text" size="small" onClick={() => setShowAll(!showAll)}
-              sx={{ textTransform: 'none', fontSize: 12, color: 'text.secondary' }}>
-              {showAll ? 'Abgelaufene ausblenden' : `+ ${expiredCount} abgelaufen`}
-            </Button>
-          )}
-          <Button variant="outlined" size="small" startIcon={<ShoppingCartIcon />} onClick={() => navigate('/catalog')}>
-            {t('nav.catalog')}
-          </Button>
-        </Box>
+        <Button variant="outlined" size="small" startIcon={<ShoppingCartIcon />} onClick={() => navigate('/produkte')}>
+          {t('nav.catalog')}
+        </Button>
       </Box>
 
-      {/* Instances */}
-      {instances.length > 0 && (
-        <Box sx={{ mb: 4 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>Instanzen</Typography>
-          <Grid container spacing={2}>
-            {instances.map((inst) => (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={inst.id}>
-                <Card sx={{
-                  borderLeft: 4,
-                  borderColor: inst.status === 'online' ? 'success.main' : inst.status === 'provisioning' ? 'warning.main' : 'error.main',
-                  '&:hover': { transform: 'translateY(-2px)', boxShadow: 4 }, transition: 'all 0.15s',
-                }}>
-                  <CardContent sx={{ py: 1.5, px: 2 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{inst.product.replace('Linkify ', '')}</Typography>
-                      <Chip label={inst.status} size="small" color={inst.status === 'online' ? 'success' : inst.status === 'provisioning' ? 'warning' : 'default'} />
-                    </Box>
-                    <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary', display: 'block', mb: 1 }}>
-                      {inst.domain}
-                    </Typography>
-                    {inst.max_connections > 0 && (
-                      <Chip label={`${inst.max_connections} conn`} size="small" sx={{ mr: 0.5, fontSize: 11 }} />
-                    )}
-                    <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                      {inst.status === 'online' && (
-                        <Button size="small" variant="contained" color="primary"
-                          onClick={() => navigate(`/products/talkhub/${inst.id}`)}
-                          sx={{ textTransform: 'none', fontSize: 12 }}>
-                          Konfigurieren
-                        </Button>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-
-      {visibleProducts.length === 0 ? (
+      {instances.length === 0 ? (
         <Card sx={{ textAlign: 'center' }}>
           <CardContent sx={{ py: 8 }}>
-            <ShoppingCartIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+            <DevicesIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
             <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-              {t('dashboard.no_products')}
+              Keine Instanzen
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              {t('dashboard.no_products_desc')}
+              Bestellen Sie ein Produkt und starten Sie eine Instanz.
             </Typography>
-            <Button variant="contained" startIcon={<ShoppingCartIcon />} onClick={() => navigate('/catalog')}>
+            <Button variant="contained" startIcon={<ShoppingCartIcon />} onClick={() => navigate('/produkte')}>
               {t('nav.catalog')}
             </Button>
           </CardContent>
         </Card>
       ) : (
         <Grid container spacing={3}>
-          {visibleProducts.map((product) => {
-            const cfg = statusConfig[product.status] || statusConfig.pending;
-            const activeLicense = product.licenses.find((l) => l.effective_status === 'active');
-            const bestLicense = activeLicense || product.licenses[0];
-            const isActive = product.status === 'active';
-            const isGrace = product.status === 'grace';
-
-            // Days left from API
-            const daysLeft = bestLicense?.days_left ?? null;
-            const expiringSoon = bestLicense?.expiring_soon ?? false;
-
-            // Progress bar
-            const progressValue = daysLeft !== null && daysLeft >= 0 ? Math.min(100, Math.max(0, (daysLeft / 30) * 100)) : 0;
-
-            return (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={product.product}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    position: 'relative',
-                    borderTop: 3,
-                    borderColor: getStatusColor(product.status),
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                    '&:hover': {
-                      transform: 'translateY(-2px)',
-                      boxShadow: 6,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ px: 3, py: 2.5 }}>
-                    {/* Header: Icon + Name + Status */}
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, mb: 2 }}>
-                      <Box sx={{
-                        color: isActive ? 'primary.main' : 'text.disabled',
-                        display: 'flex',
-                        alignItems: 'center',
-                        p: 1,
-                        borderRadius: 2,
-                        bgcolor: alpha(theme.palette.primary.main, isActive ? 0.08 : 0.04),
-                      }}>
-                        {getProductIcon(product.product)}
-                      </Box>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }} noWrap>
-                          {product.product}
-                        </Typography>
-                        {bestLicense && (
-                          <Typography variant="body2" color="text.secondary" noWrap>
-                            {bestLicense.subproduct}
-                          </Typography>
-                        )}
-                      </Box>
-                      <Chip
-                        icon={cfg.icon}
-                        label={bestLicense?.status_label || t(cfg.label)}
-                        color={bestLicense?.status_color === 'warning' ? 'warning' : bestLicense?.status_color === 'error' ? 'error' : bestLicense?.status_color === 'success' ? 'success' : cfg.color}
-                        size="small"
-                        sx={{ fontWeight: 600, maxWidth: 200 }}
-                      />
+          {instances.map((inst) => (
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={inst.id}>
+              <Card sx={{
+                height: '100%', borderLeft: 4,
+                borderColor: inst.status === 'online' ? 'success.main' : inst.status === 'provisioning' ? 'warning.main' : 'error.main',
+                '&:hover': { transform: 'translateY(-2px)', boxShadow: 6 }, transition: 'all 0.15s',
+              }}>
+                <CardContent sx={{ px: 3, py: 2.5 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1.5 }}>
+                    <Box sx={{ color: inst.status === 'online' ? 'primary.main' : 'text.disabled', display: 'flex' }}>
+                      {getIcon(inst.product)}
                     </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>{inst.product.replace('Linkify ', '')}</Typography>
+                      <Typography variant="caption" color="text.secondary">{inst.name}</Typography>
+                    </Box>
+                    <Chip label={inst.status} size="small"
+                      color={inst.status === 'online' ? 'success' : inst.status === 'provisioning' ? 'warning' : 'default'} />
+                  </Box>
 
-                    {/* License details */}
-                    {bestLicense && (
-                      <Box sx={{ mb: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                          <Typography variant="body2" color="text.secondary">
-                            {bestLicense.license_name}
-                          </Typography>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {bestLicense.max_connections > 0 ? `${bestLicense.max_connections} ${t('dashboard.connections')}` : ''}
-                          </Typography>
-                        </Box>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12, color: 'text.secondary', mb: 1 }}>
+                    {inst.domain}
+                  </Typography>
 
-                        {/* Expiry progress bar */}
-                        {daysLeft !== null && (
-                          <Box>
-                            <LinearProgress
-                              variant="determinate"
-                              value={progressValue}
-                              color={isGrace ? 'warning' : expiringSoon ? 'error' : 'primary'}
-                              sx={{ height: 6, borderRadius: 3, mb: 0.5 }}
-                            />
-                            <Typography variant="caption" color={bestLicense.status_color === 'success' ? 'text.secondary' : 'warning.main'}>
-                              {bestLicense.expires_at && new Date(bestLicense.expires_at).toLocaleDateString()}
-                            </Typography>
-                          </Box>
-                        )}
-                      </Box>
+                  {inst.max_connections > 0 && (
+                    <Chip label={`${inst.max_connections} Verbindungen`} size="small" sx={{ mb: 1.5 }} />
+                  )}
+
+                  <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                    {inst.status === 'online' ? (
+                      <Button size="small" variant="contained" fullWidth
+                        onClick={() => navigate(`/products/talkhub/${inst.id}`)}
+                        sx={{ textTransform: 'none', fontWeight: 600 }}>
+                        Konfigurieren
+                      </Button>
+                    ) : inst.status === 'provisioning' ? (
+                      <Button size="small" variant="outlined" fullWidth disabled
+                        startIcon={<CircularProgress size={14} />}
+                        sx={{ textTransform: 'none' }}>
+                        Wird bereitgestellt...
+                      </Button>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                        Offline
+                      </Typography>
                     )}
-
-                    {/* Actions */}
-                    <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: 1, borderColor: 'divider', alignItems: 'center' }}>
-                      {(product.status === 'grace' || product.status === 'suspended') ? (
-                        <Button size="small" variant="contained" color="warning"
-                          onClick={() => navigate('/catalog')}
-                          sx={{ textTransform: 'none', fontWeight: 600, flex: 1 }}>
-                          Neue Lizenz kaufen
-                        </Button>
-                      ) : (
-                        <>
-                          {/* Open product page */}
-                          <Tooltip title={product.product}>
-                            <IconButton size="small" color="primary"
-                              onClick={() => navigate(`/products/${product.product.toLowerCase().replace(/\s+/g, '-')}`)}>
-                              <PlayArrowIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                          {/* Settings — only for products with config (e.g. TalkHub) */}
-                          {product.product.includes('TalkHub') && (
-                            <Tooltip title={t('dashboard.configure')}>
-                              <IconButton size="small" onClick={() => navigate('/configuration')} sx={{ color: 'text.secondary' }}>
-                                <SettingsIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-                          {expiringSoon && (
-                            <Button size="small" variant="outlined" color="warning"
-                              onClick={() => navigate('/catalog')}
-                              sx={{ textTransform: 'none', fontSize: 11, ml: 'auto' }}>
-                              Neue Lizenz kaufen
-                            </Button>
-                          )}
-                        </>
-                      )}
-                      <Box sx={{ flex: 1 }} />
-                      {product.licenses.length > 1 && (
-                        <Typography variant="caption" color="text.secondary" sx={{ alignSelf: 'center' }}>
-                          {product.licenses.length} {t('nav.licenses')}
-                        </Typography>
-                      )}
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            );
-          })}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
         </Grid>
       )}
     </Box>
