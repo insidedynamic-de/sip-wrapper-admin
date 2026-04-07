@@ -600,7 +600,16 @@ export default function AdminInfra() {
       <Dialog open={nodeDialog} onClose={() => setNodeDialog(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{editNode.id ? 'Node bearbeiten' : 'Neuer Node'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: '16px !important' }}>
-          <TextField size="small" label="Name" value={editNode.name || ''} onChange={(e) => setEditNode({ ...editNode, name: e.target.value })} />
+          <TextField size="small" label="Name" value={editNode.name || ''} onChange={(e) => setEditNode({ ...editNode, name: e.target.value })}
+            slotProps={{ input: { endAdornment: (
+              <InputAdornment position="end">
+                <Button size="small" sx={{ minWidth: 0, fontSize: 11, px: 1 }} onClick={() => {
+                  const c = 'abcdefghjkmnpqrstuvwxyz23456789';
+                  const id = Array.from({length: 5}, () => c[Math.floor(Math.random() * c.length)]).join('');
+                  setEditNode({ ...editNode, name: `srv-${id}` });
+                }}>Gen</Button>
+              </InputAdornment>
+            )}}} />
           <Box sx={{ display: 'flex', gap: 2 }}>
             <FormControl size="small" fullWidth>
               <InputLabel>Provider</InputLabel>
