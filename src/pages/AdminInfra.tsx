@@ -807,7 +807,7 @@ export default function AdminInfra() {
             <Select value={editInstance.tenant_id || ''} label="Kunde" onChange={(e) => {
               const tid = Number(e.target.value);
               const tenant = tenantList.find((t) => t.id === tid);
-              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], name: editInstance.name || (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) });
+              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], name: (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) });
             }}>
               {tenantList.map((t) => (
                 <MenuItem key={t.id} value={t.id}>{t.name} ({t.tenant_type})</MenuItem>
