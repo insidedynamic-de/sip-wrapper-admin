@@ -805,15 +805,7 @@ export default function AdminInfra() {
             </Typography>
           )}
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <TextField size="small" label="Max Connections" type="number" value={editInstance.max_connections || 0} onChange={(e) => setEditInstance({ ...editInstance, max_connections: Number(e.target.value) })} />
-            <FormControl size="small" fullWidth>
-              <InputLabel>Infra</InputLabel>
-              <Select value={editInstance.infra_type || 'shared'} label="Infra" onChange={(e) => setEditInstance({ ...editInstance, infra_type: e.target.value })}>
-                {infraTypes.map((it) => <MenuItem key={it} value={it}>{it}</MenuItem>)}
-              </Select>
-            </FormControl>
-          </Box>
+          <TextField size="small" label="Max Connections" type="number" value={editInstance.max_connections || 0} onChange={(e) => setEditInstance({ ...editInstance, max_connections: Number(e.target.value) })} />
 
           <TextField size="small" label="Docker Image" value={editInstance.docker_image || ''}
             onChange={(e) => setEditInstance({ ...editInstance, docker_image: e.target.value })}
