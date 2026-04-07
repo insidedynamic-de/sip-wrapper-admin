@@ -423,7 +423,7 @@ export default function AdminInfra() {
                     }}>
                       {hetznerProfiles.map((p) => (
                         <MenuItem key={p.id} value={p.id}>
-                          {p.name} — {p.cpu} vCPU, {Math.round(p.ram / 1024)}GB, {p.disk}GB — €{p.price_monthly}/мес
+                          {p.name} — {p.cpu} vCPU, {Math.round(p.ram / 1024)}GB, {p.disk}GB — €{p.price_monthly}/mo
                         </MenuItem>
                       ))}
                     </Select>
