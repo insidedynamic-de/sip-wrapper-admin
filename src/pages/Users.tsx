@@ -168,7 +168,11 @@ export default function Users() {
     }
     if (form.type === 'acl') {
       if (!form.ip.trim()) e.ip = t('validation.required');
-      else if (!/^((\d{1,3}\.){3}\d{1,3}|([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4})(\/\d{1,3})?$/.test(form.ip)) e.ip = t('validation.invalid_ip');
+      else {
+        const ipPattern = /^((\d{1,3}\.){3}\d{1,3}|([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4})(\/\d{1,3})?$/;
+        const ips = form.ip.split(',').map((s) => s.trim()).filter(Boolean);
+        if (ips.length === 0 || !ips.every((ip) => ipPattern.test(ip))) e.ip = t('validation.invalid_ip');
+      }
     }
     setErrors(e);
     return Object.keys(e).length === 0;
