@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import SaasDashboard from './pages/SaasDashboard';
 import ProductCatalog from './pages/ProductCatalog';
+import Produkte from './pages/Produkte';
 import AdminClients from './pages/AdminClients';
 import AdminUsers from './pages/AdminUsers';
 import AdminLicServers from './pages/AdminLicServers';
@@ -87,6 +88,7 @@ export default function App() {
           }>
             <Route path="/" element={<SaasDashboard />} />
             <Route path="/catalog" element={<ProductCatalog />} />
+            <Route path="/produkte" element={<Produkte />} />
 
             <Route path="/logs" element={<LicenseGuard product="Logs"><SaasLogs /></LicenseGuard>} />
 
