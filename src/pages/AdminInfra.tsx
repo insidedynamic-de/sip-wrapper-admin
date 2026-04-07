@@ -532,7 +532,7 @@ export default function AdminInfra() {
                     ports[i] = { ...ports[i], port: e.target.value };
                     setEditTemplate({ ...editTemplate, ports });
                   }} />
-                <Select size="small" value={p.protocol} sx={{ width: 70, fontSize: 12, '& .MuiSelect-select': { py: 0.5 } }} onChange={(e) => {
+                <Select size="small" value={p.protocol} sx={{ minWidth: 90, fontSize: 12, '& .MuiSelect-select': { py: 0.5 } }} onChange={(e) => {
                     const ports = [...editTemplate.ports as { port: string; protocol: string; description: string }[]];
                     ports[i] = { ...ports[i], protocol: e.target.value };
                     setEditTemplate({ ...editTemplate, ports });
