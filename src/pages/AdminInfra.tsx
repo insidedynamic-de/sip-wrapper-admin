@@ -91,6 +91,7 @@ export default function AdminInfra() {
   const [templateDialog, setTemplateDialog] = useState(false);
   const [catalogProducts, setCatalogProducts] = useState<string[]>([]);
   const [tenantList, setTenantList] = useState<{ id: number; name: string; tenant_type: string }[]>([]);
+  const [tenantLicenses, setTenantLicenses] = useState<any[]>([]);
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
 
   const fetchAll = useCallback(async () => {
@@ -783,6 +784,30 @@ export default function AdminInfra() {
             </Select>
           </FormControl>
 
+          {/* Lizenz */}
+          {tenantLicenses.length > 0 && (
+            <FormControl size="small">
+              <InputLabel>Lizenz</InputLabel>
+              <Select value={editInstance.license_key || ''} label="Lizenz" onChange={(e) => {
+                const lic = tenantLicenses.find((l: any) => l.license_key === e.target.value);
+                if (lic) {
+                  const tmpl = templates.find((t) => t.product === lic._product);
+                  setEditInstance({ ...editInstance, license_key: lic.license_key, product: lic._product,
+                    docker_image: tmpl?.docker_image || editInstance.docker_image,
+                    _domain_prefix: tmpl?.domain_prefix || '',
+                    max_connections: lic.max_connections || 0,
+                  });
+                }
+              }}>
+                {tenantLicenses.map((l: any) => (
+                  <MenuItem key={l.license_key} value={l.license_key}>
+                    {l._product} — {l.license_name} ({l.max_connections} conn) [{l.license_key}]
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
           {/* Domain: subdomain input + root preview */}
           <Box sx={{ display: 'flex', gap: 0, alignItems: 'center' }}>
             <TextField size="small" label="Subdomain" value={editInstance.name || ''}
@@ -807,7 +832,19 @@ export default function AdminInfra() {
             <Select value={editInstance.tenant_id || ''} label="Kunde" onChange={(e) => {
               const tid = Number(e.target.value);
               const tenant = tenantList.find((t) => t.id === tid);
-              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], name: (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) });
+              setEditInstance({ ...editInstance, tenant_id: tid, tenant_ids: [tid], license_key: '', name: (tenant?.name || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 15) });
+              // Load tenant's products/licenses
+              api.get('/products', { headers: { 'X-Tenant-Id': String(tid) } }).then((res) => {
+                const lics: any[] = [];
+                for (const p of (res.data || [])) {
+                  for (const l of (p.licenses || [])) {
+                    if (l.effective_status === 'active' || l.effective_status === 'grace') {
+                      lics.push({ ...l, _product: p.product });
+                    }
+                  }
+                }
+                setTenantLicenses(lics);
+              }).catch(() => setTenantLicenses([]));
             }}>
               {tenantList.map((t) => (
                 <MenuItem key={t.id} value={t.id}>{t.name} ({t.tenant_type})</MenuItem>
