@@ -335,6 +335,7 @@
     "drag_hint": "Drag from handle to handle to create a route \u2022 Click edge to delete",
     "type_inbound": "Inbound",
     "type_outbound": "Outbound",
+    "type_both": "Bidirectional",
     "error_duplicate": "This route already exists (same extension, gateway and direction)",
     "error_duplicate_inbound": "This extension already has an inbound route",
     "error_duplicate_outbound": "This user already has an outbound route",

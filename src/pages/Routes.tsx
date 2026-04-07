@@ -22,13 +22,15 @@ import Toast from '../components/Toast';
 import SearchableSelect from '../components/SearchableSelect';
 import type { Route, Gateway, GatewayStatus, Extension, User, Registration } from '../api/types';
 
+type RouteDirection = 'inbound' | 'outbound' | 'both';
+
 interface ExtensionRoute {
   extension: string;
   username: string;
   gateway: string;
   description: string;
   extDescription: string;
-  direction: 'inbound' | 'outbound';
+  direction: RouteDirection;
   enabled: boolean;
 }
 
@@ -48,8 +50,8 @@ export default function RoutesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState(false);
   const [editRoute, setEditRoute] = useState<ExtensionRoute | null>(null);
-  const [form, setForm] = useState({ extension: '', gateway: '', direction: 'inbound' as 'inbound' | 'outbound', description: '' });
-  const [initialForm, setInitialForm] = useState({ extension: '', gateway: '', direction: 'inbound' as 'inbound' | 'outbound', description: '' });
+  const [form, setForm] = useState({ extension: '', gateway: '', direction: 'both' as RouteDirection, description: '' });
+  const [initialForm, setInitialForm] = useState({ extension: '', gateway: '', direction: 'both' as RouteDirection, description: '' });
   const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
 
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' | 'warning' });
@@ -95,27 +97,59 @@ export default function RoutesPage() {
     if (!routes) return [];
     const rows: ExtensionRoute[] = [];
 
-    // Inbound routes
+    // Build maps for merging
+    const inboundByExt = new Map<string, typeof routes.inbound[0]>();
+    for (const ib of routes.inbound || []) {
+      inboundByExt.set(ib.extension, ib);
+    }
+    const outboundByExt = new Map<string, typeof routes.user_routes[0]>();
+    for (const ur of routes.user_routes || []) {
+      const user = users.find((u) => u.username === ur.username);
+      if (user) outboundByExt.set(user.extension, ur);
+    }
+
+    // Merge: if same extension has both inbound + outbound with same gateway → "both"
+    const processed = new Set<string>();
+
     for (const ib of routes.inbound || []) {
       const ext = extensions.find((e) => e.extension === ib.extension);
       const user = users.find((u) => u.extension === ib.extension);
-      rows.push({
-        extension: ib.extension,
-        username: user?.username || '',
-        gateway: ib.gateway,
-        description: ib.description || '',
-        extDescription: ext?.description || '',
-        direction: 'inbound',
-        enabled: ib.enabled !== false,
-      });
+      const ob = outboundByExt.get(ib.extension);
+
+      if (ob && ob.gateway === ib.gateway) {
+        // Bidirectional
+        rows.push({
+          extension: ib.extension,
+          username: user?.username || ob.username,
+          gateway: ib.gateway,
+          description: ib.description || ob.description || '',
+          extDescription: ext?.description || '',
+          direction: 'both',
+          enabled: ib.enabled !== false && ob.enabled !== false,
+        });
+        processed.add(ib.extension);
+      } else {
+        rows.push({
+          extension: ib.extension,
+          username: user?.username || '',
+          gateway: ib.gateway,
+          description: ib.description || '',
+          extDescription: ext?.description || '',
+          direction: 'inbound',
+          enabled: ib.enabled !== false,
+        });
+        processed.add(ib.extension + '_inbound');
+      }
     }
 
-    // Outbound routes (user_routes)
+    // Outbound routes not merged
     for (const ur of routes.user_routes || []) {
       const user = users.find((u) => u.username === ur.username);
+      const userExt = user?.extension || '';
+      if (processed.has(userExt)) continue; // already merged as "both"
       const ext = user ? extensions.find((e) => e.extension === user.extension) : null;
       rows.push({
-        extension: user?.extension || '',
+        extension: userExt,
         username: ur.username,
         gateway: ur.gateway,
         description: ur.description || '',
@@ -147,7 +181,7 @@ export default function RoutesPage() {
   const openAdd = () => {
     setEditRoute(null);
     setViewMode(false);
-    const f = { extension: '', gateway: '', direction: 'inbound' as const, description: '' };
+    const f = { extension: '', gateway: '', direction: 'both' as RouteDirection, description: '' };
     setForm(f);
     setInitialForm(f);
     setDialogOpen(true);
@@ -174,31 +208,6 @@ export default function RoutesPage() {
   // ── Save route ──
 
   const doSaveRoute = async () => {
-    // One extension can only have one inbound route
-    if (form.direction === 'inbound') {
-      const existing = extRoutes.find((r) =>
-        r.direction === 'inbound' && r.extension === form.extension &&
-        !(editRoute && editRoute.direction === 'inbound' && editRoute.extension === form.extension),
-      );
-      if (existing) {
-        setToast({ open: true, message: t('route.error_duplicate_inbound'), severity: 'error' });
-        return;
-      }
-    }
-    // One user can only have one outbound route
-    if (form.direction === 'outbound') {
-      const user = users.find((u) => u.extension === form.extension);
-      if (user) {
-        const existing = extRoutes.find((r) =>
-          r.direction === 'outbound' && r.username === user.username &&
-          !(editRoute && editRoute.direction === 'outbound' && editRoute.username === user.username),
-        );
-        if (existing) {
-          setToast({ open: true, message: t('route.error_duplicate_outbound'), severity: 'error' });
-          return;
-        }
-      }
-    }
     try {
       const dirChanged = editRoute && editRoute.direction !== form.direction;
       const extChanged = editRoute && editRoute.extension !== form.extension;
@@ -208,51 +217,44 @@ export default function RoutesPage() {
       const overLimit = maxConnections > 0 && enabledCount >= maxConnections;
       const forceDisabled = isNew && !editRoute && overLimit;
 
-      // If direction or extension changed, delete old route first then create new
+      const user = users.find((u) => u.extension === form.extension);
+      const wantInbound = form.direction === 'inbound' || form.direction === 'both';
+      const wantOutbound = form.direction === 'outbound' || form.direction === 'both';
+      const enabled = editRoute ? editRoute.enabled : !forceDisabled;
+
+      // Delete old routes if direction/extension changed
       if (editRoute && (dirChanged || extChanged)) {
-        if (editRoute.direction === 'inbound') {
-          await api.delete(`/routes/inbound/${editRoute.gateway}`, { data: { extension: editRoute.extension } });
-        } else {
-          await api.delete(`/routes/user/${editRoute.username}`);
+        if (editRoute.direction === 'inbound' || editRoute.direction === 'both') {
+          await api.delete(`/routes/inbound/${editRoute.gateway}`, { data: { extension: editRoute.extension } }).catch(() => {});
         }
-        // Create as new
-        if (form.direction === 'inbound') {
-          await api.post('/routes/inbound', {
-            gateway: form.gateway, extension: form.extension, description: form.description, enabled: editRoute.enabled,
-          });
-        } else {
-          const user = users.find((u) => u.extension === form.extension);
-          if (user) {
-            await api.post('/routes/user', {
-              username: user.username, gateway: form.gateway, description: form.description, enabled: editRoute.enabled,
-            });
-          }
+        if (editRoute.direction === 'outbound' || editRoute.direction === 'both') {
+          await api.delete(`/routes/user/${editRoute.username}`).catch(() => {});
         }
-      } else if (editRoute) {
-        // Simple update — same direction and extension
-        if (form.direction === 'inbound') {
+      }
+
+      if (editRoute && !dirChanged && !extChanged) {
+        // Simple update
+        if (wantInbound) {
           await api.put(`/routes/inbound/${editRoute.gateway}`, {
-            extension: editRoute.extension, gateway: form.gateway, description: form.description,
-          });
-        } else {
+            extension: form.extension, gateway: form.gateway, description: form.description,
+          }).catch(() => {});
+        }
+        if (wantOutbound && editRoute.username) {
           await api.put(`/routes/user/${editRoute.username}`, {
-            username: editRoute.username, gateway: form.gateway, description: form.description,
-          });
+            gateway: form.gateway, description: form.description,
+          }).catch(() => {});
         }
       } else {
-        // New route — deactivate if over license limit
-        const enabled = !forceDisabled;
-        if (form.direction === 'inbound') {
+        // Create new
+        if (wantInbound) {
           await api.post('/routes/inbound', {
             gateway: form.gateway, extension: form.extension, description: form.description, enabled,
-          });
-        } else {
-          const user = users.find((u) => u.extension === form.extension);
-          if (user) {
-            await api.post('/routes/user', {
-              username: user.username, gateway: form.gateway, description: form.description, enabled,
-            });
-          }
+          }).catch(() => {});
+        }
+        if (wantOutbound && user) {
+          await api.post('/routes/user', {
+            username: user.username, gateway: form.gateway, description: form.description, enabled,
+          }).catch(() => {});
         }
       }
       setDialogOpen(false);
@@ -276,10 +278,11 @@ export default function RoutesPage() {
       open: true,
       name,
       action: async () => {
-        if (r.direction === 'inbound') {
-          await api.delete(`/routes/inbound/${r.gateway}`, { data: { extension: r.extension } });
-        } else {
-          await api.delete(`/routes/user/${r.username}`);
+        if (r.direction === 'inbound' || r.direction === 'both') {
+          await api.delete(`/routes/inbound/${r.gateway}`, { data: { extension: r.extension } }).catch(() => {});
+        }
+        if (r.direction === 'outbound' || r.direction === 'both') {
+          await api.delete(`/routes/user/${r.username}`).catch(() => {});
         }
         load();
       },
@@ -301,10 +304,11 @@ export default function RoutesPage() {
       return;
     }
     try {
-      if (r.direction === 'inbound') {
-        await api.put(`/routes/inbound/${r.gateway}`, { extension: r.extension, enabled: newEnabled });
-      } else {
-        await api.put(`/routes/user/${r.username}`, { enabled: newEnabled });
+      if (r.direction === 'inbound' || r.direction === 'both') {
+        await api.put(`/routes/inbound/${r.gateway}`, { extension: r.extension, enabled: newEnabled }).catch(() => {});
+      }
+      if (r.direction === 'outbound' || r.direction === 'both') {
+        await api.put(`/routes/user/${r.username}`, { enabled: newEnabled }).catch(() => {});
       }
       await load();
     } catch {
@@ -443,13 +447,25 @@ export default function RoutesPage() {
               {
                 id: 'direction',
                 header: t('route.direction'),
-                render: (r) => (
-                  <Tooltip title={r.direction === 'inbound' ? t('route.type_inbound') : t('route.type_outbound')}>
-                    {r.direction === 'inbound'
-                      ? <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
-                      : <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />}
-                  </Tooltip>
-                ),
+                render: (r) => {
+                  if (r.direction === 'both') {
+                    return (
+                      <Tooltip title={t('route.type_both')}>
+                        <Box sx={{ display: 'flex', gap: 0.25 }}>
+                          <CallReceivedIcon sx={{ fontSize: 16, color: 'info.main' }} />
+                          <CallMadeIcon sx={{ fontSize: 16, color: 'warning.main' }} />
+                        </Box>
+                      </Tooltip>
+                    );
+                  }
+                  return (
+                    <Tooltip title={r.direction === 'inbound' ? t('route.type_inbound') : t('route.type_outbound')}>
+                      {r.direction === 'inbound'
+                        ? <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
+                        : <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />}
+                    </Tooltip>
+                  );
+                },
               },
             ]}
             columnOrderKey="routes-extension-columns"
@@ -483,8 +499,9 @@ export default function RoutesPage() {
           <RadioGroup
             row
             value={form.direction}
-            onChange={(e) => setForm({ ...form, direction: e.target.value as 'inbound' | 'outbound' })}
+            onChange={(e) => setForm({ ...form, direction: e.target.value as RouteDirection })}
           >
+            <FormControlLabel value="both" control={<Radio />} label={t('route.type_both')} disabled={viewMode} />
             <FormControlLabel value="inbound" control={<Radio />} label={t('route.type_inbound')} disabled={viewMode} />
             <FormControlLabel value="outbound" control={<Radio />} label={t('route.type_outbound')} disabled={viewMode} />
           </RadioGroup>
