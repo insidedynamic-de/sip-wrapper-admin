@@ -197,9 +197,10 @@ export default function VapiIntegration() {
             size="small"
             sx={{ flex: 1 }}
             type={showKey ? 'text' : 'password'}
-            placeholder={config?.api_key_masked || 'VAPI Private Key'}
+            placeholder={config?.configured ? '\u2022'.repeat(12) : 'VAPI Private Key'}
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
+            onFocus={() => { if (!apiKey && config?.configured) setApiKey(''); }}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
