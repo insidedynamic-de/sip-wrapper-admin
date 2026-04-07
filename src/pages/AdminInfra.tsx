@@ -332,11 +332,24 @@ export default function AdminInfra() {
                           title={p.description} sx={{ fontSize: 11 }} />
                       ))}
                     </Box>
-                    <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
                       <IconButton size="small" onClick={() => {
                         setEditTemplate({ ...tmpl });
+                        if (catalogProducts.length === 0) {
+                          api.get('/catalog').then((res) => {
+                            setCatalogProducts([...new Set((res.data || []).map((p: { product: string }) => p.product))] as string[]);
+                          }).catch(() => {});
+                        }
                         setTemplateDialog(true);
                       }}><EditIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={async () => {
+                        if (!confirm(`Template "${tmpl.product}" löschen?`)) return;
+                        try {
+                          await api.delete(`/admin/infra/templates/${tmpl.id}`);
+                          setToast({ open: true, message: 'Gelöscht', severity: 'success' });
+                          fetchAll();
+                        } catch { setToast({ open: true, message: 'Fehler', severity: 'error' }); }
+                      }}><DeleteIcon fontSize="small" /></IconButton>
                     </Box>
                   </CardContent>
                 </Card>
