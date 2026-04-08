@@ -103,7 +103,9 @@ export default function Produkte() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [ownedProducts, setOwnedProducts] = useState<Set<string>>(new Set());
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [instances, setInstances] = useState<{ id: number; product: string; status: string }[]>([]);
   const [activating, setActivating] = useState('');
+  const [deploying, setDeploying] = useState('');
   const [showExpired, setShowExpired] = useState(false);
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({ open: false, message: '', severity: 'success' });
 
@@ -113,10 +115,12 @@ export default function Produkte() {
       api.get('/products').catch(() => ({ data: [] })),
       api.get('/catalog').catch(() => ({ data: [] })),
       api.get('/categories').catch(() => ({ data: [] })),
-    ]).then(([prodRes, catRes, catsRes]) => {
+      api.get('/my-instances').catch(() => ({ data: [] })),
+    ]).then(([prodRes, catRes, catsRes, instRes]) => {
       setProducts(prodRes.data || []);
       setCatalog(catRes.data || []);
       setCategories((catsRes.data || []).filter((c: Category) => c.product_count > 0));
+      setInstances(instRes.data || []);
       const owned = new Set<string>();
       for (const p of (prodRes.data || [])) {
         if (p.product) owned.add(p.product);
@@ -151,11 +155,25 @@ export default function Produkte() {
     try {
       await api.post('/products/trial', { product, subproduct });
       setToast({ open: true, message: `Trial ${product} aktiviert`, severity: 'success' });
+      fetchAll();
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } };
       setToast({ open: true, message: e?.response?.data?.detail || 'Error', severity: 'error' });
     }
     setActivating('');
+  };
+
+  const handleDeploy = async (product: string) => {
+    setDeploying(product);
+    try {
+      const res = await api.post('/products/deploy', { product });
+      setToast({ open: true, message: res.data?.message || 'Instanz wird erstellt', severity: 'success' });
+      fetchAll();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      setToast({ open: true, message: e?.response?.data?.detail || 'Fehler beim Erstellen', severity: 'error' });
+    }
+    setDeploying('');
   };
 
   // Expired filter
@@ -254,6 +272,16 @@ export default function Produkte() {
                         <Button size="small" variant="contained" color="warning" fullWidth
                           onClick={() => setTab(1)} sx={{ textTransform: 'none', fontWeight: 600 }}>
                           Neue Lizenz kaufen
+                        </Button>
+                      )}
+
+                      {isActive && !instances.some((i) => i.product.includes(product.product.split(' ').pop() || '')) && (
+                        <Button size="small" variant="contained" color="primary" fullWidth
+                          startIcon={deploying === product.product ? <CircularProgress size={14} /> : <RocketLaunchIcon />}
+                          onClick={() => handleDeploy(product.product)}
+                          disabled={deploying === product.product}
+                          sx={{ textTransform: 'none', fontWeight: 600, mt: 1 }}>
+                          Instanz erstellen
                         </Button>
                       )}
                     </CardContent>
