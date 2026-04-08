@@ -278,6 +278,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
             <Tooltip title="Zurück zu meinem Account" placement={collapsed ? 'right' : 'top'}>
               <IconButton size="small" onClick={() => {
                 setImpersonateUser(null);
+                window.location.hash = '#/';
                 window.location.reload();
               }} sx={{ color: 'warning.contrastText', p: 0.25 }}>
                 <LogoutIcon sx={{ fontSize: 16 }} />
