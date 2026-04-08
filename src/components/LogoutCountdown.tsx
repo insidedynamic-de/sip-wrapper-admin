@@ -38,7 +38,10 @@ export default function LogoutCountdown({ collapsed = false }: Props) {
 
   const getPrefs = useCallback(() => {
     const p = loadPreferences();
-    return { enabled: p.autoLogout, timeout: p.autoLogoutTimeout };
+    // Sanitize: if > 86400 (1 day), probably milliseconds — convert
+    let timeout = p.autoLogoutTimeout;
+    if (timeout > 86400) timeout = Math.round(timeout / 1000);
+    return { enabled: p.autoLogout, timeout };
   }, []);
 
   const doLogout = useCallback(() => {
