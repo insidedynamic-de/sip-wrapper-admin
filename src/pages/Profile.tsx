@@ -41,6 +41,7 @@ interface PrefsSnapshot {
   language: string;
   autoLogout: boolean;
   autoLogoutTimeout: number;
+  showLogoutTimer: boolean;
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
 }
@@ -53,6 +54,7 @@ function makeSnapshot(): PrefsSnapshot {
     language: p.language,
     autoLogout: p.autoLogout,
     autoLogoutTimeout: p.autoLogoutTimeout,
+    showLogoutTimer: p.showLogoutTimer,
     timeFormat: p.timeFormat,
     dateFormat: p.dateFormat,
   };
@@ -168,15 +170,21 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
             {t('profile.auto_logout_desc')}
           </Typography>
           {local.autoLogout && (
-            <TextField
-              type="number"
-              label={t('profile.auto_logout_timeout')}
-              value={local.autoLogoutTimeout}
-              onChange={(e) => updateLocal({ autoLogoutTimeout: Math.max(30, Number(e.target.value)) })}
-              inputProps={{ min: 30, step: 30 }}
-              sx={{ width: 200 }}
-              size="small"
-            />
+            <>
+              <TextField
+                type="number"
+                label={t('profile.auto_logout_timeout')}
+                value={local.autoLogoutTimeout}
+                onChange={(e) => updateLocal({ autoLogoutTimeout: Math.max(30, Number(e.target.value)) })}
+                inputProps={{ min: 30, step: 30 }}
+                sx={{ width: 200, display: 'block', mb: 2 }}
+                size="small"
+              />
+              <FormControlLabel
+                control={<Switch checked={local.showLogoutTimer} onChange={(e) => updateLocal({ showLogoutTimer: e.target.checked })} />}
+                label={t('profile.show_logout_timer')}
+              />
+            </>
           )}
         </CardContent>
       </Card>
@@ -196,7 +204,7 @@ export default function Profile({ themeMode, setThemeMode, colorTheme, setColorT
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.profile')}</Typography>
-      <TabView tabs={tabs} storageKey="sip-wrapper-tab-order-profile" sortable />
+      <TabView tabs={tabs} storageKey="linkify-tab-order-profile" sortable />
 
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>

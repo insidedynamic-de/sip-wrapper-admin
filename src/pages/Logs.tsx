@@ -16,13 +16,12 @@ import StopIcon from '@mui/icons-material/Stop';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import PhoneIcon from '@mui/icons-material/Phone';
-import ShieldIcon from '@mui/icons-material/Shield';
 import PersonIcon from '@mui/icons-material/Person';
 import api from '../api/client';
 import SearchableSelect from '../components/SearchableSelect';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { formatDateTime } from '../store/preferences';
-import type { ESLEvent, ESLStatus, CallLog, SecurityLog, Gateway, User, Extension, Route, AuditEntry, AuditCategory } from '../api/types';
+import type { ESLEvent, ESLStatus, CallLog, Gateway, User, Extension, Route, AuditEntry, AuditCategory } from '../api/types';
 
 const LEVEL_COLORS: Record<string, 'info' | 'warning' | 'error' | 'default' | 'success'> = {
   info: 'info', warning: 'warning', error: 'error', debug: 'default',
@@ -39,7 +38,7 @@ function formatDuration(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
-const LOG_TAB_IDS = ['system', 'calls', 'security', 'audit'];
+const LOG_TAB_IDS = ['system', 'calls', 'audit'];
 
 const AUDIT_CATEGORIES: AuditCategory[] = ['auth', 'user', 'gateway', 'route', 'security', 'config', 'license', 'system'];
 
@@ -85,12 +84,6 @@ export default function Logs() {
   const [callPage, setCallPage] = useState(0);
   const [callRowsPerPage, setCallRowsPerPage] = useState(25);
 
-  // Security logs
-  const [securityLogs, setSecurityLogs] = useState<SecurityLog[]>([]);
-  const [secFilter, setSecFilter] = useState('');
-  const [secPage, setSecPage] = useState(0);
-  const [secRowsPerPage, setSecRowsPerPage] = useState(25);
-
   // Audit logs
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
   const [auditTotal, setAuditTotal] = useState(0);
@@ -132,13 +125,6 @@ export default function Logs() {
     } catch { /* ignore */ }
   }, []);
 
-  const loadSecurity = useCallback(async () => {
-    try {
-      const res = await api.get('/logs/security');
-      setSecurityLogs(res.data || []);
-    } catch { /* ignore */ }
-  }, []);
-
   const loadAudit = useCallback(async () => {
     try {
       const params: Record<string, unknown> = { limit: auditRowsPerPage, offset: auditPage * auditRowsPerPage };
@@ -162,7 +148,7 @@ export default function Logs() {
     } catch { /* ignore */ }
   }, []);
 
-  useEffect(() => { loadEsl(); loadCalls(); loadSecurity(); loadAudit(); loadContext(); }, [loadEsl, loadCalls, loadSecurity, loadAudit, loadContext]);
+  useEffect(() => { loadEsl(); loadCalls(); loadAudit(); loadContext(); }, [loadEsl, loadCalls, loadAudit, loadContext]);
   useAutoRefresh(loadEsl, 3000);
 
   // Resolve extension number to "username (extension)" or "extension — description"
@@ -212,12 +198,6 @@ export default function Logs() {
     return c.caller_id.toLowerCase().includes(q) || c.destination.toLowerCase().includes(q) || c.gateway.toLowerCase().includes(q);
   });
 
-  const filteredSecurity = securityLogs.filter((s) => {
-    if (!secFilter) return true;
-    const q = secFilter.toLowerCase();
-    return s.ip.toLowerCase().includes(q) || s.details.toLowerCase().includes(q) || s.event.toLowerCase().includes(q);
-  });
-
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 3 }}>{t('nav.logs')}</Typography>
@@ -229,7 +209,6 @@ export default function Logs() {
       >
         <Tab icon={<TerminalIcon />} iconPosition="start" label={t('logs.tab_system')} />
         <Tab icon={<PhoneIcon />} iconPosition="start" label={t('logs.tab_calls')} />
-        <Tab icon={<ShieldIcon />} iconPosition="start" label={t('logs.tab_security')} />
         <Tab icon={<PersonIcon />} iconPosition="start" label={t('logs.tab_audit')} />
       </Tabs>
 
@@ -436,75 +415,8 @@ export default function Logs() {
         </>
       )}
 
-      {/* Security Logs (tab index shifted: was 2, now 2) */}
-      {tab === 2 && (
-        <>
-          <Box sx={{ mb: 2 }}>
-            <TextField
-              size="small"
-              placeholder={t('logs.search')}
-              value={secFilter}
-              onChange={(e) => { setSecFilter(e.target.value); setSecPage(0); }}
-              InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
-              sx={{ width: 300 }}
-            />
-          </Box>
-
-          <Card>
-            <CardContent sx={{ p: 0 }}>
-              {filteredSecurity.length === 0 ? (
-                <Box sx={{ p: 3 }}>
-                  <Typography color="text.secondary">{t('logs.no_security')}</Typography>
-                </Box>
-              ) : (
-                <>
-                  <TableContainer>
-                    <Table size="small">
-                      <TableHead>
-                        <TableRow>
-                          <TableCell sx={{ width: 160 }}>{t('calls.time')}</TableCell>
-                          <TableCell sx={{ width: 80 }}>{t('logs.level')}</TableCell>
-                          <TableCell sx={{ width: 130 }}>{t('logs.event')}</TableCell>
-                          <TableCell sx={{ width: 150 }}>{t('field.ip_address')}</TableCell>
-                          <TableCell>Details</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {filteredSecurity
-                          .slice(secPage * secRowsPerPage, secPage * secRowsPerPage + secRowsPerPage)
-                          .map((s, i) => (
-                            <TableRow key={i} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
-                              <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>
-                                {formatDateTime(s.timestamp)}
-                              </TableCell>
-                              <TableCell>
-                                <Chip size="small" label={s.level} color={LEVEL_COLORS[s.level] || 'default'} />
-                              </TableCell>
-                              <TableCell sx={{ fontSize: 12, fontWeight: 500 }}>{s.event}</TableCell>
-                              <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{s.ip}</TableCell>
-                              <TableCell sx={{ fontSize: 12 }}>{s.details}</TableCell>
-                            </TableRow>
-                          ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                  <TablePagination
-                    component="div"
-                    count={filteredSecurity.length}
-                    page={secPage}
-                    onPageChange={(_, p) => setSecPage(p)}
-                    rowsPerPage={secRowsPerPage}
-                    onRowsPerPageChange={(e) => { setSecRowsPerPage(parseInt(e.target.value, 10)); setSecPage(0); }}
-                    rowsPerPageOptions={[10, 25, 50, 100]}
-                  />
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
       {/* Audit / User Actions */}
-      {tab === 3 && (
+      {tab === 2 && (
         <>
           <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField

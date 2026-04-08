@@ -13,12 +13,13 @@ export interface Preferences {
   demoMode: boolean;
   autoLogout: boolean;
   autoLogoutTimeout: number;
+  showLogoutTimer: boolean;
   timeFormat: TimeFormat;
   dateFormat: DateFormat;
   sidebarCollapsed: boolean;
 }
 
-const STORAGE_KEY = 'sip-wrapper-prefs';
+const STORAGE_KEY = 'linkify-prefs';
 
 const defaults: Preferences = {
   darkMode: false,
@@ -29,6 +30,7 @@ const defaults: Preferences = {
   demoMode: false,
   autoLogout: true,
   autoLogoutTimeout: 300,
+  showLogoutTimer: true,
   timeFormat: '24h',
   dateFormat: 'DD.MM.YYYY',
   sidebarCollapsed: false,
@@ -57,6 +59,7 @@ export function savePreferences(prefs: Partial<Preferences>) {
   const current = loadPreferences();
   const merged = { ...current, ...prefs };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+  window.dispatchEvent(new Event('preferences-changed'));
   return merged;
 }
 

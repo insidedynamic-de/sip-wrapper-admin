@@ -29,7 +29,7 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { savePreferences } from '../../store/preferences';
+import { savePreferences, loadPreferences } from '../../store/preferences';
 import type { ThemeMode } from '../../store/preferences';
 import { clearApiKey } from '../../store/keyStore';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -73,6 +73,13 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
   const [hasLicense, setHasLicense] = useState(false);
   const [hasHub, setHasHub] = useState(false);
   const [activeLicenseNames, setActiveLicenseNames] = useState<string[]>([]);
+  const [showTimer, setShowTimer] = useState(loadPreferences().showLogoutTimer);
+
+  useEffect(() => {
+    const handler = () => setShowTimer(loadPreferences().showLogoutTimer);
+    window.addEventListener('preferences-changed', handler);
+    return () => window.removeEventListener('preferences-changed', handler);
+  }, []);
 
   // Load available tenants for switcher
   useEffect(() => {
@@ -291,7 +298,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
           return (
           <Tooltip key={item.key} title={collapsed ? t(item.label) : ''} placement="right" arrow>
             <ListItemButton
-              selected={location.pathname.startsWith(navKey)}
+              selected={navKey === '/' ? location.pathname === '/' : location.pathname.startsWith(navKey)}
               onClick={() => navigate(navKey)}
               sx={{
                 borderRadius: 1, mb: 0.5,
@@ -357,7 +364,7 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
       <Box sx={{ flexGrow: 1 }} />
 
       {/* Auto-logout countdown */}
-      {/* TODO: LogoutCountdown needs rework for JWT auth */}
+      {showTimer && <LogoutCountdown collapsed={collapsed} />}
 
       {/* Theme mode toggle + Logout */}
       <Box sx={{ display: 'flex', flexDirection: collapsed ? 'column' : 'row', alignItems: 'center', justifyContent: 'center', gap: 1, pb: 1 }}>

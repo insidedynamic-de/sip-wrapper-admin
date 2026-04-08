@@ -37,7 +37,10 @@ api.interceptors.request.use((config) => {
 let refreshPromise: Promise<string> | null = null;
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    window.dispatchEvent(new Event('api-activity'));
+    return res;
+  },
   async (err) => {
     const original = err.config;
 

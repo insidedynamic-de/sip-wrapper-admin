@@ -14,8 +14,15 @@ import CloseIcon from '@mui/icons-material/Close';
 import { loadPreferences } from '../store/preferences';
 import { clearApiKey } from '../store/keyStore';
 
-const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'api-activity'];
 const MODAL_THRESHOLD = 20;
+
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m > 0) return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${s}s`;
+}
 
 interface Props {
   collapsed?: boolean;
@@ -100,7 +107,7 @@ export default function LogoutCountdown({ collapsed = false }: Props) {
     <>
       {/* Sidebar indicator */}
       {collapsed ? (
-        <Tooltip title={t('countdown.logout_in', { seconds: secondsLeft })} placement="right" arrow>
+        <Tooltip title={t('countdown.logout_in', { time: formatTime(secondsLeft) })} placement="right" arrow>
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
             <LogoutIcon sx={{ fontSize: 20, color: urgent ? 'error.main' : 'rgba(255,255,255,0.5)' }} />
           </Box>
@@ -117,7 +124,7 @@ export default function LogoutCountdown({ collapsed = false }: Props) {
                 fontVariantNumeric: 'tabular-nums',
               }}
             >
-              {t('countdown.logout_in', { seconds: secondsLeft })}
+              {t('countdown.logout_in', { time: formatTime(secondsLeft) })}
             </Typography>
           </Box>
           <LinearProgress

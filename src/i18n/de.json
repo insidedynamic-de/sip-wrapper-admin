@@ -168,6 +168,7 @@
     "appearance": "Erscheinungsbild", "theme_mode": "Theme-Modus", "color_theme": "Farbschema",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Auto-Logout aktivieren",
     "auto_logout_timeout": "Timeout (Sekunden)",
+    "show_logout_timer": "Timer in Sidebar anzeigen",
     "auto_logout_desc": "Automatisch abmelden nach Inaktivität",
     "time_format": "Zeitformat",
     "date_format": "Datumsformat"
@@ -400,7 +401,7 @@
     "custom_hostname_desc": "Angezeigten Hostnamen überschreiben"
   },
   "countdown": {
-    "logout_in": "Logout in {{seconds}}s",
+    "logout_in": "Abmeldung in {{time}}",
     "activity_reset": "Maus bewegen oder Taste drücken zum Zurücksetzen",
     "modal_title": "Sitzung l\u00e4uft ab",
     "modal_message": "Sie werden wegen Inaktivit\u00e4t abgemeldet. Klicken Sie X oder bewegen Sie die Maus."

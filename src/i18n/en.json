@@ -167,7 +167,8 @@
     "settings": "Settings",
     "appearance": "Appearance", "theme_mode": "Theme Mode", "color_theme": "Color Theme",
     "auto_logout": "Auto-Logout", "auto_logout_enabled": "Enable Auto-Logout",
-    "auto_logout_timeout": "Timeout (seconds)",
+    "auto_logout_timeout": "Timeout (Sekunden)",
+    "show_logout_timer": "Show timer in sidebar",
     "auto_logout_desc": "Automatically logout after inactivity",
     "time_format": "Time Format",
     "date_format": "Date Format"
@@ -400,7 +401,7 @@
     "custom_hostname_desc": "Override the displayed hostname"
   },
   "countdown": {
-    "logout_in": "Logout in {{seconds}}s",
+    "logout_in": "Logout in {{time}}",
     "activity_reset": "Move mouse or press a key to reset",
     "modal_title": "Session Expiring",
     "modal_message": "You will be logged out due to inactivity. Click X or move mouse to stay."
