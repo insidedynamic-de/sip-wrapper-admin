@@ -22,7 +22,7 @@ export default function LicenseManagement() {
   return (
     <Box>
       <Typography variant="h5" sx={{ mb: 3 }}>{t('license.management_title')}</Typography>
-      <TabView tabs={tabs} storageKey="sip-wrapper-tab-order-licenses" sortable />
+      <TabView tabs={tabs} storageKey="linkify-tab-order-licenses" sortable />
     </Box>
   );
 }

@@ -554,7 +554,7 @@ export default async function demoAdapter(config: InternalAxiosRequestConfig): P
     const availEntry = (store.available_licenses || []).find((a) => a.license_key === key);
     if (availEntry) {
       availEntry.bound_to = 'srv-a1b2c3d4';
-      availEntry.server_name = 'sip-wrapper-prod';
+      availEntry.server_name = 'linkify-prod';
       availEntry.licensed = true;
     }
     saveDemoStore(store);

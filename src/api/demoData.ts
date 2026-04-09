@@ -10,7 +10,7 @@ import type {
   AuditEntry,
 } from './types';
 
-const DEMO_STORAGE_KEY = 'sip-wrapper-demo-data';
+const DEMO_STORAGE_KEY = 'linkify-demo-data';
 
 export interface DemoStore {
   extensions: Extension[];
@@ -261,7 +261,7 @@ const SEED_DATA: DemoStore = {
     { timestamp: new Date(Date.now() - 14400000).toISOString(), event: 'whitelist', ip: '172.16.0.0/12', details: 'Whitelist entry added: VPN clients', level: 'info' },
   ],
   settings: {
-    fs_domain: 'demo.sip-wrapper.local',
+    fs_domain: 'demo.linkify.local',
     external_sip_ip: '203.0.113.10',
     fs_internal_port: 5060,
     fs_external_port: 5080,
@@ -274,12 +274,12 @@ const SEED_DATA: DemoStore = {
     { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', type: 'client', client_name: 'InsideDynamic Demo', licensed: true, valid_until: '2026-12-31', days_remaining: 0, max_connections: 4, version: '2.0.0', server_id: 'srv-a1b2c3d4', bound_to: 'srv-a1b2c3d4', features: ['basic'], sku: 'LTH-BAS-005' },
   ],
   available_licenses: [
-    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2026-12-31', bound_to: 'srv-a1b2c3d4', server_name: 'sip-wrapper-prod', licensed: true, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
+    { license_key: 'DEMO-0000-0000-0001', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2026-12-31', bound_to: 'srv-a1b2c3d4', server_name: 'linkify-prod', licensed: true, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
     { license_key: 'DEMO-0000-0000-0002', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
-    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify TalkHub', subproduct: 'Premium Hub', license_name: 'Premium Hub', max_connections: 25, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true, type: 'client', features: ['basic', 'premium', 'webrtc'], sku: 'LTH-PRM-025' },
+    { license_key: 'DEMO-0000-0000-0003', product: 'Linkify TalkHub', subproduct: 'Premium Hub', license_name: 'Premium Hub', max_connections: 25, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'linkify-staging', licensed: true, type: 'client', features: ['basic', 'premium', 'webrtc'], sku: 'LTH-PRM-025' },
     { license_key: 'DEMO-PREMSUPPORT-0001', product: 'Linkify Premium Support', subproduct: 'Standard', license_name: 'Premium Support Standard', max_connections: 0, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic'], sku: 'LPS-STD-000' },
     { license_key: 'DEMO-VAPI-0001', product: 'Linkify VAPI Connect', subproduct: 'Starter', license_name: 'VAPI Starter', max_connections: 2, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic', 'vapi'], sku: 'LVC-STR-002' },
-    { license_key: 'DEMO-ODOO-0001', product: 'Linkify Odoo Bridge', subproduct: 'Business', license_name: 'Odoo Business', max_connections: 10, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'sip-wrapper-staging', licensed: true, type: 'client', features: ['basic', 'odoo', 'recording'], sku: 'LOB-BUS-010' },
+    { license_key: 'DEMO-ODOO-0001', product: 'Linkify Odoo Bridge', subproduct: 'Business', license_name: 'Odoo Business', max_connections: 10, valid_until: '2026-12-31', bound_to: 'srv-e5f6g7h8', server_name: 'linkify-staging', licensed: true, type: 'client', features: ['basic', 'odoo', 'recording'], sku: 'LOB-BUS-010' },
     { license_key: 'DEMO-RETELL-0001', product: 'Linkify Retell Connect', subproduct: 'Starter', license_name: 'Retell Starter', max_connections: 2, valid_until: '2026-12-31', licensed: false, type: 'client', features: ['basic', 'retell'], sku: 'LRC-STR-002' },
     { license_key: 'DEMO-SIP-EXPIRED-01', product: 'Linkify TalkHub', subproduct: 'Basic Hub', license_name: 'Basic Hub', max_connections: 4, valid_until: '2025-06-30', licensed: false, type: 'client', features: ['basic'], sku: 'LTH-BAS-005' },
   ],
@@ -351,7 +351,7 @@ const SEED_DATA: DemoStore = {
       name: 'Debian GNU/Linux',
       version: '12 (bookworm)',
       kernel: '6.1.0-18-amd64',
-      hostname: 'sip-wrapper-prod',
+      hostname: 'linkify-prod',
       uptime: 1296000,
       arch: 'x86_64',
     },

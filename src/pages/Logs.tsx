@@ -14,6 +14,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import TerminalIcon from '@mui/icons-material/Terminal';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PersonIcon from '@mui/icons-material/Person';
@@ -40,6 +41,24 @@ function formatDuration(seconds: number): string {
 
 const LOG_TAB_IDS = ['system', 'calls', 'audit'];
 
+function copyText(text: string) {
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+function fallbackCopy(text: string) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
 const AUDIT_CATEGORIES: AuditCategory[] = ['auth', 'user', 'gateway', 'route', 'security', 'config', 'license', 'system'];
 
 const CATEGORY_COLORS: Record<AuditCategory, 'info' | 'success' | 'warning' | 'error' | 'default' | 'primary' | 'secondary'> = {
@@ -58,18 +77,23 @@ export default function Logs() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const [tab, setTab] = useState(tabFromHash(location.hash));
+  // Only use hash navigation when Logs is a standalone page (not embedded in Configuration)
+  const isEmbedded = location.pathname.includes('/products/');
+  const [tab, setTab] = useState(isEmbedded ? 0 : tabFromHash(location.hash));
 
-  // Sync tab when URL hash changes externally
+  // Sync tab when URL hash changes externally (standalone only)
   useEffect(() => {
+    if (isEmbedded) return;
     const idx = tabFromHash(location.hash);
     if (idx !== tab) setTab(idx);
-  }, [location.hash]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.hash, isEmbedded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTabChange = (_: unknown, v: number) => {
     setTab(v);
-    navigate({ hash: LOG_TAB_IDS[v] }, { replace: true });
+    if (!isEmbedded) navigate({ hash: LOG_TAB_IDS[v] }, { replace: true });
   };
+
+  const PAGE_OPTIONS = [100, 250, 500, 1000];
 
   // System logs (ESL)
   const [events, setEvents] = useState<ESLEvent[]>([]);
@@ -77,19 +101,21 @@ export default function Logs() {
   const [filter, setFilter] = useState('');
   const [levelFilter, setLevelFilter] = useState('all');
   const lastTs = useRef(0);
+  const [eslPage, setEslPage] = useState(0);
+  const [eslRowsPerPage, setEslRowsPerPage] = useState(250);
 
   // Call logs
   const [callLogs, setCallLogs] = useState<CallLog[]>([]);
   const [callFilter, setCallFilter] = useState('');
   const [callPage, setCallPage] = useState(0);
-  const [callRowsPerPage, setCallRowsPerPage] = useState(25);
+  const [callRowsPerPage, setCallRowsPerPage] = useState(250);
 
   // Audit logs
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
   const [auditTotal, setAuditTotal] = useState(0);
   const [auditFilter, setAuditFilter] = useState('');
   const [auditPage, setAuditPage] = useState(0);
-  const [auditRowsPerPage, setAuditRowsPerPage] = useState(25);
+  const [auditRowsPerPage, setAuditRowsPerPage] = useState(250);
   const [auditCategory, setAuditCategory] = useState<AuditCategory | ''>('');
 
   // Context data for enriching call logs
@@ -98,8 +124,8 @@ export default function Logs() {
   const [extList, setExtList] = useState<Extension[]>([]);
   const [routes, setRoutes] = useState<Route | null>(null);
 
-  // Category filter for system logs
-  const [selectedCategories, setSelectedCategories] = useState<Set<string>>(new Set());
+  // Category filter for system logs — excluded categories (inverted: all active by default)
+  const [excludedCategories, setExcludedCategories] = useState<Set<string>>(new Set());
   const categories = useMemo(() => {
     const set = new Set<string>();
     events.forEach((e) => set.add(e.type));
@@ -187,7 +213,7 @@ export default function Logs() {
 
   const filteredEvents = events.filter((e) => {
     if (levelFilter !== 'all' && e.level !== levelFilter) return false;
-    if (selectedCategories.size > 0 && !selectedCategories.has(e.type)) return false;
+    if (excludedCategories.has(e.type)) return false;
     if (filter && !e.text?.toLowerCase().includes(filter.toLowerCase())) return false;
     return true;
   });
@@ -239,6 +265,13 @@ export default function Logs() {
               <Button size="small" variant="outlined" startIcon={<DeleteSweepIcon />} onClick={clear}>
                 Clear
               </Button>
+              <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={() => {
+                const text = filteredEvents.slice(-eslRowsPerPage).reverse()
+                  .map((e) => `${e.datetime}\t${e.level}\t${e.type}\t${e.text}`).join('\n');
+                copyText(text);
+              }}>
+                Copy
+              </Button>
             </Box>
           </Box>
 
@@ -262,34 +295,38 @@ export default function Logs() {
               value={levelFilter}
               onChange={setLevelFilter}
               label={t('logs.level')}
+              sx={{ minWidth: 150 }}
             />
           </Box>
 
-          {/* Category filter chips */}
+          {/* Category filter chips — all active by default, click to exclude */}
           {categories.length > 0 && (
             <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
               <Chip
                 label="All"
                 size="small"
-                variant={selectedCategories.size === 0 ? 'filled' : 'outlined'}
-                color={selectedCategories.size === 0 ? 'primary' : 'default'}
-                onClick={() => setSelectedCategories(new Set())}
+                variant="filled"
+                color={excludedCategories.size === 0 ? 'primary' : 'default'}
+                onClick={() => setExcludedCategories(new Set())}
               />
-              {categories.map((cat) => (
-                <Chip
-                  key={cat}
-                  label={cat}
-                  size="small"
-                  variant={selectedCategories.has(cat) ? 'filled' : 'outlined'}
-                  color={selectedCategories.has(cat) ? 'primary' : 'default'}
-                  onClick={() => {
-                    const next = new Set(selectedCategories);
-                    if (next.has(cat)) next.delete(cat);
-                    else next.add(cat);
-                    setSelectedCategories(next);
-                  }}
-                />
-              ))}
+              {categories.map((cat) => {
+                const active = !excludedCategories.has(cat);
+                return (
+                  <Chip
+                    key={cat}
+                    label={cat}
+                    size="small"
+                    variant={active ? 'filled' : 'outlined'}
+                    color={active ? 'primary' : 'default'}
+                    onClick={() => {
+                      const next = new Set(excludedCategories);
+                      if (active) next.add(cat);
+                      else next.delete(cat);
+                      setExcludedCategories(next);
+                    }}
+                  />
+                );
+              })}
             </Box>
           )}
 
@@ -306,7 +343,9 @@ export default function Logs() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredEvents.slice(-200).reverse().map((e, i) => (
+                    {filteredEvents.slice().reverse()
+                      .slice(eslPage * eslRowsPerPage, eslPage * eslRowsPerPage + eslRowsPerPage)
+                      .map((e, i) => (
                       <TableRow key={i} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
                         <TableCell sx={{ fontFamily: 'monospace', fontSize: 12 }}>{e.datetime}</TableCell>
                         <TableCell>
@@ -321,6 +360,11 @@ export default function Logs() {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <TablePagination component="div" count={filteredEvents.length}
+                page={eslPage} onPageChange={(_, p) => setEslPage(p)}
+                rowsPerPage={eslRowsPerPage}
+                onRowsPerPageChange={(e) => { setEslRowsPerPage(parseInt(e.target.value)); setEslPage(0); }}
+                rowsPerPageOptions={PAGE_OPTIONS} />
             </CardContent>
           </Card>
         </>
@@ -329,7 +373,7 @@ export default function Logs() {
       {/* Call Logs */}
       {tab === 1 && (
         <>
-          <Box sx={{ mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2, alignItems: 'center' }}>
             <TextField
               size="small"
               placeholder={t('logs.search')}
@@ -338,6 +382,16 @@ export default function Logs() {
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               sx={{ width: 300 }}
             />
+            <Box sx={{ flex: 1 }} />
+            <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={() => {
+              const visible = filteredCalls.slice(callPage * callRowsPerPage, callPage * callRowsPerPage + callRowsPerPage);
+              const text = visible.map((c) =>
+                `${c.start_time}\t${c.direction}\t${c.caller_id}\t${c.destination}\t${c.duration}s\t${c.result}\t${c.gateway}`
+              ).join('\n');
+              copyText(text);
+            }}>
+              Copy
+            </Button>
           </Box>
 
           <Card>
@@ -406,7 +460,7 @@ export default function Logs() {
                     onPageChange={(_, p) => setCallPage(p)}
                     rowsPerPage={callRowsPerPage}
                     onRowsPerPageChange={(e) => { setCallRowsPerPage(parseInt(e.target.value, 10)); setCallPage(0); }}
-                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    rowsPerPageOptions={PAGE_OPTIONS}
                   />
                 </>
               )}
@@ -427,6 +481,15 @@ export default function Logs() {
               InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
               sx={{ width: 300 }}
             />
+            <Box sx={{ flex: 1 }} />
+            <Button size="small" variant="outlined" startIcon={<ContentCopyIcon />} onClick={() => {
+              const text = auditLogs.map((a) =>
+                `${a.timestamp}\t${a.category}\t${a.action}\t${a.user}\t${a.ip}\t${a.details}\t${a.success ? 'OK' : 'Error'}`
+              ).join('\n');
+              copyText(text);
+            }}>
+              Copy
+            </Button>
             <SearchableSelect
               options={[
                 { label: t('logs.level_all'), value: '' },
@@ -435,6 +498,7 @@ export default function Logs() {
               value={auditCategory}
               onChange={(v) => { setAuditCategory(v as AuditCategory | ''); setAuditPage(0); }}
               label={t('audit.category')}
+              sx={{ minWidth: 180 }}
             />
           </Box>
 
@@ -510,7 +574,7 @@ export default function Logs() {
                     onPageChange={(_, p) => setAuditPage(p)}
                     rowsPerPage={auditRowsPerPage}
                     onRowsPerPageChange={(e) => { setAuditRowsPerPage(parseInt(e.target.value, 10)); setAuditPage(0); }}
-                    rowsPerPageOptions={[10, 25, 50, 100]}
+                    rowsPerPageOptions={PAGE_OPTIONS}
                   />
                 </>
               )}
@@ -518,6 +582,7 @@ export default function Logs() {
           </Card>
         </>
       )}
+
     </Box>
   );
 }

@@ -14,6 +14,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import FormDialog from '../components/FormDialog';
 import CrudTable from '../components/CrudTable';
 import Toast from '../components/Toast';
+import SearchableSelect from '../components/SearchableSelect';
 import type { User, AclUser, Registration, Extension } from '../api/types';
 
 function extractError(err: unknown): string {
@@ -36,12 +37,15 @@ function extractError(err: unknown): string {
 /** Merged NB + User row for unified table */
 interface MergedRow {
   extension: string;
-  type: 'sip' | 'acl';
+  type: 'sip' | 'acl' | 'vapi';
   username: string;
+  password: string;
   description: string;
   caller_id: string;
   ip: string;
   enabled: boolean;
+  vapi_assistant_id: string;
+  vapi_assistant_name: string;
 }
 
 export default function Users() {
@@ -54,7 +58,9 @@ export default function Users() {
   const [viewMode, setViewMode] = useState(false);
   const [editRow, setEditRow] = useState<MergedRow | null>(null);
 
-  const defaultForm = { extension: '', type: 'sip' as 'sip' | 'acl', username: '', password: '', description: '', caller_id: '', ip: '', enabled: true };
+  const defaultForm = { extension: '', type: 'sip' as 'sip' | 'acl' | 'vapi', username: '', password: '', description: '', caller_id: '', ip: '', enabled: true, vapi_assistant_id: '', vapi_assistant_name: '' };
+  const [vapiAssistants, setVapiAssistants] = useState<{ id: string; name: string }[]>([]);
+  const [hasVapi, setHasVapi] = useState(false);
   const [form, setForm] = useState(defaultForm);
   const [initialForm, setInitialForm] = useState(defaultForm);
   const formDirty = JSON.stringify(form) !== JSON.stringify(initialForm);
@@ -66,13 +72,23 @@ export default function Users() {
 
   const load = useCallback(async () => {
     try {
-      const [u, a, r, e] = await Promise.all([
+      const [u, a, r, e, lic] = await Promise.all([
         api.get('/users'), api.get('/acl-users'), api.get('/registrations'), api.get('/extensions'),
+        api.get('/license').catch(() => ({ data: null })),
       ]);
       setUsers(u.data || []);
       setAclUsers(a.data || []);
       setRegistrations(r.data || []);
       setExtensions(e.data || []);
+      const features: string[] = lic.data?.active_features || [];
+      const vapiActive = features.includes('vapi');
+      setHasVapi(vapiActive);
+      if (vapiActive) {
+        try {
+          const vaRes = await api.get('/integrations/vapi/assistants');
+          setVapiAssistants(vaRes.data || []);
+        } catch { /* ignore */ }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -92,6 +108,10 @@ export default function Users() {
   // Build unified list: merge SIP users + ACL users with their extensions
   const extMap = new Map(extensions.map((e) => [e.extension, e]));
 
+  // Extensions that are VAPI type (no SIP user needed)
+  const usedByUsers = new Set([...users.map((u) => u.extension), ...aclUsers.map((u) => u.extension)]);
+  const vapiExtensions = extensions.filter((e) => e.type === 'vapi' && !usedByUsers.has(e.extension));
+
   const mergedRows: MergedRow[] = [
     ...users.map((u): MergedRow => {
       const ext = extMap.get(u.extension);
@@ -99,10 +119,13 @@ export default function Users() {
         extension: u.extension,
         type: 'sip',
         username: u.username,
+        password: u.password || '',
         description: ext?.description || '',
         caller_id: u.caller_id || '',
         ip: '',
         enabled: u.enabled !== false,
+        vapi_assistant_id: '',
+        vapi_assistant_name: '',
       };
     }),
     ...aclUsers.map((u): MergedRow => {
@@ -111,12 +134,27 @@ export default function Users() {
         extension: u.extension,
         type: 'acl',
         username: u.username,
+        password: '',
         description: ext?.description || '',
         caller_id: u.caller_id || '',
         ip: u.ip,
         enabled: ext?.enabled !== false,
+        vapi_assistant_id: '',
+        vapi_assistant_name: '',
       };
     }),
+    ...vapiExtensions.map((e): MergedRow => ({
+      extension: e.extension,
+      type: 'vapi',
+      username: e.vapi_assistant_name || 'VAPI',
+      password: '',
+      description: e.description || '',
+      caller_id: '',
+      ip: '',
+      enabled: e.enabled !== false,
+      vapi_assistant_id: e.vapi_assistant_id || '',
+      vapi_assistant_name: e.vapi_assistant_name || '',
+    })),
   ].sort((a, b) => a.extension.localeCompare(b.extension, undefined, { numeric: true }));
 
   // All used extension numbers (for duplicate check)
@@ -137,7 +175,7 @@ export default function Users() {
   const openView = (row: MergedRow) => {
     setEditRow(row);
     setViewMode(true);
-    const f = { extension: row.extension, type: row.type, username: row.username, password: '', description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled };
+    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name };
     setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
@@ -146,7 +184,7 @@ export default function Users() {
   const openEdit = (row: MergedRow) => {
     setEditRow(row);
     setViewMode(false);
-    const f = { extension: row.extension, type: row.type, username: row.username, password: '', description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled };
+    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name };
     setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
@@ -159,9 +197,13 @@ export default function Users() {
     if (!form.extension.trim()) e.extension = t('validation.required');
     else if (!/^\d+$/.test(form.extension)) e.extension = t('extension.digits_only');
     else if (usedExtensions.has(form.extension) && (!editRow || form.extension !== editRow.extension)) e.extension = t('extension.already_exists');
-    if (!form.username.trim()) e.username = t('validation.required');
-    else if (!/^[a-zA-Z0-9._-]+$/.test(form.username)) e.username = t('validation.invalid_username');
-    else if (editRow && form.username !== editRow.username && mergedRows.some((r) => r.username === form.username)) e.username = t('validation.username_taken');
+    if (form.type === 'vapi') {
+      if (!form.vapi_assistant_id) e.vapi_assistant_id = t('validation.required');
+    } else {
+      if (!form.username.trim()) e.username = t('validation.required');
+      else if (!/^[a-zA-Z0-9._-]+$/.test(form.username)) e.username = t('validation.invalid_username');
+      else if (editRow && form.username !== editRow.username && mergedRows.some((r) => r.username === form.username)) e.username = t('validation.username_taken');
+    }
     if (form.type === 'sip') {
       if (!editRow && !form.password) e.password = t('validation.required');
       else if (form.password && form.password.length < 4) e.password = t('validation.min_length', { min: 4 });
@@ -227,11 +269,12 @@ export default function Users() {
         }
       } else {
         // Create extension first
-        await api.post('/extensions', extData);
-        // Create user
+        const extPayload = { ...extData, type: form.type === 'vapi' ? 'vapi' : 'sip', vapi_assistant_id: form.vapi_assistant_id, vapi_assistant_name: form.vapi_assistant_name };
+        await api.post('/extensions', extPayload);
+        // Create user (not needed for VAPI)
         if (form.type === 'sip') {
           await api.post('/users', { username: form.username, password: form.password, extension: form.extension, caller_id: form.caller_id, enabled: form.enabled });
-        } else {
+        } else if (form.type === 'acl') {
           await api.post('/acl-users', { username: form.username, ip: form.ip, extension: form.extension, caller_id: form.caller_id });
         }
       }
@@ -276,9 +319,10 @@ export default function Users() {
     try {
       if (row.type === 'sip') {
         await api.delete(`/users/${row.username}`);
-      } else {
+      } else if (row.type === 'acl') {
         await api.delete(`/acl-users/${row.username}`);
       }
+      // VAPI: only delete extension, no user to delete
       await api.delete(`/extensions/${row.extension}`);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
       load();
@@ -326,6 +370,29 @@ export default function Users() {
             searchText: (row) => formatUser(row),
           },
           {
+            id: 'password',
+            header: t('field.password'),
+            render: (row) => row.type === 'sip' && row.password ? (
+              <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 13, color: 'text.secondary', cursor: 'pointer', userSelect: 'none' }}
+                onClick={(e) => {
+                  const el = e.currentTarget;
+                  const pw = row.password || '';
+                  if (el.dataset.visible === '1') { el.textContent = '••••••'; el.dataset.visible = '0'; }
+                  else {
+                    el.textContent = pw; el.dataset.visible = '1';
+                    const ta = document.createElement('textarea');
+                    ta.value = pw; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+                  }
+                }}
+                data-visible="0"
+              >
+                {'••••••'}
+              </Typography>
+            ) : null,
+            width: 100,
+          },
+          {
             id: 'caller_id',
             header: t('field.caller_id'),
             render: (row) => row.caller_id ? (
@@ -339,6 +406,9 @@ export default function Users() {
         columnOrderKey="users-columns"
         searchable
         getStatus={(row) => {
+          if (row.type === 'vapi') {
+            return { label: 'VAPI', color: 'secondary' };
+          }
           if (row.type === 'acl') {
             return { label: `ACL ${row.ip}`, color: 'info' };
           }
@@ -375,7 +445,7 @@ export default function Users() {
           placeholder="1001"
         />
 
-        {/* Type selector: SIP or ACL — only when adding */}
+        {/* Type selector: SIP, ACL, VAPI — only when adding */}
         {!editRow && !viewMode && (
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
@@ -398,14 +468,15 @@ export default function Users() {
         )}
 
         <TextField label={t('field.user')} value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          disabled={viewMode || (!!editRow && editRow.enabled)} error={!!errors.username} helperText={errors.username} />
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            disabled={viewMode || (!!editRow && editRow.enabled)} error={!!errors.username} helperText={errors.username} />
 
         {form.type === 'sip' && (
-          <TextField label={t('auth.password')} type="password" value={form.password}
+          <TextField label={t('auth.password')} type={viewMode ? 'text' : 'password'} value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             disabled={viewMode}
-            error={!!errors.password} helperText={errors.password || (editRow ? t('validation.leave_empty_keep') : '')} />
+            error={!!errors.password} helperText={errors.password || (editRow ? t('validation.leave_empty_keep') : '')}
+            slotProps={viewMode ? { input: { sx: { fontFamily: 'monospace' } } } : undefined} />
         )}
 
         {form.type === 'acl' && (
@@ -414,6 +485,7 @@ export default function Users() {
             disabled={viewMode}
             error={!!errors.ip} helperText={errors.ip} placeholder="192.168.1.1" />
         )}
+
 
         <TextField
           label={t('extension.description')}

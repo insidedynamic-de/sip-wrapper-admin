@@ -21,6 +21,9 @@ export interface Preferences {
 
 const STORAGE_KEY = 'linkify-prefs';
 
+/** APP_MODE=dev disables auto-logout and MFA enforcement */
+export const isDevMode = () => import.meta.env.VITE_APP_MODE === 'dev';
+
 const defaults: Preferences = {
   darkMode: false,
   themeMode: 'light',
@@ -28,8 +31,8 @@ const defaults: Preferences = {
   language: 'de',
   refreshInterval: 30,
   demoMode: false,
-  autoLogout: true,
-  autoLogoutTimeout: 300,
+  autoLogout: false,
+  autoLogoutTimeout: 1800,
   showLogoutTimer: true,
   timeFormat: '24h',
   dateFormat: 'DD.MM.YYYY',
@@ -65,7 +68,9 @@ export function savePreferences(prefs: Partial<Preferences>) {
 
 /** Format a Date or ISO string using the user's preferred date/time format */
 export function formatDateTime(input: Date | string): string {
+  if (!input) return '—';
   const d = typeof input === 'string' ? new Date(input) : input;
+  if (isNaN(d.getTime())) return '—';
   const p = loadPreferences();
   const pad = (n: number) => String(n).padStart(2, '0');
   const day = pad(d.getDate());

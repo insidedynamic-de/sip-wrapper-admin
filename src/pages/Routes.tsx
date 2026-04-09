@@ -6,12 +6,16 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Box, Typography, Card, CardContent, Button,
-  TextField, Tooltip,
+  TextField, Tooltip, Chip, Checkbox,
   RadioGroup, Radio, FormControlLabel, FormLabel,
+  Table, TableHead, TableBody, TableRow, TableCell,
 } from '@mui/material';
 import Grid from '@mui/material/Grid2';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
 import CallReceivedIcon from '@mui/icons-material/CallReceived';
 import CallMadeIcon from '@mui/icons-material/CallMade';
 import api from '../api/client';
@@ -45,6 +49,9 @@ export default function RoutesPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [defaults, setDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
   const [maxConnections, setMaxConnections] = useState(0);
+  const [hasVapi, setHasVapi] = useState(false);
+  const [vapiAssistants, setVapiAssistants] = useState<{ id: string; name: string }[]>([]);
+  const [vapiConnected, setVapiConnected] = useState(false);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -72,7 +79,22 @@ export default function RoutesPage() {
       setUsers(u.data || []);
       setRegistrations(reg.data || []);
       if (r.data?.defaults) setDefaults(r.data.defaults);
-      if (lic.data) setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
+      if (lic.data) {
+        setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
+        const features: string[] = lic.data.active_features || [];
+        const vapiActive = features.includes('vapi');
+        setHasVapi(vapiActive);
+        if (vapiActive) {
+          try {
+            const [vapiRes, asstRes] = await Promise.all([
+              api.get('/integrations/vapi').catch(() => ({ data: null })),
+              api.get('/integrations/vapi/assistants').catch(() => ({ data: [] })),
+            ]);
+            setVapiConnected(vapiRes.data?.connected || false);
+            setVapiAssistants(asstRes.data || []);
+          } catch { /* ignore */ }
+        }
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -163,7 +185,13 @@ export default function RoutesPage() {
   }, [routes, extensions, users]);
 
   // Count only enabled routes for license limit check
-  const enabledCount = extRoutes.filter((r) => r.enabled).length;
+  // VAPI bundle (all routes pointing to same extension as vapi gateway) counts as 1
+  const vapiExtensions = new Set(
+    extRoutes.filter((r) => r.enabled && r.gateway === 'vapi').map((r) => r.extension)
+  );
+  const nonVapiRoutes = extRoutes.filter((r) => r.enabled && r.gateway !== 'vapi'
+    && !vapiExtensions.has(r.extension) && !(r.description || '').includes('VAPI OUT'));
+  const enabledCount = nonVapiRoutes.length + vapiExtensions.size;
 
   const gwOptions = gateways.map((g) => ({
     label: g.description ? `${g.name} \u2014 ${g.description}` : g.name,
@@ -395,7 +423,7 @@ export default function RoutesPage() {
             </Button>
           </Box>
           <CrudTable<ExtensionRoute>
-            rows={extRoutes}
+            rows={extRoutes.filter((r) => !vapiExtensions.has(r.extension) && !(r.description || '').includes('VAPI OUT'))}
             getKey={(r, i) => `${r.direction}-${r.extension}-${r.gateway}-${i}`}
             columns={[
               {
@@ -539,7 +567,352 @@ export default function RoutesPage() {
         confirmLabel={t('button.delete')} cancelLabel={t('button.cancel')}
         onConfirm={handleConfirmDelete} onCancel={() => setConfirmDelete({ open: false, name: '', action: null })} />
 
+      {/* VAPI Routes */}
+      {hasVapi && vapiConnected && (
+        <VapiRoutes
+          gateways={gateways}
+          extensions={extensions}
+          users={users}
+          assistants={vapiAssistants}
+          onToast={(msg: string, ok: boolean) => setToast({ open: true, message: msg, severity: ok ? 'success' : 'error' })}
+          onReload={load}
+        />
+      )}
+
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
+  );
+}
+
+// ── VAPI Routes Component ──
+
+function VapiRoutes({ gateways, extensions, users, assistants, onToast, onReload }: {
+  gateways: Gateway[];
+  extensions: Extension[];
+  users: User[];
+  assistants: { id: string; name: string }[];
+  onToast: (msg: string, ok: boolean) => void;
+  onReload: () => void;
+}) {
+  const { t } = useTranslation();
+  const [vapiRoutes, setVapiRoutes] = useState<{ id: string; gateway: string; phone_number: string; extension: string; username: string; assistant_id: string; assistant_name: string }[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editRouteId, setEditRouteId] = useState('');
+  const [form, setForm] = useState({ gateway: '', extension: '', assistant_id: '', inbound: true, outbound: true });
+  const [saving, setSaving] = useState(false);
+  const [aclUsers, setAclUsers] = useState<{ username: string; ip: string; extension: string }[]>([]);
+  const [vapiIps, setVapiIps] = useState('');
+  const [addNbOpen, setAddNbOpen] = useState(false);
+  const [nbForm, setNbForm] = useState({ extension: '', username: '' });
+  const [nbSaving, setNbSaving] = useState(false);
+
+  // Load ACL users + VAPI config
+  useEffect(() => {
+    api.get('/acl-users').then((r) => setAclUsers(r.data || [])).catch(() => {});
+    api.get('/integrations/vapi').then((r) => {
+      setVapiIps((r.data?.sip_ips || []).join(', '));
+    }).catch(() => {});
+  }, []);
+
+  // Load existing VAPI phone numbers with their mappings
+  useEffect(() => {
+    api.get('/integrations/vapi/phone-numbers').then((res) => {
+      const nums = res.data || [];
+      setVapiRoutes(nums.map((n: Record<string, string>) => {
+        const acl = aclUsers.find((u) => u.extension === n.extension);
+        const asst = assistants.find((a) => a.id === n.assistantId);
+        return {
+          id: n.id,
+          gateway: n.provider || 'vapi',
+          phone_number: n.number,
+          extension: n.extension || '',
+          username: acl?.username || '',
+          assistant_id: n.assistantId || '',
+          assistant_name: asst?.name || '',
+        };
+      }));
+    }).catch(() => {});
+  }, [aclUsers, assistants]);
+
+  // Gateway options (nur mit phone_number)
+  const gwWithPhone = gateways.filter((g) => g.phone_number && g.name !== 'vapi');
+  const gwOptions = gwWithPhone.map((g) => ({ label: `${g.name} (${g.phone_number})`, value: g.name }));
+
+  // Extension options from ACL users with VAPI IPs
+  const vapiAcls = aclUsers.filter((u) => {
+    const ips = vapiIps.split(',').map((s) => s.trim());
+    return ips.some((vip) => u.ip.includes(vip));
+  });
+  const extOptions = vapiAcls.map((u) => ({
+    label: `${u.extension} — ${u.username}`,
+    value: u.extension,
+  }));
+
+  // Assistant options
+  const asstOptions = [
+    { label: '\u2014', value: '' },
+    ...assistants.map((a) => ({ label: a.name || a.id, value: a.id })),
+  ];
+
+  const handleSave = async () => {
+    if (!form.extension || !form.assistant_id) {
+      onToast('Nebenstelle und Assistant ausfüllen', false);
+      return;
+    }
+    if (form.outbound && !form.gateway) {
+      onToast('Gateway für Outbound wählen', false);
+      return;
+    }
+    setSaving(true);
+    try {
+      const gw = gateways.find((g) => g.name === form.gateway);
+      const acl = aclUsers.find((u) => u.extension === form.extension);
+      const phoneNumber = gw?.phone_number || '';
+      const username = acl?.username || '';
+
+      // Create or update phone number on VAPI
+      if (editRouteId) {
+        await api.put(`/integrations/vapi/phone-number/${editRouteId}`, {
+          assistant_id: form.assistant_id,
+          extension: form.extension,
+        }).catch(() => {});
+      } else {
+        await api.post('/integrations/vapi/phone-number', {
+          number: phoneNumber || username,
+          name: `${username}@TalkHub`,
+          assistant_id: form.assistant_id,
+          extension: form.extension,
+          sip_username: username,
+        });
+      }
+
+      // Inbound route: VAPI → NB
+      if (form.inbound) {
+        await api.post('/routes/inbound', {
+          gateway: 'vapi',
+          extension: form.extension,
+          description: `VAPI IN: ${phoneNumber || 'any'} → ${form.extension}`,
+          enabled: true,
+        }).catch(() => {});
+      }
+
+      // Outbound route: NB → Gateway
+      if (form.outbound && form.gateway) {
+        await api.post('/routes/outbound', {
+          pattern: '.*',
+          gateway: form.gateway,
+          prepend: '',
+          strip: '',
+          enabled: true,
+        }).catch(() => {});
+
+        // User route for this extension
+        await api.post('/routes/user', {
+          username: username,
+          gateway: form.gateway,
+          description: `VAPI OUT: ${form.extension} → ${form.gateway}`,
+          enabled: true,
+        }).catch(() => {});
+      }
+
+      await api.post('/config/apply').catch(() => {});
+
+      setDialogOpen(false);
+      setEditRouteId('');
+      setForm({ gateway: '', extension: '', assistant_id: '', inbound: true, outbound: true });
+      onToast(editRouteId ? 'AI Route aktualisiert' : `AI Route erstellt: ${username} ↔ ${form.gateway || 'inbound only'}`, true);
+      onReload();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } };
+      onToast(e?.response?.data?.detail || 'Fehler', false);
+    }
+    setSaving(false);
+  };
+
+  return (
+    <Card sx={{ mt: 3 }}>
+      <CardContent sx={{ px: 4, py: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="h6">AI Routes</Typography>
+          </Box>
+          <Button size="small" startIcon={<AddIcon />} onClick={() => setDialogOpen(true)}>
+            VAPI Route
+          </Button>
+        </Box>
+
+        {vapiRoutes.length > 0 ? (
+          <Table size="small">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ width: 60 }}>Typ</TableCell>
+                <TableCell>{t('gateway.phone_number')}</TableCell>
+                <TableCell>{t('field.extension')}</TableCell>
+                <TableCell>ACL User</TableCell>
+                <TableCell>Assistant</TableCell>
+                <TableCell sx={{ width: 80 }} />
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {vapiRoutes.filter((r) => r.extension).map((r) => (
+                <TableRow key={r.id} sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
+                  <TableCell><Chip label="VAPI" size="small" color="secondary" sx={{ height: 20, fontSize: 11 }} /></TableCell>
+                  <TableCell sx={{ fontFamily: 'monospace' }}>{r.phone_number}</TableCell>
+                  <TableCell>{r.extension}</TableCell>
+                  <TableCell>{r.username}</TableCell>
+                  <TableCell>{r.assistant_name || r.assistant_id || '\u2014'}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <IconButton size="small" onClick={async () => {
+                        setEditRouteId(r.id);
+                        // Find outbound gateway from user routes
+                        let outGw = '';
+                        try {
+                          const routeRes = await api.get('/routes');
+                          const ur = (routeRes.data?.user_routes || []).find((u: { description?: string }) => (u.description || '').includes('VAPI OUT') && (u.description || '').includes(r.extension));
+                          if (ur) outGw = ur.gateway;
+                        } catch { /* ignore */ }
+                        setForm({
+                          gateway: outGw,
+                          extension: r.extension,
+                          assistant_id: r.assistant_id,
+                          inbound: true,
+                          outbound: !!outGw,
+                        });
+                        setDialogOpen(true);
+                      }}><EditIcon fontSize="small" /></IconButton>
+                      <IconButton size="small" color="error" onClick={async () => {
+                        try {
+                          // Delete inbound routes for this extension
+                          await api.delete(`/routes/inbound/vapi`).catch(() => {});
+                          // Find and delete provider inbound for same extension
+                          const routeRes = await api.get('/routes');
+                          const inb = (routeRes.data?.inbound || []).filter((ir: { extension: string; gateway: string }) => ir.extension === r.extension && ir.gateway !== 'vapi');
+                          for (const ir of inb) {
+                            await api.delete(`/routes/inbound/${ir.gateway}`).catch(() => {});
+                          }
+                          // Delete user route
+                          if (r.username) await api.delete(`/routes/user/${r.username}`).catch(() => {});
+                          await api.post('/config/apply').catch(() => {});
+                          onToast('AI Route gelöscht', true);
+                          onReload();
+                        } catch { onToast('Fehler beim Löschen', false); }
+                      }}><DeleteIcon fontSize="small" /></IconButton>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            Keine VAPI Routes. Erstellen Sie eine Route um eine Rufnummer mit einem VAPI Assistant zu verbinden.
+          </Typography>
+        )}
+
+        {/* Create VAPI Route Dialog */}
+        <FormDialog
+          open={dialogOpen}
+          title="VAPI Route erstellen"
+          dirty={!!(form.gateway || form.extension || form.assistant_id)}
+          onClose={() => { setDialogOpen(false); setEditRouteId(''); setForm({ gateway: '', extension: '', assistant_id: '', inbound: true, outbound: true }); }}
+          onSave={handleSave}
+          saveLabel={saving ? '...' : 'Route erstellen'}
+        >
+          {/* VAPI Seite */}
+          <Typography variant="caption" color="primary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>VAPI</Typography>
+          <SearchableSelect options={asstOptions} value={form.assistant_id}
+            onChange={(v) => setForm({ ...form, assistant_id: v })}
+            label="Assistant" />
+          {form.extension && (() => {
+            const acl = vapiAcls.find((u) => u.extension === form.extension);
+            return acl ? (
+              <TextField label="SIP URI (wird an VAPI gesendet)" size="small"
+                value={`sip:${acl.username}@${vapiIps.split(',')[0]?.trim()}`}
+                disabled InputProps={{ sx: { fontFamily: 'monospace', fontSize: 13 } }} />
+            ) : null;
+          })()}
+
+          {/* TalkHub Seite */}
+          <Box sx={{ mt: 2 }} />
+          <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>TalkHub</Typography>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+            <SearchableSelect options={extOptions} value={form.extension}
+              onChange={(v) => setForm({ ...form, extension: v })}
+              label="Nebenstelle (ACL)" sx={{ flex: 1 }} />
+            <Button size="small" variant="outlined" sx={{ mt: 1, whiteSpace: 'nowrap' }}
+              onClick={() => setAddNbOpen(true)}>
+              + NB
+            </Button>
+          </Box>
+
+          {/* Richtung */}
+          <Box sx={{ mt: 2 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 1 }}>Richtung</Typography>
+          <Box sx={{ display: 'flex', gap: 3 }}>
+            <FormControlLabel
+              control={<Checkbox checked={form.inbound} onChange={(e) => setForm({ ...form, inbound: e.target.checked })} />}
+              label="Inbound (VAPI → TalkHub)"
+            />
+            <FormControlLabel
+              control={<Checkbox checked={form.outbound} onChange={(e) => setForm({ ...form, outbound: e.target.checked })} />}
+              label="Outbound (TalkHub → PSTN)"
+            />
+          </Box>
+          {form.outbound && (
+            <SearchableSelect options={gwOptions} value={form.gateway}
+              onChange={(v) => setForm({ ...form, gateway: v })}
+              label="Outbound Gateway (Rufnummer)" />
+          )}
+
+          {/* Preview */}
+          {form.extension && form.assistant_id && (
+            <Box sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1, fontSize: 12 }}>
+              <Typography variant="caption" sx={{ fontWeight: 600 }}>Vorschau:</Typography>
+              {form.inbound && <Typography variant="body2" sx={{ fontSize: 12 }}>↓ Inbound: VAPI Assistant → NB {form.extension}</Typography>}
+              {form.outbound && form.gateway && (() => {
+                const gw = gateways.find((g) => g.name === form.gateway);
+                return <Typography variant="body2" sx={{ fontSize: 12 }}>↑ Outbound: NB {form.extension} → {form.gateway} ({gw?.phone_number})</Typography>;
+              })()}
+            </Box>
+          )}
+        </FormDialog>
+
+        {/* Quick Add VAPI NB Dialog */}
+        <FormDialog
+          open={addNbOpen}
+          title="VAPI Nebenstelle erstellen"
+          dirty={!!(nbForm.extension || nbForm.username)}
+          onClose={() => { setAddNbOpen(false); setNbForm({ extension: '', username: '' }); }}
+          onSave={async () => {
+            if (!nbForm.extension || !nbForm.username) { onToast('Extension und Username ausfüllen', false); return; }
+            setNbSaving(true);
+            try {
+              await api.post('/extensions', { extension: nbForm.extension, description: 'VAPI', enabled: true });
+              await api.post('/acl-users', { username: nbForm.username, ip: vapiIps, extension: nbForm.extension, caller_id: '' });
+              await api.post('/config/apply').catch(() => {});
+              const r = await api.get('/acl-users');
+              setAclUsers(r.data || []);
+              setForm((prev) => ({ ...prev, extension: nbForm.extension }));
+              setAddNbOpen(false);
+              setNbForm({ extension: '', username: '' });
+              onToast(`NB ${nbForm.extension} erstellt`, true);
+            } catch (err: unknown) {
+              const e = err as { response?: { data?: { detail?: string } } };
+              onToast(e?.response?.data?.detail || 'Fehler', false);
+            }
+            setNbSaving(false);
+          }}
+          saveLabel={nbSaving ? '...' : 'Erstellen'}
+        >
+          <TextField label="Extension" placeholder="9000" value={nbForm.extension}
+            onChange={(e) => setNbForm({ ...nbForm, extension: e.target.value.replace(/\D/g, '') })} />
+          <TextField label="Username" placeholder="vapi1" value={nbForm.username}
+            onChange={(e) => setNbForm({ ...nbForm, username: e.target.value })} />
+          <TextField label="VAPI IPs" value={vapiIps} disabled
+            helperText="Automatisch aus VAPI Integration" />
+        </FormDialog>
+      </CardContent>
+    </Card>
   );
 }

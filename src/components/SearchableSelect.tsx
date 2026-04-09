@@ -3,6 +3,7 @@
  * @author Viktor Nikolayev <viktor.nikolayev@gmail.com>
  */
 import { Autocomplete, TextField } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 interface Option {
   label: string;
@@ -22,6 +23,7 @@ interface Props {
   /** Allow empty value — shown as first option */
   allowEmpty?: boolean;
   emptyLabel?: string;
+  sx?: SxProps<Theme>;
 }
 
 function normalizeOptions(options: string[] | Option[]): Option[] {
@@ -35,7 +37,7 @@ function normalizeOptions(options: string[] | Option[]): Option[] {
 export default function SearchableSelect({
   options: rawOptions, value, onChange, label, disabled,
   fullWidth, size = 'small', helperText, placeholder,
-  allowEmpty, emptyLabel = '—',
+  allowEmpty, emptyLabel = '—', sx,
 }: Props) {
   const options = normalizeOptions(rawOptions);
   const allOptions = allowEmpty
@@ -54,6 +56,7 @@ export default function SearchableSelect({
       disabled={disabled}
       fullWidth={fullWidth}
       size={size}
+      sx={sx}
       renderInput={(params) => (
         <TextField
           {...params}

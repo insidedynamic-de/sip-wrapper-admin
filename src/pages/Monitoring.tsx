@@ -66,7 +66,7 @@ function usageColor(pct: number): 'success' | 'warning' | 'error' {
 }
 
 // ── Monitoring card visibility persistence ──
-const MON_CARDS_KEY = 'sip-wrapper-monitoring-cards';
+const MON_CARDS_KEY = 'linkify-monitoring-cards';
 
 function loadHiddenMonCards(): Set<string> {
   try {

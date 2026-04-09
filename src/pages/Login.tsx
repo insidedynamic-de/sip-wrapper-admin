@@ -14,7 +14,7 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import BrightnessAutoIcon from '@mui/icons-material/BrightnessAuto';
 import api from '../api/client';
-import { loadPreferences, savePreferences } from '../store/preferences';
+import { loadPreferences, savePreferences, isDevMode } from '../store/preferences';
 import type { ThemeMode } from '../store/preferences';
 import { colorThemes, type ColorTheme } from '../theme/colors';
 import FormDialog from '../components/FormDialog';
@@ -87,14 +87,14 @@ export default function Login({ themeMode, setThemeMode, colorTheme, setColorThe
 
       const data = res.data;
 
-      if (data.mfa_required) {
+      if (data.mfa_required && !isDevMode()) {
         // Step 2: enter MFA code
         setStep('mfa');
         setLoading(false);
         return;
       }
 
-      if (data.mfa_setup_required) {
+      if (data.mfa_setup_required && !isDevMode()) {
         // Step 2b: setup MFA first (NIS2)
         setTempToken(data.access_token);
         setStep('mfa_setup');

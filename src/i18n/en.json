@@ -74,7 +74,7 @@
     "connection_failed": "Connection failed"
   },
   "section": {
-    "users": "Users", "sip_users": "SIP Users", "acl_users": "ACL Users",
+    "users": "Extensions", "sip_users": "SIP Users", "acl_users": "ACL Users",
     "gateways": "Gateways", "routes": "Routes", "settings": "Settings",
     "outbound_routing": "Outbound Routes", "inbound_routing": "Inbound Routes",
     "user_routing": "User Routes", "default_routes": "Default Routes",
@@ -83,6 +83,7 @@
   },
   "field": {
     "extension": "Extension", "ip_address": "IP Address", "user_agent": "User-Agent",
+    "source": "Source",
     "contact": "Contact", "pattern": "Pattern", "destination": "Destination",
     "did": "DID/Number", "domain": "Domain", "external_ip": "External IP",
     "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
@@ -106,7 +107,7 @@
     "extensions_active": "Extensions",
     "license_status": "License",
     "customize": "Customize Dashboard",
-    "server_info": "Server Info",
+    "server_info": "Server Info", "connection_info": "Connection Info",
     "connection": "Connection",
     "today": "Today",
     "this_month": "Month",
@@ -143,7 +144,9 @@
     "plans": "Available Plans",
     "contact_sales": "Contact Sales",
     "all": "All",
-    "upgrade": "Buy new license"
+    "upgrade": "Buy new license",
+    "my_products": "My Products",
+    "all_products": "All Products"
   },
   "config": {
     "default_gateway": "Default Gateway", "default_extension": "Default Extension",
@@ -253,10 +256,10 @@
   "logs": {
     "filter": "Filter", "search": "Search logs...", "level": "Level",
     "lines": "Lines", "entries": "entries", "sources": "Sources",
-    "no_logs": "No logs available", "esl_failed": "ESL connection failed",
+    "no_logs": "No logs available", "esl_failed": "Log connection failed",
     "saved": "Saved", "failed_to_load": "Failed to load logs",
     "server_not_running": "is not running", "debug_dump": "Debug Dump",
-    "esl_events": "ESL Events", "esl_connected": "Connected",
+    "esl_events": "Log Events", "esl_connected": "Connected",
     "esl_disconnected": "Disconnected", "events_buffer": "Event Buffer",
     "tab_system": "System Logs",
     "tab_calls": "Call Logs",
@@ -277,7 +280,7 @@
     "whitelist_mode": "Whitelist Mode", "enable_whitelist": "Enable Whitelist Mode",
     "whitelist_desc": "When enabled, only IPs in the whitelist can register. All other IPs will be blocked.",
     "blocked_ips": "Blocked IPs", "allowed_ips": "Allowed IPs",
-    "block_ip": "Block IP", "allow_ip": "Allow IP",
+    "block_ip": "Block IP", "unblock_ip": "Unblock IP", "allow_ip": "Allow IP",
     "auto_blacklist_title": "Auto-Blacklist (Fail2Ban-like)",
     "enable_auto_blacklist": "Enable Auto-Blacklist",
     "auto_blacklist_desc": "Automatically block IPs after too many failed registration attempts.",
@@ -304,6 +307,9 @@
     "monitoring": "Monitoring",
     "auth_monitoring": "Authentication Monitoring",
     "no_failed_auth": "No failed authentication attempts",
+    "no_banned_ips": "No IPs banned",
+    "fail2ban_unavailable": "Fail2Ban unavailable",
+    "banned": "banned",
     "progress": "Progress",
     "critical": "Critical",
     "last_attempt": "Last Attempt",
@@ -321,7 +327,8 @@
   },
   "gateway": {
     "sip_gateways": "SIP Gateways / Providers", "add_gateway": "Add Gateway",
-    "auth_username": "Auth Username (optional)", "auth_username_hint": "For 3CX and some PBX systems"
+    "auth_username": "Auth Username (optional)", "auth_username_hint": "For 3CX and some PBX systems",
+    "phone_number": "Phone Number"
   },
   "route": {
     "add_route": "Add Route", "edit_route": "Edit Route", "view_route": "View Route",
@@ -390,7 +397,7 @@
     "codec_prefs": "Codec Preferences", "codec_prefs_desc": "Select audio/video codecs. Order determines negotiation priority.",
     "default_country": "Default Country Code",
     "outbound_caller_id": "Outbound Caller ID", "save_settings": "Save Settings",
-    "esl_settings": "ESL Connection", "esl_password": "Password", "esl_test": "Test Connection",
+    "esl_settings": "Log Stream", "esl_password": "Password", "esl_test": "Test Connection",
     "server_desc": "Server connection and SIP configuration settings.",
     "domain_ip": "Domain & IP",
     "ports": "Ports",

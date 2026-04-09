@@ -195,9 +195,7 @@ export default function Produkte() {
       <Typography variant="h5" sx={{ mb: 2 }}>{t('nav.catalog')}</Typography>
 
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 0 }}>
-        <Tab label={`Alle Produkte (${Object.keys(grouped).length})`} />
-        </Tabs>
+        <Box />
         {tab === 0 && expiredCount > 0 && (
           <Button variant="text" size="small" onClick={() => setShowExpired(!showExpired)}
             sx={{ textTransform: 'none', fontSize: 12, color: 'text.secondary' }}>
@@ -207,8 +205,8 @@ export default function Produkte() {
       </Box>
       <Box sx={{ mb: 3 }} />
 
-      {/* ── Tab 0: Meine Produkte ── */}
-      {tab === 0 && (
+      {/* ── Katalog ── */}
+      {tab === 0 && false && (
         visibleProducts.length === 0 && expiredCount === 0 ? (
           <Card sx={{ textAlign: 'center' }}>
             <CardContent sx={{ py: 6 }}>
@@ -293,8 +291,8 @@ export default function Produkte() {
         )
       )}
 
-      {/* ── Tab 1: Alle Produkte (Katalog) ── */}
-      {tab === 1 && (
+      {/* ── Alle Produkte (Katalog) ── */}
+      {(
         <>
           {categories.length > 0 && (
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 3 }}>

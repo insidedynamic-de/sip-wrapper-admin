@@ -4,7 +4,7 @@
  */
 
 const STORAGE_KEY = 'api_key_enc';
-const SALT = 'sip-wrapper-admin-v2';
+const SALT = 'linkify-products-v2';
 
 /** Derive an AES-GCM key from a static passphrase + origin */
 async function deriveKey(): Promise<CryptoKey> {
@@ -54,14 +54,14 @@ export async function loadApiKey(): Promise<string | null> {
 export function clearApiKey(): void {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem('api_key');
-  localStorage.setItem('sip-wrapper-logout-at', String(Date.now()));
+  localStorage.setItem('linkify-logout-at', String(Date.now()));
 }
 
 const CLEANUP_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 
 /** Check if demo data should be cleared (60 min after last logout) */
 export function shouldCleanupDemoData(): boolean {
-  const loggedOutAt = localStorage.getItem('sip-wrapper-logout-at');
+  const loggedOutAt = localStorage.getItem('linkify-logout-at');
   if (!loggedOutAt) return false;
   return Date.now() - Number(loggedOutAt) >= CLEANUP_TIMEOUT_MS;
 }

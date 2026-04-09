@@ -31,7 +31,7 @@ import DnsIcon from '@mui/icons-material/Dns';
 import type { Gateway, GatewayStatus, Registration, ActiveCall, CallLog, Extension, CallStatEntry, User, AclUser, SystemInfo } from '../api/types';
 
 // ── Dashboard card visibility persistence ──
-const CARDS_STORAGE_KEY = 'sip-wrapper-dashboard-cards';
+const CARDS_STORAGE_KEY = 'linkify-dashboard-cards';
 
 function loadHiddenCards(): Set<string> {
   try {
@@ -296,20 +296,22 @@ export default function Dashboard() {
 
   const refresh = useCallback(async () => {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const f = (p: Promise<any>) => p.catch(() => ({ data: null }));
       const [gwRes, gwAllRes, regRes, callRes, usersRes, aclRes, logRes, secRes, extRes, licRes, routeRes, statsRes, sysRes] = await Promise.all([
-        api.get('/gateways/status'),
-        api.get('/gateways'),
-        api.get('/registrations'),
-        api.get('/active-calls'),
-        api.get('/users'),
-        api.get('/acl-users'),
-        api.get('/logs/calls'),
-        api.get('/security'),
-        api.get('/extensions'),
-        api.get('/license'),
-        api.get('/routes'),
-        api.get('/logs/call-stats'),
-        api.get('/system/info'),
+        f(api.get('/gateways/status')),
+        f(api.get('/gateways')),
+        f(api.get('/registrations')),
+        f(api.get('/active-calls')),
+        f(api.get('/users')),
+        f(api.get('/acl-users')),
+        f(api.get('/logs/calls')),
+        f(api.get('/security')),
+        f(api.get('/extensions')),
+        f(api.get('/license')),
+        f(api.get('/routes')),
+        f(api.get('/logs/call-stats')),
+        f(api.get('/system/info')),
       ]);
       setAllGateways(gwAllRes.data || []);
       setGateways(gwRes.data || []);
@@ -328,10 +330,22 @@ export default function Dashboard() {
       if (sysRes.data) setSystemInfo(sysRes.data);
       if (routeRes.data) {
         const rd = routeRes.data;
-        // Count enabled routes (inbound + outbound user routes)
-        const inb = (rd.inbound || []).filter((r: { enabled?: boolean }) => r.enabled !== false).length;
-        const usr = (rd.user_routes || []).filter((r: { enabled?: boolean }) => r.enabled !== false).length;
-        setRoutingCount(inb + usr);
+        // Count enabled routes — VAPI internal routes (gateway=vapi + matching user route) count as 1
+        const inbRoutes = (rd.inbound || []).filter((r: { enabled?: boolean }) => r.enabled !== false);
+        const usrRoutes = (rd.user_routes || []).filter((r: { enabled?: boolean }) => r.enabled !== false);
+        // VAPI bundles: each unique extension with vapi inbound = 1 connection
+        const vapiExts = new Set(
+          inbRoutes.filter((r: { gateway?: string }) => r.gateway === 'vapi').map((r: { extension?: string }) => r.extension)
+        );
+        // Non-VAPI inbound routes (exclude those pointing to a VAPI extension)
+        const realInbound = inbRoutes.filter((r: { gateway?: string; extension?: string }) =>
+          r.gateway !== 'vapi' && !vapiExts.has(r.extension)
+        );
+        // Non-VAPI user routes
+        const realUser = usrRoutes.filter((r: { description?: string }) =>
+          !(r.description || '').includes('VAPI OUT')
+        );
+        setRoutingCount(realInbound.length + vapiExts.size + realUser.length);
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -578,7 +592,12 @@ export default function Dashboard() {
         {isVisible('license') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('license')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 180, cursor: 'pointer' }} onClick={async () => {
+              try {
+                await api.post('/license/refresh');
+                refresh();
+              } catch { /* ignore */ }
+            }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <BadgeIcon color={licenseInfo.licensed ? 'primary' : 'error'} sx={{ fontSize: 40 }} />
                 <Box>
@@ -792,9 +811,11 @@ export default function Dashboard() {
                             <TableCell>{gwLabel}</TableCell>
                             <TableCell>
                               <Tooltip title={stat.direction === 'inbound' ? t('route.type_inbound') : t('route.type_outbound')}>
-                                {stat.direction === 'inbound'
-                                  ? <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
-                                  : <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />}
+                                <span style={{ display: 'inline-flex' }}>
+                                  {stat.direction === 'inbound'
+                                    ? <CallReceivedIcon sx={{ fontSize: 18, color: 'info.main' }} />
+                                    : <CallMadeIcon sx={{ fontSize: 18, color: 'warning.main' }} />}
+                                </span>
                               </Tooltip>
                             </TableCell>
                             <TableCell align="right">{stat.today}</TableCell>

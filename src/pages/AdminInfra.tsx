@@ -85,6 +85,7 @@ export default function AdminInfra() {
   const [nodeDialog, setNodeDialog] = useState(false);
   const [instanceDialog, setInstanceDialog] = useState(false);
   const [portChecks, setPortChecks] = useState<Record<number, { port: string; protocol: string; open: boolean }[]>>({});
+  const [licInfo, setLicInfo] = useState<Record<number, { licensed: boolean; features: string[]; products: string[] }>>({});
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const [editNode, setEditNode] = useState<any>({});
   const [editInstance, setEditInstance] = useState<any>({});
@@ -190,6 +191,7 @@ export default function AdminInfra() {
         <Tab icon={<StorageIcon />} label={`Instanzen (${instances.length})`} iconPosition="start" />
         <Tab icon={<DescriptionIcon />} label={`Templates (${templates.length})`} iconPosition="start" />
         <Tab icon={<SettingsIcon />} label="Einstellungen" iconPosition="start" />
+        <Tab icon={<RefreshIcon />} label="Cronjobs" iconPosition="start" />
       </Tabs>
 
       {/* ── TAB 0: Nodes ── */}
@@ -330,6 +332,16 @@ export default function AdminInfra() {
                         </Box>
                         ) : null;
                       })()}
+                      {/* License info */}
+                      {licInfo[i.id] && (
+                        <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1 }}>
+                          <Chip label={licInfo[i.id].licensed ? 'Lizenziert' : 'Keine Lizenz'} size="small"
+                            color={licInfo[i.id].licensed ? 'success' : 'error'} sx={{ fontSize: 10, height: 20 }} />
+                          {licInfo[i.id].features.map((f) => (
+                            <Chip key={f} label={f} size="small" variant="outlined" color="primary" sx={{ fontSize: 10, height: 20 }} />
+                          ))}
+                        </Box>
+                      )}
                       {/* Actions */}
                       <Box sx={{ display: 'flex', gap: 1, pt: 1, borderTop: 1, borderColor: 'divider' }}>
                         <Button size="small" onClick={async () => {
@@ -340,6 +352,17 @@ export default function AdminInfra() {
                             fetchAll();
                           } catch { setToast({ open: true, message: 'Check failed', severity: 'error' }); }
                         }}>Health</Button>
+                        <Button size="small" disabled={licInfo[i.id]?.licensed === undefined && !!licInfo[i.id]} onClick={async () => {
+                          setLicInfo((prev) => ({ ...prev, [i.id]: { licensed: undefined as unknown as boolean, features: [], products: [] } }));
+                          setToast({ open: true, message: 'Lizenz wird geprüft...', severity: 'success' });
+                          try {
+                            const r = await api.post(`/admin/infra/instances/${i.id}/license-refresh`);
+                            const d = r.data || {};
+                            setLicInfo((prev) => ({ ...prev, [i.id]: { licensed: d.licensed || false, features: d.active_features || [], products: d.active_products || [] } }));
+                            setToast({ open: true, message: d.licensed ? `Lizenziert: ${(d.active_products || []).join(', ')}` : 'Keine aktive Lizenz', severity: d.licensed ? 'success' : 'error' });
+                            fetchAll();
+                          } catch { setToast({ open: true, message: 'Lizenz-Refresh fehlgeschlagen', severity: 'error' }); }
+                        }}>Lic Refresh</Button>
                         <Button size="small" onClick={async () => {
                           try {
                             await api.post(`/admin/infra/instances/${i.id}/firewall`);
@@ -1004,7 +1027,101 @@ export default function AdminInfra() {
         </DialogActions>
       </Dialog>
 
+      {/* ── TAB 4: Cronjobs ── */}
+      {tab === 4 && (
+        <CronjobsTab />
+      )}
+
       <Toast open={toast.open} message={toast.message} severity={toast.severity} onClose={() => setToast({ ...toast, open: false })} />
     </Box>
+  );
+}
+
+function CronjobsTab() {
+  const [jobs, setJobs] = useState<{ key: string; value: string; description: string; enabled?: boolean }[]>([]);
+  const [saving, setSaving] = useState('');
+  const [running, setRunning] = useState('');
+
+  useEffect(() => {
+    api.get('/admin/infra/cronjobs').then((r) => setJobs(r.data || [])).catch(() => {});
+  }, []);
+
+  const save = async (key: string, value: string) => {
+    setSaving(key);
+    try {
+      await api.put('/admin/infra/cronjobs', { key, value });
+      setJobs((prev) => prev.map((j) => j.key === key ? { ...j, value } : j));
+    } catch { /* ignore */ }
+    setSaving('');
+  };
+
+  const toggle = async (key: string) => {
+    const job = jobs.find((j) => j.key === key);
+    if (!job) return;
+    const newEnabled = job.value === '0' ? '30' : '0';
+    await save(key, newEnabled);
+  };
+
+  const runNow = async (key: string) => {
+    setRunning(key);
+    try {
+      await api.post('/admin/infra/cronjobs/run', { key });
+    } catch { /* ignore */ }
+    setRunning('');
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ mb: 2 }}>Cronjobs</Typography>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Aufgabe</TableCell>
+              <TableCell sx={{ width: 80 }}>Status</TableCell>
+              <TableCell sx={{ width: 150 }}>Intervall (Min)</TableCell>
+              <TableCell sx={{ width: 200 }}>Aktionen</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {jobs.map((j) => {
+              const active = j.value !== '0';
+              return (
+                <TableRow key={j.key}>
+                  <TableCell>
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>{j.description}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>{j.key}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={active ? 'Aktiv' : 'Gestoppt'} size="small" color={active ? 'success' : 'default'} />
+                  </TableCell>
+                  <TableCell>
+                    <TextField size="small" type="number" value={j.value}
+                      onChange={(e) => setJobs((prev) => prev.map((x) => x.key === j.key ? { ...x, value: e.target.value } : x))}
+                      sx={{ width: 80 }} inputProps={{ min: 0 }} />
+                  </TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button size="small" variant="contained" disabled={saving === j.key}
+                        onClick={() => save(j.key, j.value)}>
+                        {saving === j.key ? '...' : 'Save'}
+                      </Button>
+                      <Button size="small" variant="outlined" color={active ? 'error' : 'success'}
+                        onClick={() => toggle(j.key)}>
+                        {active ? 'Stop' : 'Start'}
+                      </Button>
+                      <Button size="small" variant="outlined" disabled={running === j.key}
+                        onClick={() => runNow(j.key)}>
+                        {running === j.key ? '...' : 'Jetzt ausführen'}
+                      </Button>
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
   );
 }

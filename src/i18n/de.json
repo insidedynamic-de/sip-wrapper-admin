@@ -74,7 +74,7 @@
     "connection_failed": "Verbindung fehlgeschlagen"
   },
   "section": {
-    "users": "Benutzer", "sip_users": "SIP-Benutzer", "acl_users": "ACL-Benutzer",
+    "users": "Nebenstellen", "sip_users": "SIP-Benutzer", "acl_users": "ACL-Benutzer",
     "gateways": "Gateways", "routes": "Routen", "settings": "Einstellungen",
     "outbound_routing": "Ausgehende Routen", "inbound_routing": "Eingehende Routen",
     "user_routing": "Benutzer-Routen", "default_routes": "Standard-Routen",
@@ -83,6 +83,7 @@
   },
   "field": {
     "extension": "Nebenstelle", "ip_address": "IP-Adresse", "user_agent": "User-Agent",
+    "source": "Quelle",
     "contact": "Kontakt", "pattern": "Muster", "destination": "Ziel",
     "did": "DID/Rufnummer", "domain": "Domain", "external_ip": "Externe IP",
     "codecs": "Codecs", "host": "Host", "port": "Port", "transport": "Transport",
@@ -106,7 +107,7 @@
     "extensions_active": "Nebenstellen",
     "license_status": "Lizenz",
     "customize": "Dashboard anpassen",
-    "server_info": "Server-Info",
+    "server_info": "Server-Info", "connection_info": "Verbindungsinfo",
     "connection": "Verbindung",
     "today": "Heute",
     "this_month": "Monat",
@@ -143,7 +144,9 @@
     "plans": "Verfügbare Tarife",
     "contact_sales": "Vertrieb kontaktieren",
     "all": "Alle",
-    "upgrade": "Neue Lizenz kaufen"
+    "upgrade": "Neue Lizenz kaufen",
+    "my_products": "Meine Produkte",
+    "all_products": "Alle Produkte"
   },
   "config": {
     "default_gateway": "Standard-Gateway", "default_extension": "Standard-Nebenstelle",
@@ -253,10 +256,10 @@
   "logs": {
     "filter": "Filter", "search": "Logs durchsuchen...", "level": "Level",
     "lines": "Zeilen", "entries": "Eintr\u00e4ge", "sources": "Quellen",
-    "no_logs": "Keine Logs verf\u00fcgbar", "esl_failed": "ESL-Verbindung fehlgeschlagen",
+    "no_logs": "Keine Logs verf\u00fcgbar", "esl_failed": "Log-Verbindung fehlgeschlagen",
     "saved": "Gespeichert", "failed_to_load": "Logs konnten nicht geladen werden",
     "server_not_running": "l\u00e4uft nicht", "debug_dump": "Debug-Ausgabe",
-    "esl_events": "ESL-Ereignisse", "esl_connected": "Verbunden",
+    "esl_events": "Log-Ereignisse", "esl_connected": "Verbunden",
     "esl_disconnected": "Getrennt", "events_buffer": "Ereignis-Puffer",
     "tab_system": "System-Logs",
     "tab_calls": "Anruf-Logs",
@@ -277,7 +280,7 @@
     "whitelist_mode": "Whitelist-Modus", "enable_whitelist": "Whitelist-Modus aktivieren",
     "whitelist_desc": "Wenn aktiviert, k\u00f6nnen nur IPs aus der Whitelist registrieren. Alle anderen IPs werden blockiert.",
     "blocked_ips": "Blockierte IPs", "allowed_ips": "Erlaubte IPs",
-    "block_ip": "IP blockieren", "allow_ip": "IP erlauben",
+    "block_ip": "IP blockieren", "unblock_ip": "IP entsperren", "allow_ip": "IP erlauben",
     "auto_blacklist_title": "Auto-Blacklist (Fail2Ban-\u00e4hnlich)",
     "enable_auto_blacklist": "Auto-Blacklist aktivieren",
     "auto_blacklist_desc": "IPs automatisch blockieren nach zu vielen fehlgeschlagenen Registrierungsversuchen.",
@@ -304,6 +307,9 @@
     "monitoring": "Monitoring",
     "auth_monitoring": "Authentifizierungs-Monitoring",
     "no_failed_auth": "Keine fehlgeschlagenen Authentifizierungsversuche",
+    "no_banned_ips": "Keine IPs gesperrt",
+    "fail2ban_unavailable": "Fail2Ban nicht verf\u00fcgbar",
+    "banned": "gesperrt",
     "progress": "Fortschritt",
     "critical": "Kritisch",
     "last_attempt": "Letzter Versuch",
@@ -321,7 +327,8 @@
   },
   "gateway": {
     "sip_gateways": "SIP-Gateways / Provider", "add_gateway": "Gateway hinzuf\u00fcgen",
-    "auth_username": "Auth-Benutzername (optional)", "auth_username_hint": "F\u00fcr 3CX und einige PBX-Systeme"
+    "auth_username": "Auth-Benutzername (optional)", "auth_username_hint": "F\u00fcr 3CX und einige PBX-Systeme",
+    "phone_number": "Telefonnummer"
   },
   "route": {
     "add_route": "Route hinzuf\u00fcgen", "edit_route": "Route bearbeiten", "view_route": "Route anzeigen",
@@ -390,7 +397,7 @@
     "codec_prefs": "Codec-Präferenzen", "codec_prefs_desc": "Audio-/Video-Codecs auswählen. Reihenfolge bestimmt Verhandlungspriorität.",
     "default_country": "Standard-Ländercode",
     "outbound_caller_id": "Ausgehende Anrufer-ID", "save_settings": "Einstellungen speichern",
-    "esl_settings": "ESL-Verbindung", "esl_password": "Passwort", "esl_test": "Verbindung testen",
+    "esl_settings": "Log-Stream", "esl_password": "Passwort", "esl_test": "Verbindung testen",
     "server_desc": "Server-Verbindung und SIP-Konfigurationseinstellungen.",
     "domain_ip": "Domain & IP",
     "ports": "Ports",

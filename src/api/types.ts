@@ -8,6 +8,7 @@ export interface ApiResult {
 
 export interface User {
   username: string;
+  password?: string;
   extension: string;
   enabled?: boolean;
   caller_id?: string;
@@ -32,6 +33,7 @@ export interface Gateway {
   transport: string;
   auth_username?: string;
   enabled?: boolean;
+  phone_number?: string;
 }
 
 export interface GatewayStatus {
@@ -45,6 +47,9 @@ export interface Extension {
   extension: string;
   description: string;
   enabled?: boolean;
+  type?: 'sip' | 'vapi';
+  vapi_assistant_id?: string;
+  vapi_assistant_name?: string;
 }
 
 export interface Registration {
@@ -159,6 +164,10 @@ export interface SecurityLog {
   ip: string;
   details: string;
   level: 'info' | 'warning' | 'error';
+  method?: string;
+  profile?: string;
+  user?: string;
+  domain?: string;
 }
 
 export type AuditCategory = 'auth' | 'user' | 'gateway' | 'route' | 'security' | 'config' | 'license' | 'system';

@@ -53,7 +53,8 @@ api.interceptors.response.use(
       original.url?.includes('/auth/login') ||
       original.url?.includes('/auth/register') ||
       original.url?.includes('/auth/refresh') ||
-      original.url?.includes('/integrations/')
+      original.url?.includes('/integrations/') ||
+      original.url?.includes('/instance/')
     ) {
       return Promise.reject(err);
     }

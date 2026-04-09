@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
 import CloseIcon from '@mui/icons-material/Close';
-import { loadPreferences } from '../store/preferences';
+import { loadPreferences, isDevMode } from '../store/preferences';
 import { clearApiKey } from '../store/keyStore';
 
 const ACTIVITY_EVENTS = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'api-activity'];
@@ -36,13 +36,15 @@ export default function LogoutCountdown({ collapsed = false }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const deadlineRef = useRef<number>(0);
 
+  const devMode = isDevMode();
+
   const getPrefs = useCallback(() => {
     const p = loadPreferences();
     // Sanitize: if > 86400 (1 day), probably milliseconds — convert
     let timeout = p.autoLogoutTimeout;
     if (timeout > 86400) timeout = Math.round(timeout / 1000);
-    return { enabled: p.autoLogout, timeout };
-  }, []);
+    return { enabled: devMode ? false : p.autoLogout, timeout };
+  }, [devMode]);
 
   const doLogout = useCallback(() => {
     clearApiKey();

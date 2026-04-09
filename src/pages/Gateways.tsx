@@ -33,7 +33,7 @@ export default function Gateways() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState(false);
   const [editGw, setEditGw] = useState<Gateway | null>(null);
-  const defaultForm = { name: '', description: '', type: 'provider', host: '', port: 5060, username: '', password: '', register: true, transport: 'udp', auth_username: '', enabled: true };
+  const defaultForm = { name: '', description: '', type: 'provider', host: '', port: 5060, username: '', password: '', register: true, transport: 'udp', auth_username: '', enabled: true, phone_number: '' };
   const [form, setForm] = useState(defaultForm);
   const [initialForm, setInitialForm] = useState(defaultForm);
   const [toast, setToast] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
@@ -67,7 +67,7 @@ export default function Gateways() {
   const openView = (gw: Gateway) => {
     setEditGw(gw);
     setViewMode(true);
-    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
+    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false, phone_number: gw.phone_number || '' };
     setForm(gwForm);
     setInitialForm(gwForm);
     setDialogOpen(true);
@@ -76,7 +76,7 @@ export default function Gateways() {
   const openEdit = (gw: Gateway) => {
     setEditGw(gw);
     setViewMode(false);
-    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false };
+    const gwForm = { ...gw, description: gw.description || '', auth_username: gw.auth_username || '', enabled: gw.enabled !== false, phone_number: gw.phone_number || '' };
     setForm(gwForm);
     setInitialForm(gwForm);
     setDialogOpen(true);
@@ -170,6 +170,10 @@ export default function Gateways() {
         <TextField label={t('auth.username')} value={form.username} onChange={(e) => f('username', e.target.value)} disabled={viewMode} />
         <TextField label={t('auth.password')} type="password" value={form.password} onChange={(e) => f('password', e.target.value)} disabled={viewMode} />
         <TextField label={t('gateway.auth_username')} value={form.auth_username} onChange={(e) => f('auth_username', e.target.value)} helperText={t('gateway.auth_username_hint')} disabled={viewMode} />
+        <TextField label={t('gateway.phone_number')} value={form.phone_number} onChange={(e) => f('phone_number', e.target.value)}
+          placeholder="+4930123456" disabled={viewMode} required
+          error={!!form.phone_number && !/^\+[1-9]\d{6,14}$/.test(form.phone_number)}
+          helperText={form.phone_number && !/^\+[1-9]\d{6,14}$/.test(form.phone_number) ? '+49...' : ''} />
         <SearchableSelect options={TRANSPORT_OPTIONS} value={form.transport} onChange={(v) => f('transport', v)} label={t('field.transport')} disabled={viewMode} />
         <FormControlLabel
           control={<Switch checked={form.enabled} onChange={(e) => f('enabled', e.target.checked)} color="success" disabled={viewMode} />}
