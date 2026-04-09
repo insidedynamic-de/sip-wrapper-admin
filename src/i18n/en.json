@@ -55,6 +55,7 @@
   },
   "button": {
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "close": "Close",
+    "create": "Create",
     "reload": "Reload", "add": "Add", "edit": "Edit", "apply": "Apply",
     "activate": "Activate", "import": "Import", "export": "Export",
     "apply_reload": "Apply & Reload", "save_reload": "Save & Reload",
@@ -64,7 +65,7 @@
   },
   "status": {
     "online": "Online", "offline": "Offline", "registered": "Registered",
-    "not_registered": "Not registered", "success": "Success", "error": "Error",
+    "not_registered": "Not registered", "success": "Success", "error": "Error", "copied": "Copied",
     "loading": "Loading...", "checking": "Checking...", "connected": "Connected",
     "disconnected": "Disconnected", "enabled": "Enabled", "disabled": "Disabled", "deactivated": "Deactivated",
     "ok": "OK",
@@ -567,5 +568,11 @@
     "info_text_1": "You are currently using the demo version. All data shown here is simulated and does not represent a real server connection. This mode is intended to showcase the features and capabilities of the Linkify TalkHub admin panel.",
     "info_text_2": "When you install the product, you can try all features with a free 7-day trial. No credit card required — simply install and start configuring your SIP infrastructure.",
     "info_text_3": "To switch to a real server, disable demo mode in the login settings and enter your server address and API key."
+  },
+  "callwidget": {
+    "empty_title": "No CallWidgets yet",
+    "empty_desc": "Create a CallWidget to let visitors call directly from your website.",
+    "create_first": "Create first widget",
+    "code_hint": "Add this code before the closing </body> tag on your website."
   }
 }

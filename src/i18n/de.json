@@ -55,6 +55,7 @@
   },
   "button": {
     "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
+    "create": "Erstellen",
     "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
     "activate": "Aktivieren", "import": "Importieren", "export": "Exportieren",
     "apply_reload": "Anwenden & Neu laden", "save_reload": "Speichern & Neu laden",
@@ -64,7 +65,7 @@
   },
   "status": {
     "online": "Online", "offline": "Offline", "registered": "Registriert",
-    "not_registered": "Nicht registriert", "success": "Erfolgreich", "error": "Fehler",
+    "not_registered": "Nicht registriert", "success": "Erfolgreich", "error": "Fehler", "copied": "Kopiert",
     "loading": "Laden...", "checking": "Pr\u00fcfen...", "connected": "Verbunden",
     "disconnected": "Getrennt", "enabled": "Aktiviert", "disabled": "Deaktiviert", "deactivated": "Deaktiviert",
     "ok": "OK",
@@ -567,5 +568,11 @@
     "info_text_1": "Sie verwenden derzeit die Demo-Version. Alle hier angezeigten Daten sind simuliert und stellen keine echte Serververbindung dar. Dieser Modus dient dazu, die Funktionen und Möglichkeiten des Linkify TalkHub Admin-Panels zu demonstrieren.",
     "info_text_2": "Bei der Installation des Produkts können Sie alle Funktionen mit einer kostenlosen 7-Tage-Testversion ausprobieren. Keine Kreditkarte erforderlich — einfach installieren und Ihre SIP-Infrastruktur konfigurieren.",
     "info_text_3": "Um zu einem echten Server zu wechseln, deaktivieren Sie den Demo-Modus in den Login-Einstellungen und geben Sie Ihre Serveradresse und Ihren API-Schlüssel ein."
+  },
+  "callwidget": {
+    "empty_title": "Noch keine CallWidgets",
+    "empty_desc": "Erstellen Sie ein CallWidget, das Besucher Ihrer Website direkt anrufen lässt.",
+    "create_first": "Erstes Widget erstellen",
+    "code_hint": "Fügen Sie diesen Code vor dem schließenden </body> Tag Ihrer Website ein."
   }
 }
