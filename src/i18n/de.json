@@ -326,7 +326,9 @@
     "description": "Beschreibung",
     "digits_only": "Nur Ziffern erlaubt",
     "digits_hint": "Nur Ziffern (z.B. 1001)",
-    "already_exists": "Nebenstelle existiert bereits"
+    "already_exists": "Nebenstelle existiert bereits",
+    "protocols": "Verbindungsprotokoll",
+    "protocols_hint": "UDP/TCP f\u00fcr Softphones, WS/WSS f\u00fcr Browser-Telefonie"
   },
   "gateway": {
     "sip_gateways": "SIP-Gateways / Provider", "add_gateway": "Gateway hinzuf\u00fcgen",

@@ -5,7 +5,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  Box, Typography, Button, TextField,
+  Box, Typography, Button, TextField, Checkbox,
   Switch, FormControlLabel, ToggleButtonGroup, ToggleButton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
@@ -58,7 +58,7 @@ export default function Users() {
   const [viewMode, setViewMode] = useState(false);
   const [editRow, setEditRow] = useState<MergedRow | null>(null);
 
-  const defaultForm = { extension: '', type: 'sip' as 'sip' | 'acl' | 'vapi', username: '', password: '', description: '', caller_id: '', ip: '', enabled: true, vapi_assistant_id: '', vapi_assistant_name: '' };
+  const defaultForm = { extension: '', type: 'sip' as 'sip' | 'acl' | 'vapi', username: '', password: '', description: '', caller_id: '', ip: '', enabled: true, vapi_assistant_id: '', vapi_assistant_name: '', protocols: ['udp'] as string[] };
   const [vapiAssistants, setVapiAssistants] = useState<{ id: string; name: string }[]>([]);
   const [hasVapi, setHasVapi] = useState(false);
   const [form, setForm] = useState(defaultForm);
@@ -175,7 +175,7 @@ export default function Users() {
   const openView = (row: MergedRow) => {
     setEditRow(row);
     setViewMode(true);
-    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name };
+    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name, protocols: (row as any).protocols || ['udp'] };
     setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
@@ -184,7 +184,7 @@ export default function Users() {
   const openEdit = (row: MergedRow) => {
     setEditRow(row);
     setViewMode(false);
-    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name };
+    const f = { extension: row.extension, type: row.type, username: row.username, password: row.password, description: row.description, caller_id: row.caller_id, ip: row.ip, enabled: row.enabled, vapi_assistant_id: row.vapi_assistant_id, vapi_assistant_name: row.vapi_assistant_name, protocols: (row as any).protocols || ['udp'] };
     setForm(f); setInitialForm(f);
     setErrors({});
     setDialogOpen(true);
@@ -497,6 +497,38 @@ export default function Users() {
         <TextField label={t('field.caller_id')} value={form.caller_id}
           onChange={(e) => setForm({ ...form, caller_id: e.target.value })} disabled={viewMode}
           helperText={t('config.caller_id_desc')} />
+
+        {/* Verbindungsprotokoll */}
+        {form.type === 'sip' && (
+          <Box>
+            <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+              {t('extension.protocols')}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              {['udp', 'tcp', 'ws', 'wss'].map((proto) => (
+                <FormControlLabel key={proto} disabled={viewMode}
+                  control={
+                    <Checkbox size="small"
+                      checked={(form.protocols || ['udp']).includes(proto)}
+                      onChange={(e) => {
+                        const cur = form.protocols || ['udp'];
+                        const next = e.target.checked
+                          ? [...cur, proto]
+                          : cur.filter((p) => p !== proto);
+                        setForm({ ...form, protocols: next.length ? next : ['udp'] });
+                      }}
+                    />
+                  }
+                  label={proto.toUpperCase()}
+                  sx={{ '& .MuiTypography-root': { fontSize: 13, fontWeight: 600 } }}
+                />
+              ))}
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              {t('extension.protocols_hint')}
+            </Typography>
+          </Box>
+        )}
 
         <FormControlLabel
           control={<Switch checked={form.enabled} onChange={(e) => setForm({ ...form, enabled: e.target.checked })} color="success" disabled={viewMode} />}

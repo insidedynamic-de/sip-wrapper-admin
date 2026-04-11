@@ -326,7 +326,9 @@
     "description": "Description",
     "digits_only": "Only digits allowed",
     "digits_hint": "Only digits (e.g. 1001)",
-    "already_exists": "Extension already exists"
+    "already_exists": "Extension already exists",
+    "protocols": "Connection Protocol",
+    "protocols_hint": "UDP/TCP for softphones, WS/WSS for browser telephony"
   },
   "gateway": {
     "sip_gateways": "SIP Gateways / Providers", "add_gateway": "Add Gateway",
