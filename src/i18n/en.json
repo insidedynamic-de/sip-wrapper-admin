@@ -348,7 +348,15 @@
     "ai_config_hint": "AI connections are configured in the Integrations page",
     "ai_provider": "AI Provider",
     "ai_account": "Account",
-    "ai_no_accounts": "No AI account connected. Set up in Integrations first."
+    "ai_no_accounts": "No AI account connected. Set up in Integrations first.",
+    "ai_setup_title": "AI Connection Setup",
+    "ai_setup_desc": "Configure extension and assistant for this AI gateway.",
+    "ai_extension_hint": "Extension for AI calls (e.g. 9001)",
+    "ai_assistant": "Assistant",
+    "ai_load_assistants": "Load Assistants",
+    "ai_auto_create_hint": "ACL user and routing will be created automatically.",
+    "ai_new_extension": "Create new extension",
+    "ai_new_ext_number": "Extension number"
   },
   "route": {
     "add_route": "Add Route", "edit_route": "Edit Route", "view_route": "View Route",

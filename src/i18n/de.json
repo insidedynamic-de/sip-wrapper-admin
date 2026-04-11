@@ -348,7 +348,15 @@
     "ai_config_hint": "AI-Verbindungen werden \u00fcber die Integrationsseite konfiguriert",
     "ai_provider": "AI-Provider",
     "ai_account": "Account",
-    "ai_no_accounts": "Kein AI-Account verbunden. Erst unter Integrationen einrichten."
+    "ai_no_accounts": "Kein AI-Account verbunden. Erst unter Integrationen einrichten.",
+    "ai_setup_title": "AI Verbindung einrichten",
+    "ai_setup_desc": "Nebenstelle und Assistant f\u00fcr diesen AI-Gateway konfigurieren.",
+    "ai_extension_hint": "Nebenstelle f\u00fcr AI-Anrufe (z.B. 9001)",
+    "ai_assistant": "Assistant",
+    "ai_load_assistants": "Assistenten laden",
+    "ai_auto_create_hint": "ACL User und Routing werden automatisch erstellt.",
+    "ai_new_extension": "Neue Nebenstelle erstellen",
+    "ai_new_ext_number": "Nebenstellennummer"
   },
   "route": {
     "add_route": "Route hinzuf\u00fcgen", "edit_route": "Route bearbeiten", "view_route": "Route anzeigen",

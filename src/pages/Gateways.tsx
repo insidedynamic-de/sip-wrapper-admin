@@ -35,7 +35,8 @@ const GW_TYPES = [
   { value: 'pbx', label: 'PBX', icon: RouterIcon, desc: '3CX, Fritzbox, Asterisk...' },
   { value: 'ai', label: 'AI Platform', icon: SmartToyIcon, desc: 'VAPI, Retell, Bland AI...' },
 ];
-const WIZARD_STEPS = ['Typ', 'Verbindung', 'Rufnummern', 'Zusammenfassung'];
+const WIZARD_STEPS_SIP = ['Typ', 'Verbindung', 'Rufnummern', 'Zusammenfassung'];
+const WIZARD_STEPS_AI = ['Typ', 'Verbindung', 'Rufnummern', 'AI Verbindung', 'Zusammenfassung'];
 
 function gwChipColor(state: string): 'success' | 'error' | 'warning' {
   if (state === 'REGED' || state === 'online') return 'success';
@@ -58,17 +59,22 @@ export default function Gateways() {
   const [confirmSave, setConfirmSave] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean; name: string }>({ open: false, name: '' });
   const [wizardStep, setWizardStep] = useState(0);
+  const [aiAssistants, setAiAssistants] = useState<Array<{ id: string; name: string }>>([]);
+  const [aiSetup, setAiSetup] = useState({ assistant_id: '', extension: '', newExtNumber: '' });
+  const [aiExtensions, setAiExtensions] = useState<Array<{ extension: string; description: string }>>([]);
 
   const load = useCallback(async () => {
     try {
-      const [gwRes, statusRes, aiRes] = await Promise.all([
+      const [gwRes, statusRes, aiRes, extRes] = await Promise.all([
         api.get('/gateways'),
         api.get('/gateways/status'),
         api.get('/integrations/vapi/accounts').catch(() => ({ data: [] })),
+        api.get('/extensions').catch(() => ({ data: [] })),
       ]);
       setGateways(gwRes.data || []);
       setGwStatuses(statusRes.data || []);
       setAiAccounts(aiRes.data || []);
+      setAiExtensions((extRes as any).data || []);
     } catch { /* ignore */ }
   }, []);
 
@@ -117,8 +123,16 @@ export default function Gateways() {
   const doSave = async () => {
     setConfirmSave(false);
     try {
-      if (editGw) await api.put(`/gateways/${editGw.name}`, form);
-      else await api.post('/gateways', form);
+      if (editGw) {
+        await api.put(`/gateways/${editGw.name}`, form);
+      } else {
+        const payload = { ...form } as any;
+        if (form.type === 'ai') {
+          payload.ai_extension = aiSetup.extension === '__new__' ? aiSetup.newExtNumber : aiSetup.extension;
+          payload.ai_assistant_id = aiSetup.assistant_id;
+        }
+        await api.post('/gateways', payload);
+      }
       setDialogOpen(false);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
       load();
@@ -185,17 +199,20 @@ export default function Gateways() {
       />
 
       {/* Gateway Wizard */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="md" fullWidth>
         <DialogTitle>
           {viewMode ? t('modal.view_gateway') : editGw ? t('modal.edit_gateway') : t('modal.add_gateway')}
         </DialogTitle>
         <DialogContent>
           {/* Stepper — only for new gateway */}
-          {!editGw && !viewMode && (
-            <Stepper activeStep={wizardStep} sx={{ mb: 3 }}>
-              {WIZARD_STEPS.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
-            </Stepper>
-          )}
+          {!editGw && !viewMode && (() => {
+            const steps = form.type === 'ai' ? WIZARD_STEPS_AI : WIZARD_STEPS_SIP;
+            return (
+              <Stepper activeStep={wizardStep} sx={{ mb: 3 }}>
+                {steps.map((label, i) => <Step key={label}><StepLabel>{i === wizardStep ? label : ''}</StepLabel></Step>)}
+              </Stepper>
+            );
+          })()}
 
           {/* Step 0: Typ */}
           {wizardStep === 0 && !editGw && !viewMode && (
@@ -419,8 +436,63 @@ export default function Gateways() {
             </Box>
           )}
 
-          {/* Step 3: Zusammenfassung */}
-          {wizardStep === 3 && !editGw && (
+          {/* Step 3 (AI only): AI Verbindung */}
+          {wizardStep === 3 && form.type === 'ai' && !editGw && (() => {
+            // Available extensions (not used in inbound routes)
+            const usedExts = new Set<string>();
+            const allExts = aiExtensions || [];
+            const freeExts = allExts.filter((e) => !usedExts.has(e.extension));
+            const newExtOption = { label: `+ ${t('gateway.ai_new_extension')}`, value: '__new__' };
+            const extOptions = [
+              newExtOption,
+              ...freeExts.map((e) => ({ label: `${e.extension}${e.description ? ` — ${e.description}` : ''}`, value: e.extension })),
+            ];
+
+            return (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Typography variant="subtitle2">{t('gateway.ai_setup_title')}</Typography>
+                <Typography variant="body2" color="text.secondary">{t('gateway.ai_setup_desc')}</Typography>
+
+                {/* NB / Extension */}
+                <SearchableSelect
+                  options={extOptions}
+                  value={aiSetup.extension === '__new__' ? '__new__' : aiSetup.extension}
+                  onChange={(v) => setAiSetup({ ...aiSetup, extension: v })}
+                  label={t('field.extension')}
+                />
+                {aiSetup.extension === '__new__' && (
+                  <TextField label={t('gateway.ai_new_ext_number')} value={aiSetup.newExtNumber || ''}
+                    onChange={(e) => setAiSetup({ ...aiSetup, newExtNumber: e.target.value.replace(/\D/g, '') })}
+                    placeholder="1001" helperText={t('gateway.ai_extension_hint')} />
+                )}
+
+                {/* Assistant */}
+                {aiAssistants.length > 0 ? (
+                  <SearchableSelect
+                    options={aiAssistants.map((a) => ({ label: a.name || a.id, value: a.id }))}
+                    value={aiSetup.assistant_id}
+                    onChange={(v) => setAiSetup({ ...aiSetup, assistant_id: v })}
+                    label={t('gateway.ai_assistant')}
+                  />
+                ) : (
+                  <Button variant="outlined" onClick={async () => {
+                    if (!form.ai_account_id) return;
+                    try {
+                      const res = await api.get(`/integrations/vapi/accounts/${form.ai_account_id}/assistants`);
+                      setAiAssistants(res.data || []);
+                    } catch { /* ignore */ }
+                  }}>{t('gateway.ai_load_assistants')}</Button>
+                )}
+
+                <Typography variant="caption" color="text.secondary">
+                  {t('gateway.ai_auto_create_hint')}
+                </Typography>
+              </Box>
+            );
+          })()}
+
+          {/* Zusammenfassung (last step) */}
+          {wizardStep === (form.type === 'ai' ? 4 : 3) && !editGw && (
             <Table size="small">
               <TableBody>
                 <TableRow><TableCell sx={{ fontWeight: 600 }}>{t('field.type')}</TableCell><TableCell>{GW_TYPES.find((g) => g.value === form.type)?.label}</TableCell></TableRow>
@@ -434,6 +506,12 @@ export default function Gateways() {
                   </>
                 )}
                 <TableRow><TableCell sx={{ fontWeight: 600 }}>{t('gateway.phone_numbers')}</TableCell><TableCell>{form.phone_numbers.length}</TableCell></TableRow>
+                {form.type === 'ai' && aiSetup.extension && (
+                  <TableRow><TableCell sx={{ fontWeight: 600 }}>{t('field.extension')}</TableCell><TableCell>{aiSetup.extension}</TableCell></TableRow>
+                )}
+                {form.type === 'ai' && aiSetup.assistant_id && (
+                  <TableRow><TableCell sx={{ fontWeight: 600 }}>{t('gateway.ai_assistant')}</TableCell><TableCell>{aiAssistants.find((a) => a.id === aiSetup.assistant_id)?.name || aiSetup.assistant_id}</TableCell></TableRow>
+                )}
                 <TableRow><TableCell sx={{ fontWeight: 600 }}>{t('field.status')}</TableCell><TableCell>{form.enabled ? t('status.enabled') : t('status.disabled')}</TableCell></TableRow>
               </TableBody>
             </Table>
@@ -446,7 +524,7 @@ export default function Gateways() {
           )}
           <Box sx={{ flex: 1 }} />
           <Button onClick={() => setDialogOpen(false)}>{t('button.cancel')}</Button>
-          {wizardStep < 3 && !editGw && !viewMode && (
+          {wizardStep < (form.type === 'ai' ? 4 : 3) && !editGw && !viewMode && (
             <Button variant="contained" endIcon={<ArrowForwardIcon />}
               onClick={() => setWizardStep(wizardStep + 1)}
               disabled={
@@ -455,7 +533,7 @@ export default function Gateways() {
                 (wizardStep === 1 && form.type === 'ai' && (!form.ai_provider || !form.ai_account_id || !form.description))
               }>{t('button.next')}</Button>
           )}
-          {(wizardStep === 3 || editGw) && !viewMode && (
+          {(wizardStep === (form.type === 'ai' ? 4 : 3) || editGw) && !viewMode && (
             <Button variant="contained" onClick={requestSave}>{t('button.save')}</Button>
           )}
         </DialogActions>
