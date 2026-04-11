@@ -56,7 +56,7 @@
   "button": {
     "save": "Save", "cancel": "Cancel", "delete": "Delete", "close": "Close",
     "create": "Create",
-    "reload": "Reload", "add": "Add", "edit": "Edit", "apply": "Apply",
+    "reload": "Reload", "discard": "Discard", "add": "Add", "edit": "Edit", "apply": "Apply",
     "activate": "Activate", "import": "Import", "export": "Export",
     "apply_reload": "Apply & Reload", "save_reload": "Save & Reload",
     "block": "Block", "allow": "Allow",
@@ -349,6 +349,7 @@
     "add_inbound": "Add Inbound Route", "did_number": "DID / Phone Number",
     "dest_type": "Destination Type", "add_user_route": "Add User Route",
     "add_extension_route": "Add Extension Route",
+    "unsaved_changes": "{{count}} unsaved change(s)",
     "edit_extension_route": "Edit Extension Route",
     "direction": "Direction",
     "view_table": "Table View", "view_graph": "Graph View",

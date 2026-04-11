@@ -25,6 +25,7 @@ import CrudTable from '../components/CrudTable';
 import Toast from '../components/Toast';
 import SearchableSelect from '../components/SearchableSelect';
 import type { Route, Gateway, GatewayStatus, Extension, User, Registration } from '../api/types';
+import PageActions from '../components/PageActions';
 
 type RouteDirection = 'inbound' | 'outbound' | 'both';
 
@@ -48,6 +49,7 @@ export default function RoutesPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [defaults, setDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
+  const [initialDefaults, setInitialDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
   const [maxConnections, setMaxConnections] = useState(0);
   const [hasVapi, setHasVapi] = useState(false);
   const [vapiAssistants, setVapiAssistants] = useState<{ id: string; name: string }[]>([]);
@@ -78,7 +80,7 @@ export default function RoutesPage() {
       setExtensions(e.data || []);
       setUsers(u.data || []);
       setRegistrations(reg.data || []);
-      if (r.data?.defaults) setDefaults(r.data.defaults);
+      if (r.data?.defaults) { setDefaults(r.data.defaults); setInitialDefaults(r.data.defaults); }
       if (lic.data) {
         setMaxConnections(lic.data.total_connections || lic.data.max_connections || 0);
         const features: string[] = lic.data.active_features || [];
@@ -100,18 +102,30 @@ export default function RoutesPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // ── Save Defaults ──
+  // ── Save (defined after toggles, see pageDirty below) ──
 
-  const doSaveDefaults = async () => {
+  const saveAllChanges = async () => {
     try {
-      await api.put('/routes/defaults', defaults);
-      await api.post('/config/apply');
+      if (defaultsDirty) {
+        await api.put('/routes/defaults', defaults);
+      }
+      if (hasPendingToggles) {
+        await savePendingToggles();
+      } else if (defaultsDirty) {
+        await api.post('/config/apply');
+      }
+      setInitialDefaults(defaults);
       setToast({ open: true, message: t('status.success'), severity: 'success' });
+      await load();
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
     }
   };
-  const saveDefaults = () => setConfirmSave({ open: true, action: doSaveDefaults });
+
+  const discardAllChanges = () => {
+    setDefaults(initialDefaults);
+    discardPendingToggles();
+  };
 
   // ── Build unified Extension Routes from inbound routes + user routes ──
 
@@ -317,34 +331,59 @@ export default function RoutesPage() {
     });
   };
 
-  // ── Toggle enabled ──
+  // ── Toggle enabled (local state + pending changes) ──
 
-  const togglingRef = useRef(false);
+  const [pendingToggles, setPendingToggles] = useState<Map<string, boolean>>(new Map());
+  const hasPendingToggles = pendingToggles.size > 0;
+  const defaultsDirty = JSON.stringify(defaults) !== JSON.stringify(initialDefaults);
+  const pageDirty = defaultsDirty || hasPendingToggles;
 
-  const toggleEnabled = async (r: ExtensionRoute) => {
-    if (togglingRef.current) return;
-    togglingRef.current = true;
+  const toggleEnabled = (r: ExtensionRoute) => {
+    const key = `${r.direction}-${r.extension}-${r.gateway}`;
     const newEnabled = !r.enabled;
     // Block enabling if at license limit
     if (newEnabled && maxConnections > 0 && enabledCount >= maxConnections) {
       setToast({ open: true, message: t('route.error_license_limit'), severity: 'error' });
-      togglingRef.current = false;
       return;
     }
+    setPendingToggles((prev) => {
+      const next = new Map(prev);
+      next.set(key, newEnabled);
+      return next;
+    });
+  };
+
+  // Apply pending toggle to extRoutes for display
+  const displayRoutes = extRoutes.map((r) => {
+    const key = `${r.direction}-${r.extension}-${r.gateway}`;
+    if (pendingToggles.has(key)) {
+      return { ...r, enabled: pendingToggles.get(key)! };
+    }
+    return r;
+  });
+
+  const savePendingToggles = async () => {
     try {
-      if (r.direction === 'inbound' || r.direction === 'both') {
-        await api.put(`/routes/inbound/${r.gateway}`, { extension: r.extension, enabled: newEnabled }).catch(() => {});
+      for (const r of extRoutes) {
+        const key = `${r.direction}-${r.extension}-${r.gateway}`;
+        if (!pendingToggles.has(key)) continue;
+        const newEnabled = pendingToggles.get(key)!;
+        if (r.direction === 'inbound' || r.direction === 'both') {
+          await api.put(`/routes/inbound/${r.gateway}`, { extension: r.extension, enabled: newEnabled }).catch(() => {});
+        }
+        if (r.direction === 'outbound' || r.direction === 'both') {
+          await api.put(`/routes/user/${r.username}`, { enabled: newEnabled }).catch(() => {});
+        }
       }
-      if (r.direction === 'outbound' || r.direction === 'both') {
-        await api.put(`/routes/user/${r.username}`, { enabled: newEnabled }).catch(() => {});
-      }
+      setPendingToggles(new Map());
       await load();
+      setToast({ open: true, message: t('status.success'), severity: 'success' });
     } catch {
       setToast({ open: true, message: t('status.error'), severity: 'error' });
-    } finally {
-      togglingRef.current = false;
     }
   };
+
+  const discardPendingToggles = () => setPendingToggles(new Map());
 
   // ── Confirm handlers ──
 
@@ -370,7 +409,15 @@ export default function RoutesPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h5">{t('section.routes')}</Typography>
-        <Button variant="contained" startIcon={<SaveIcon />} onClick={saveDefaults}>{t('button.save_reload')}</Button>
+        {pageDirty && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography variant="body2" color="warning.main" fontWeight={600}>
+              {t('route.unsaved_changes', { count: pendingToggles.size + (defaultsDirty ? 1 : 0) })}
+            </Typography>
+            <Button variant="contained" size="small" onClick={saveAllChanges}>{t('button.save')}</Button>
+            <Button variant="outlined" size="small" onClick={discardAllChanges}>{t('button.discard')}</Button>
+          </Box>
+        )}
       </Box>
 
       {/* Defaults — split outbound / inbound */}
@@ -391,9 +438,6 @@ export default function RoutesPage() {
                   label={t('config.default_gateway')} helperText={t('config.outbound_calls_via')}
                   allowEmpty emptyLabel={t('field.none')} fullWidth
                 />
-                <TextField fullWidth label={t('field.caller_id')} value={defaults.caller_id}
-                  onChange={(e) => setDefaults({ ...defaults, caller_id: e.target.value })}
-                  helperText={t('config.caller_id_desc')} size="small" />
               </Box>
             </Grid>
             {/* Inbound default */}
@@ -424,7 +468,7 @@ export default function RoutesPage() {
             </Button>
           </Box>
           <CrudTable<ExtensionRoute>
-            rows={extRoutes.filter((r) => !vapiExtensions.has(r.extension) && !(r.description || '').includes('VAPI OUT'))}
+            rows={displayRoutes.filter((r) => !vapiExtensions.has(r.extension) && !(r.description || '').includes('VAPI OUT'))}
             getKey={(r, i) => `${r.direction}-${r.extension}-${r.gateway}-${i}`}
             columns={[
               {

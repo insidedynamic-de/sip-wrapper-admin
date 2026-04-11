@@ -56,7 +56,7 @@
   "button": {
     "save": "Speichern", "cancel": "Abbrechen", "delete": "L\u00f6schen", "close": "Schlie\u00dfen",
     "create": "Erstellen",
-    "reload": "Neu laden", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
+    "reload": "Neu laden", "discard": "Verwerfen", "add": "Hinzuf\u00fcgen", "edit": "Bearbeiten", "apply": "Anwenden",
     "activate": "Aktivieren", "import": "Importieren", "export": "Exportieren",
     "apply_reload": "Anwenden & Neu laden", "save_reload": "Speichern & Neu laden",
     "block": "Blockieren", "allow": "Erlauben",
@@ -349,6 +349,7 @@
     "add_inbound": "Eingehende Route hinzuf\u00fcgen", "did_number": "DID / Rufnummer",
     "dest_type": "Zieltyp", "add_user_route": "Benutzer-Route hinzuf\u00fcgen",
     "add_extension_route": "Nebenstellen-Route hinzuf\u00fcgen",
+    "unsaved_changes": "{{count}} nicht gespeicherte \u00c4nderung(en)",
     "edit_extension_route": "Nebenstellen-Route bearbeiten",
     "direction": "Richtung",
     "view_table": "Tabellenansicht", "view_graph": "Graphansicht",
