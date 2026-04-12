@@ -57,7 +57,9 @@ const instanceStatuses = ['provisioning', 'online', 'offline', 'suspended', 'del
 
 const settingsTemplate = [
   { category: 'hetzner', key: 'api_token', description: 'Hetzner Cloud API Token' },
-  { category: 'ionos', key: 'api_token', description: 'IONOS Cloud API Token' },
+  { category: 'ionos', key: 'username', description: 'IONOS Username (Email)' },
+  { category: 'ionos', key: 'password', description: 'IONOS Passwort', secret: true },
+  { category: 'ionos', key: 'api_token', description: 'IONOS API Token (alternativ)' },
   { category: 'coolify', key: 'url', description: 'Coolify Dashboard URL' },
   { category: 'coolify', key: 'api_token', description: 'Coolify API Token' },
   { category: 'cloudflare', key: 'api_key', description: 'Cloudflare Global API Key' },
@@ -493,7 +495,9 @@ export default function AdminInfra() {
               { key: 'api_token', description: 'API Token', placeholder: '' },
             ], profiles: true },
             { category: 'ionos', title: 'IONOS', icon: '🖥️', fields: [
-              { key: 'api_token', description: 'API Token', placeholder: '' },
+              { key: 'username', description: 'Username (Email)', placeholder: '' },
+              { key: 'password', description: 'Passwort', placeholder: '', secret: true },
+              { key: 'api_token', description: 'API Token (alternativ)', placeholder: '' },
             ], profiles: true },
             { category: 'aws', title: 'AWS', icon: '☁️', fields: [
               { key: 'access_key', description: 'Access Key ID', placeholder: '' },
@@ -523,7 +527,7 @@ export default function AdminInfra() {
                     {block.fields.map((f) => {
                       const existing = blockSettings.find((s) => s.key === f.key);
                       const fieldKey = `${block.category}/${f.key}`;
-                      const isSecret = f.key.includes('token') || f.key.includes('key');
+                      const isSecret = f.key.includes('token') || f.key.includes('key') || f.key.includes('password') || (f as any).secret;
                       return (
                         <TextField
                           key={fieldKey}
