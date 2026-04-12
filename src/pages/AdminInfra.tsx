@@ -596,7 +596,7 @@ export default function AdminInfra() {
                                       <MenuItem value="">— {tier.label} —</MenuItem>
                                       {blockProfiles.map((p) => (
                                         <MenuItem key={p.id} value={p.id}>
-                                          {p.id} — {p.cpu} vCPU ({String((p as Record<string, unknown>).cpu_type || 'shared')}), {String((p as Record<string, unknown>).ram_gb || Math.round(p.ram / 1024))}GB RAM, {p.disk}GB {String((p as Record<string, unknown>).storage || 'SSD')}, {String((p as Record<string, unknown>).traffic_tb || '?')}TB — €{p.price_monthly}/mo
+                                          {p.name}
                                         </MenuItem>
                                       ))}
                                     </Select>
