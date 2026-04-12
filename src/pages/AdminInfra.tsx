@@ -830,22 +830,32 @@ export default function AdminInfra() {
                         </Select>
                       </FormControl>
                     )}
-                    {editNode.provider === 'ionos' && (
-                      <FormControlLabel
-                        control={<Checkbox checked={(editNode as any)._fixedIp || false} onChange={(e) => setEditNode({ ...editNode, _fixedIp: e.target.checked } as any)} />}
-                        label="Fixed IP (+5,00 €/mo)"
-                      />
-                    )}
-                    {editNode.provider === 'ionos' && ionosImages.length > 0 && (
-                      <FormControl size="small">
-                        <InputLabel>Image</InputLabel>
-                        <Select value={(editNode as any)._image || ''} label="Image" onChange={(e) => setEditNode({ ...editNode, _image: e.target.value } as any)}>
-                          {ionosImages.map((img) => (
-                            <MenuItem key={img.id} value={img.id}>{img.name} ({img.location})</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    )}
+                    {/* Image select — universal */}
+                    {(() => {
+                      const imgs = prov === 'ionos' ? ionosImages : [];
+                      // Hetzner uses string image names, IONOS uses UUIDs
+                      const hetznerImages = [
+                        { id: 'ubuntu-24.04', name: 'Ubuntu 24.04', location: '' },
+                        { id: 'ubuntu-22.04', name: 'Ubuntu 22.04', location: '' },
+                        { id: 'debian-12', name: 'Debian 12', location: '' },
+                      ];
+                      const allImages = prov === 'hetzner' ? hetznerImages : imgs;
+                      return allImages.length > 0 ? (
+                        <FormControl size="small">
+                          <InputLabel>Image</InputLabel>
+                          <Select value={(editNode as any)._image || (prov === 'hetzner' ? 'ubuntu-22.04' : '')} label="Image" onChange={(e) => setEditNode({ ...editNode, _image: e.target.value } as any)}>
+                            {allImages.map((img) => (
+                              <MenuItem key={img.id} value={img.id}>{img.name}{img.location ? ` (${img.location})` : ''}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      ) : null;
+                    })()}
+                    {/* Fixed IP option */}
+                    <FormControlLabel
+                      control={<Checkbox checked={(editNode as any)._fixedIp ?? true} onChange={(e) => setEditNode({ ...editNode, _fixedIp: e.target.checked } as any)} />}
+                      label={prov === 'ionos' ? 'Fixed IP (+5,00 €/mo)' : 'Öffentliche IPv4'}
+                    />
                   </>
                 );
               })()}
@@ -924,9 +934,10 @@ export default function AdminInfra() {
                   server_type: (editNode as any)._server_type,
                   location: (editNode as any)._location || '',
                 };
-                if (editNode.provider === 'ionos' && (editNode as any)._image) {
+                if ((editNode as any)._image) {
                   payload.image = (editNode as any)._image;
                 }
+                payload.ipv4_public = (editNode as any)._fixedIp ?? true;
                 const res = await api.post('/admin/infra/nodes/create-from-provider', payload);
                 setToast({ open: true, message: `VM erstellt! IP: ${res.data.ip || 'wird zugewiesen...'}`, severity: 'success' });
                 if (res.data.root_password) {
