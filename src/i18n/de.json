@@ -606,6 +606,8 @@
   },
   "instance": {
     "license_suspended": "Lizenz deaktiviert",
-    "license_suspended_desc": "Die Lizenz f\u00fcr diese Instanz wurde deaktiviert. Bitte kontaktieren Sie Ihren Administrator."
+    "license_suspended_desc": "Die Lizenz f\u00fcr diese Instanz wurde deaktiviert. Bitte kontaktieren Sie Ihren Administrator.",
+    "offline_desc": "Instanz ist nicht erreichbar. Polling wurde gestoppt.",
+    "check_status": "Status pr\u00fcfen"
   }
 }

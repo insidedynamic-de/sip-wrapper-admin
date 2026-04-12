@@ -13,7 +13,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import api, { setInstancePrefix } from '../api/client';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import api, { setInstancePrefix, setInstanceOffline } from '../api/client';
 import { getImpersonateUser, getUserFromToken } from '../store/auth';
 import { useTranslation } from 'react-i18next';
 import Configuration from './Configuration';
@@ -54,35 +56,44 @@ export default function ProductConfig() {
   const user = getUserFromToken();
   const isAdminViewing = !getImpersonateUser() && user?.tenant_type === 'provider';
 
-  // Clear prefix on unmount
+  // Clear prefix + offline flag on unmount
   useEffect(() => {
-    return () => { setInstancePrefix(''); };
+    return () => { setInstancePrefix(''); setInstanceOffline(false); };
   }, []);
+
+  // Shared health+license check (used by both initial load and periodic refresh)
+  const checkHealth = async () => {
+    try {
+      // Temporarily allow requests for health check even when offline
+      setInstanceOffline(false);
+      const healthRes = await api.get('/health').catch(() => null);
+      if (!healthRes) {
+        setLiveStatus('offline');
+        setLicenseBlocked(false);
+        setInstanceOffline(true);
+      } else {
+        setInstanceOffline(false);
+        const licRes = await api.get('/license').catch(() => null);
+        if (licRes?.data && !licRes.data.active) {
+          setLicenseBlocked(true);
+          setLiveStatus('suspended');
+        } else {
+          setLicenseBlocked(false);
+          setLiveStatus('online');
+        }
+      }
+    } catch {
+      setLiveStatus('offline');
+      setInstanceOffline(true);
+    }
+  };
 
   // Auto-refresh live status every 30 seconds (includes LicServer re-validation)
   useEffect(() => {
     if (!proxyPrefix) return;
-    const check = async () => {
-      try {
-        const healthRes = await api.get('/health').catch(() => null);
-        if (!healthRes) {
-          setLiveStatus('offline');
-          setLicenseBlocked(false);
-        } else {
-          const licRes = await api.get('/license').catch(() => null);
-          if (licRes?.data && !licRes.data.active) {
-            setLicenseBlocked(true);
-            setLiveStatus('suspended');
-          } else {
-            setLicenseBlocked(false);
-            setLiveStatus('online');
-          }
-        }
-      } catch { /* ignore */ }
-    };
-    const interval = setInterval(check, 30000);
+    const interval = setInterval(checkHealth, 30000);
     return () => clearInterval(interval);
-  }, [proxyPrefix]);
+  }, [proxyPrefix]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!instanceId) return;
@@ -91,22 +102,7 @@ export default function ProductConfig() {
       const prefix = `/instance/${instanceId}`;
       setProxyPrefix(prefix);
       setInstancePrefix(prefix);
-      // Live status: health + license
-      try {
-        const healthRes = await api.get('/health').catch(() => null);
-        if (!healthRes) {
-          setLiveStatus('offline');
-          setLicenseBlocked(false);
-        } else {
-          const licRes = await api.get('/license').catch(() => null);
-          if (licRes?.data && !licRes.data.active) {
-            setLicenseBlocked(true);
-            setLiveStatus('suspended');
-          } else {
-            setLiveStatus('online');
-          }
-        }
-      } catch { /* ignore */ }
+      await checkHealth();
     }).catch((err) => {
       if (err.response?.status === 403) {
         setError('Kein Zugriff auf diese Instanz');
@@ -206,7 +202,29 @@ export default function ProductConfig() {
 
       {/* Configuration page — all api calls automatically prefixed via setInstancePrefix */}
       <Box sx={{ position: 'relative' }}>
-        {licenseBlocked && (
+        {/* Offline overlay */}
+        {liveStatus === 'offline' && (
+          <Box sx={{
+            position: 'absolute', inset: 0, zIndex: 10,
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)',
+            backdropFilter: 'blur(2px)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 2, minHeight: 400,
+          }}>
+            <CloudOffIcon sx={{ fontSize: 64, color: 'text.disabled', mb: 2 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'text.secondary', mb: 1 }}>
+              {t('status.offline')}
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center', maxWidth: 500 }}>
+              {t('instance.offline_desc', 'Instanz ist nicht erreichbar. Polling wurde gestoppt.')}
+            </Typography>
+            <Button variant="contained" startIcon={<RefreshIcon />} onClick={checkHealth}>
+              {t('instance.check_status', 'Status prüfen')}
+            </Button>
+          </Box>
+        )}
+        {/* License blocked overlay */}
+        {licenseBlocked && liveStatus !== 'offline' && (
           <Box sx={{
             position: 'absolute', inset: 0, zIndex: 10,
             bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.5)',

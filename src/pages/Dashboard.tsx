@@ -9,6 +9,7 @@ import {
   TableBody, TableCell, TableContainer, TableHead, TableRow,
   CircularProgress, LinearProgress, IconButton, Dialog, DialogTitle,
   DialogContent, FormControlLabel, Checkbox, Tooltip,
+  Accordion, AccordionSummary, AccordionDetails,
 } from '@mui/material';
 import PhoneIcon from '@mui/icons-material/Phone';
 import PhoneMissedIcon from '@mui/icons-material/PhoneMissed';
@@ -28,6 +29,8 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { loadPreferences, isDemoMode } from '../store/preferences';
 import { loadDemoStore, saveDemoStore } from '../api/demoData';
 import DnsIcon from '@mui/icons-material/Dns';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import LinkIcon from '@mui/icons-material/Link';
 import type { Gateway, GatewayStatus, Registration, ActiveCall, CallLog, Extension, CallStatEntry, User, AclUser, SystemInfo } from '../api/types';
 
 // ── Dashboard card visibility persistence ──
@@ -150,6 +153,8 @@ export default function Dashboard() {
   const [routingCount, setRoutingCount] = useState(0);
   const [callStats, setCallStats] = useState<CallStatEntry[]>([]);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [sysSettings, setSysSettings] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Dashboard card visibility
@@ -298,7 +303,7 @@ export default function Dashboard() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const f = (p: Promise<any>) => p.catch(() => ({ data: null }));
-      const [gwRes, gwAllRes, regRes, callRes, usersRes, aclRes, logRes, secRes, extRes, licRes, routeRes, statsRes, sysRes] = await Promise.all([
+      const [gwRes, gwAllRes, regRes, callRes, usersRes, aclRes, logRes, secRes, extRes, licRes, routeRes, statsRes, sysRes, settRes] = await Promise.all([
         f(api.get('/gateways/status')),
         f(api.get('/gateways')),
         f(api.get('/registrations')),
@@ -312,6 +317,7 @@ export default function Dashboard() {
         f(api.get('/routes')),
         f(api.get('/logs/call-stats')),
         f(api.get('/system/info')),
+        f(api.get('/settings')),
       ]);
       setAllGateways(gwAllRes.data || []);
       setGateways(gwRes.data || []);
@@ -328,6 +334,7 @@ export default function Dashboard() {
       setCallStats(statsRes.data || []);
       if (licRes.data) setLicenseInfo({ licensed: licRes.data.licensed, trial: licRes.data.trial, nfr: !!licRes.data.nfr, max_connections: licRes.data.max_connections || 0 });
       if (sysRes.data) setSystemInfo(sysRes.data);
+      if (settRes.data) setSysSettings(settRes.data);
       if (routeRes.data) {
         const rd = routeRes.data;
         // Count enabled routes — VAPI internal routes (gateway=vapi + matching user route) count as 1
@@ -420,16 +427,18 @@ export default function Dashboard() {
         </Tooltip>
       </Box>
 
-      {/* Server Info Card */}
+      {/* Server Info + Connection Info — Accordion */}
       {isVisible('server_info') && systemInfo && (
         <Box sx={{ ...hoverWrapSx, mb: 3 }}>
           <IconButton className="dash-x" size="small" onClick={() => hideCard('server_info')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-          <Card>
-            <CardContent sx={{ px: 4, py: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <Accordion defaultExpanded={false} sx={{ '&:before': { display: 'none' } }}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <DnsIcon color="primary" />
                 <Typography variant="h6">{t('dashboard.server_info')}</Typography>
               </Box>
+            </AccordionSummary>
+            <AccordionDetails sx={{ px: 4, pb: 3 }}>
               <TableContainer>
                 <Table size="small">
                   <TableBody>
@@ -449,8 +458,48 @@ export default function Dashboard() {
                   </TableBody>
                 </Table>
               </TableContainer>
-            </CardContent>
-          </Card>
+
+              {/* Verbindungsinfo */}
+              {sysSettings && (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 1 }}>
+                    <LinkIcon color="primary" fontSize="small" />
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t('dashboard.connection_info')}</Typography>
+                  </Box>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableBody>
+                        {sysSettings.fs_domain && (
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>Domain</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.fs_domain}</TableCell>
+                          </TableRow>
+                        )}
+                        {sysSettings.external_sip_ip && (
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>External IP</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.external_sip_ip}</TableCell>
+                          </TableRow>
+                        )}
+                        {sysSettings.internal_sip_port && (
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>SIP Port (intern)</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.internal_sip_port}</TableCell>
+                          </TableRow>
+                        )}
+                        {sysSettings.external_sip_port && (
+                          <TableRow>
+                            <TableCell sx={{ fontWeight: 600 }}>SIP Port (extern)</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.external_sip_port}</TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </>
+              )}
+            </AccordionDetails>
+          </Accordion>
         </Box>
       )}
 

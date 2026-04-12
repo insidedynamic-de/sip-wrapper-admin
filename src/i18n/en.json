@@ -606,6 +606,8 @@
   },
   "instance": {
     "license_suspended": "License suspended",
-    "license_suspended_desc": "The license for this instance has been deactivated. Please contact your administrator."
+    "license_suspended_desc": "The license for this instance has been deactivated. Please contact your administrator.",
+    "offline_desc": "Instance is unreachable. Polling has been stopped.",
+    "check_status": "Check status"
   }
 }

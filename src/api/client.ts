@@ -116,6 +116,11 @@ let _instancePrefix = '';
 export function setInstancePrefix(prefix: string) { _instancePrefix = prefix; }
 export function getInstancePrefix() { return _instancePrefix; }
 
+/** Instance offline flag — stops polling when instance is unreachable */
+let _instanceOffline = false;
+export function setInstanceOffline(offline: boolean) { _instanceOffline = offline; }
+export function isInstanceOffline() { return _instanceOffline; }
+
 // Override baseURL dynamically based on instance prefix
 const originalGet = api.get.bind(api);
 const originalPost = api.post.bind(api);
