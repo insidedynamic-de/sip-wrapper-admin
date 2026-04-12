@@ -29,6 +29,7 @@ import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { loadPreferences, isDemoMode } from '../store/preferences';
 import { loadDemoStore, saveDemoStore } from '../api/demoData';
 import DnsIcon from '@mui/icons-material/Dns';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LinkIcon from '@mui/icons-material/Link';
 import type { Gateway, GatewayStatus, Registration, ActiveCall, CallLog, Extension, CallStatEntry, User, AclUser, SystemInfo } from '../api/types';
@@ -458,45 +459,47 @@ export default function Dashboard() {
                 </Table>
               </TableContainer>
 
-              {/* Verbindungsinfo */}
-              {sysSettings && (
-                <>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 1 }}>
-                    <LinkIcon color="primary" fontSize="small" />
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t('dashboard.connection_info')}</Typography>
-                  </Box>
-                  <TableContainer>
+              {/* Verbindungsinfo — same as ProductConfig modal */}
+              {sysSettings && (() => {
+                const connRows = [
+                  { label: 'Hostname', value: sysSettings.fs_domain || '' },
+                  { label: 'External IP', value: sysSettings.external_sip_ip || '' },
+                  { label: 'SIP Port (intern)', value: String(sysSettings.internal_sip_port || '') },
+                  { label: 'SIP Port (extern)', value: String(sysSettings.external_sip_port || '') },
+                  { label: 'Max Nebenstellen', value: String(licenseInfo.max_connections) },
+                ].filter((r) => r.value && r.value !== '0');
+                const copyVal = (value: string) => {
+                  if (navigator.clipboard?.writeText) navigator.clipboard.writeText(value);
+                };
+                return (
+                  <>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 3, mb: 1 }}>
+                      <LinkIcon color="primary" fontSize="small" />
+                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{t('dashboard.connection_info')}</Typography>
+                    </Box>
                     <Table size="small">
                       <TableBody>
-                        {sysSettings.fs_domain && (
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>Domain</TableCell>
-                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.fs_domain}</TableCell>
+                        {connRows.map((row) => (
+                          <TableRow
+                            key={row.label}
+                            hover
+                            sx={{ cursor: 'pointer', '&:active': { bgcolor: 'action.selected' } }}
+                            onClick={() => copyVal(row.value)}
+                          >
+                            <TableCell sx={{ fontWeight: 600, width: 180, border: 'none' }}>{row.label}</TableCell>
+                            <TableCell sx={{ fontFamily: 'monospace', border: 'none' }}>{row.value}</TableCell>
+                            <TableCell sx={{ width: 40, border: 'none', textAlign: 'right' }}>
+                              <Tooltip title={t('common.copy', 'Kopieren')}>
+                                <ContentCopyIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              </Tooltip>
+                            </TableCell>
                           </TableRow>
-                        )}
-                        {sysSettings.external_sip_ip && (
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>External IP</TableCell>
-                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.external_sip_ip}</TableCell>
-                          </TableRow>
-                        )}
-                        {sysSettings.internal_sip_port && (
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>SIP Port (intern)</TableCell>
-                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.internal_sip_port}</TableCell>
-                          </TableRow>
-                        )}
-                        {sysSettings.external_sip_port && (
-                          <TableRow>
-                            <TableCell sx={{ fontWeight: 600 }}>SIP Port (extern)</TableCell>
-                            <TableCell sx={{ fontFamily: 'monospace' }}>{sysSettings.external_sip_port}</TableCell>
-                          </TableRow>
-                        )}
+                        ))}
                       </TableBody>
                     </Table>
-                  </TableContainer>
-                </>
-              )}
+                  </>
+                );
+              })()}
             </AccordionDetails>
           </Accordion>
         </Box>
