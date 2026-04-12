@@ -47,6 +47,7 @@ export default function RoutesPage() {
   const [, setGatewayStatuses] = useState<GatewayStatus[]>([]);
   const [extensions, setExtensions] = useState<Extension[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [aclUsers, setAclUsers] = useState<Array<{ username: string; ip: string; extension: string }>>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [defaults, setDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
   const [initialDefaults, setInitialDefaults] = useState({ gateway: '', extension: '1000', caller_id: '' });
@@ -69,16 +70,17 @@ export default function RoutesPage() {
 
   const load = useCallback(async () => {
     try {
-      const [r, g, gs, e, u, reg, lic] = await Promise.all([
+      const [r, g, gs, e, u, acl, reg, lic] = await Promise.all([
         api.get('/routes'), api.get('/gateways'), api.get('/gateways/status'),
-        api.get('/extensions'), api.get('/users'), api.get('/registrations'),
-        api.get('/license'),
+        api.get('/extensions'), api.get('/users'), api.get('/acl-users'),
+        api.get('/registrations'), api.get('/license'),
       ]);
       setRoutes(r.data || null);
       setGateways(g.data || []);
       setGatewayStatuses(gs.data || []);
       setExtensions(e.data || []);
       setUsers(u.data || []);
+      setAclUsers(acl.data || []);
       setRegistrations(reg.data || []);
       if (r.data?.defaults) { setDefaults(r.data.defaults); setInitialDefaults(r.data.defaults); }
       if (lic.data) {
@@ -260,6 +262,8 @@ export default function RoutesPage() {
       const forceDisabled = isNew && !editRoute && overLimit;
 
       const user = users.find((u) => u.extension === form.extension);
+      const aclUser = !user ? aclUsers.find((u) => u.extension === form.extension) : null;
+      const routeUsername = user?.username || aclUser?.username || '';
       const wantInbound = form.direction === 'inbound' || form.direction === 'both';
       const wantOutbound = form.direction === 'outbound' || form.direction === 'both';
       const enabled = editRoute ? editRoute.enabled : !forceDisabled;
@@ -293,9 +297,9 @@ export default function RoutesPage() {
             gateway: form.gateway, extension: form.extension, description: form.description, enabled,
           }).catch(() => {});
         }
-        if (wantOutbound && user) {
+        if (wantOutbound && routeUsername) {
           await api.post('/routes/user', {
-            username: user.username, gateway: form.gateway, description: form.description, enabled,
+            username: routeUsername, gateway: form.gateway, description: form.description, enabled,
           }).catch(() => {});
         }
       }
