@@ -76,9 +76,11 @@ export default function AdminInfra() {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({ open: false, message: '', severity: 'success' });
 
-  // Hetzner profiles
+  // Provider profiles
   const [hetznerProfiles, setHetznerProfiles] = useState<{ id: string; name: string; cpu: number; ram: number; disk: number; price_monthly: number; type: string }[]>([]);
   const [hetznerLocations, setHetznerLocations] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [ionosProfiles, setIonosProfiles] = useState<{ id: string; name: string; cpu: number; ram: number; disk: number; price_monthly: number }[]>([]);
+  const [ionosLocations, setIonosLocations] = useState<{ id: string; name: string; city: string }[]>([]);
   const [creating, setCreating] = useState(false);
 
   // Dialogs
@@ -558,8 +560,8 @@ export default function AdminInfra() {
                         { key: 'profile_high', label: 'Hoch' },
                         { key: 'profile_premium', label: 'Premium' },
                       ];
-                      const blockProfiles = block.category === 'hetzner' ? hetznerProfiles : [];
-                      const hasApiProfiles = block.category === 'hetzner'; // only hetzner has API profiles for now
+                      const blockProfiles = block.category === 'hetzner' ? hetznerProfiles : block.category === 'ionos' ? ionosProfiles : [];
+                      const hasApiProfiles = block.category === 'hetzner' || block.category === 'ionos';
                       return (
                         <Box sx={{ mt: 1, mb: 1 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -570,6 +572,9 @@ export default function AdminInfra() {
                                   if (block.category === 'hetzner') {
                                     setHetznerProfiles(res.data.profiles || []);
                                     setHetznerLocations(res.data.locations || []);
+                                  } else if (block.category === 'ionos') {
+                                    setIonosProfiles(res.data.profiles || []);
+                                    setIonosLocations(res.data.locations || []);
                                   }
                                 }).catch(() => setToast({ open: true, message: 'API Fehler', severity: 'error' }));
                               }}>Profile laden</Button>
@@ -730,10 +735,16 @@ export default function AdminInfra() {
               <InputLabel>Provider</InputLabel>
               <Select value={editNode.provider || ''} label="Provider" onChange={(e) => {
                 setEditNode({ ...editNode, provider: e.target.value, _profile: '', _server_type: '' });
-                if (e.target.value === 'hetzner' && hetznerProfiles.length === 0) {
+                const prov = e.target.value;
+                if (prov === 'hetzner' && hetznerProfiles.length === 0) {
                   api.get('/admin/infra/providers/hetzner/profiles').then((res) => {
                     setHetznerProfiles(res.data.profiles || []);
                     setHetznerLocations(res.data.locations || []);
+                  }).catch(() => {});
+                } else if (prov === 'ionos' && ionosProfiles.length === 0) {
+                  api.get('/admin/infra/providers/ionos/profiles').then((res) => {
+                    setIonosProfiles(res.data.profiles || []);
+                    setIonosLocations(res.data.locations || []);
                   }).catch(() => {});
                 }
               }}>
@@ -747,55 +758,78 @@ export default function AdminInfra() {
             </FormControl>
           </Box>
 
-          {/* Hetzner: profile + location select */}
-          {editNode.provider === 'hetzner' && !editNode.id && (
+          {/* Cloud provider: profile + location select */}
+          {(editNode.provider === 'hetzner' || editNode.provider === 'ionos') && !editNode.id && (
             <>
-              {hetznerProfiles.length === 0 ? (
-                <Button size="small" onClick={() => {
-                  api.get('/admin/infra/providers/hetzner/profiles').then((res) => {
-                    setHetznerProfiles(res.data.profiles || []);
-                    setHetznerLocations(res.data.locations || []);
-                  }).catch(() => setToast({ open: true, message: 'Hetzner API Fehler', severity: 'error' }));
-                }}>Profile laden...</Button>
-              ) : (
-                <>
-                  <FormControl size="small">
-                    <InputLabel>Profil</InputLabel>
-                    <Select value={(editNode._profile as string) || ''} label="Profil" onChange={(e) => {
-                      const tier = e.target.value as string;
-                      const savedType = settings.find((s) => s.category === 'hetzner' && s.key === tier)?.value_full || '';
-                      const profile = hetznerProfiles.find((p) => p.id === savedType);
-                      setEditNode({ ...editNode, _profile: tier, _server_type: savedType,
-                        ...(profile ? { cpu: profile.cpu, ram: profile.ram, disk: profile.disk } : {}),
-                      });
-                    }}>
-                      {['profile_low', 'profile_mid', 'profile_high', 'profile_premium'].filter((tier) => {
-                        return settings.some((s) => s.category === 'hetzner' && s.key === tier && s.value_full);
-                      }).map((tier) => {
-                        const saved = settings.find((s) => s.category === 'hetzner' && s.key === tier);
-                        const label = tier === 'profile_low' ? 'Low' : tier === 'profile_mid' ? 'Mittel' : tier === 'profile_high' ? 'Hoch' : 'Premium';
-                        const profile = hetznerProfiles.find((p) => p.id === saved?.value_full);
-                        return <MenuItem key={tier} value={tier}>
-                          {label}: {saved?.value_full} {profile ? `(${profile.cpu} vCPU, ${Math.round(profile.ram / 1024)}GB, €${profile.price_monthly}/mo)` : ''}
-                        </MenuItem>;
-                      })}
-                    </Select>
-                  </FormControl>
-                  <FormControl size="small">
-                    <InputLabel>Standort</InputLabel>
-                    <Select value={(editNode._location as string) || 'nbg1'} label="Standort" onChange={(e) => setEditNode({ ...editNode, _location: e.target.value, region: e.target.value })}>
-                      {hetznerLocations.map((l) => (
-                        <MenuItem key={l.id} value={l.id}>{l.name} ({l.city})</MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </>
-              )}
+              {(() => {
+                const prov = editNode.provider;
+                const profs = prov === 'hetzner' ? hetznerProfiles : prov === 'ionos' ? ionosProfiles : [];
+                const locs = prov === 'hetzner' ? hetznerLocations : prov === 'ionos' ? ionosLocations : [];
+                if (profs.length === 0) return (
+                  <Button size="small" onClick={() => {
+                    api.get(`/admin/infra/providers/${prov}/profiles`).then((res) => {
+                      if (prov === 'hetzner') { setHetznerProfiles(res.data.profiles || []); setHetznerLocations(res.data.locations || []); }
+                      else if (prov === 'ionos') { setIonosProfiles(res.data.profiles || []); setIonosLocations(res.data.locations || []); }
+                    }).catch(() => setToast({ open: true, message: `${prov.toUpperCase()} API Fehler`, severity: 'error' }));
+                  }}>Profile laden...</Button>
+                );
+                // Hetzner: use saved tier profiles
+                const hasTiers = settings.some((s) => s.category === prov && s.key.startsWith('profile_'));
+                return (
+                  <>
+                    <FormControl size="small">
+                      <InputLabel>Profil</InputLabel>
+                      {hasTiers ? (
+                        <Select value={(editNode._profile as string) || ''} label="Profil" onChange={(e) => {
+                          const tier = e.target.value as string;
+                          const savedType = settings.find((s) => s.category === prov && s.key === tier)?.value_full || '';
+                          const profile = profs.find((p) => p.id === savedType);
+                          setEditNode({ ...editNode, _profile: tier, _server_type: savedType,
+                            ...(profile ? { cpu: profile.cpu, ram: profile.ram, disk: profile.disk } : {}),
+                          });
+                        }}>
+                          {['profile_low', 'profile_mid', 'profile_high', 'profile_premium'].filter((tier) =>
+                            settings.some((s) => s.category === prov && s.key === tier && s.value_full)
+                          ).map((tier) => {
+                            const saved = settings.find((s) => s.category === prov && s.key === tier);
+                            const label = tier === 'profile_low' ? 'Low' : tier === 'profile_mid' ? 'Mittel' : tier === 'profile_high' ? 'Hoch' : 'Premium';
+                            const profile = profs.find((p) => p.id === saved?.value_full);
+                            return <MenuItem key={tier} value={tier}>
+                              {label}: {saved?.value_full} {profile ? `(${profile.cpu} vCPU, ${Math.round(profile.ram / 1024)}GB)` : ''}
+                            </MenuItem>;
+                          })}
+                        </Select>
+                      ) : (
+                        <Select value={(editNode._server_type as string) || ''} label="Profil" onChange={(e) => {
+                          const profile = profs.find((p) => p.id === e.target.value);
+                          setEditNode({ ...editNode, _server_type: e.target.value,
+                            ...(profile ? { cpu: profile.cpu, ram: profile.ram, disk: profile.disk } : {}),
+                          });
+                        }}>
+                          {profs.map((p) => (
+                            <MenuItem key={p.id} value={p.id}>{p.name}</MenuItem>
+                          ))}
+                        </Select>
+                      )}
+                    </FormControl>
+                    {locs.length > 0 && (
+                      <FormControl size="small">
+                        <InputLabel>Standort</InputLabel>
+                        <Select value={(editNode._location as string) || ''} label="Standort" onChange={(e) => setEditNode({ ...editNode, _location: e.target.value, region: e.target.value })}>
+                          {locs.map((l) => (
+                            <MenuItem key={l.id} value={l.id}>{l.name} ({l.city})</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    )}
+                  </>
+                );
+              })()}
             </>
           )}
 
-          {/* Manual fields (for edit or non-Hetzner) */}
-          {(editNode.id || editNode.provider !== 'hetzner') && (
+          {/* Manual fields (for edit or non-cloud providers) */}
+          {(editNode.id || (editNode.provider !== 'hetzner' && editNode.provider !== 'ionos')) && (
             <>
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField size="small" label="IP" value={editNode.ip || ''} onChange={(e) => setEditNode({ ...editNode, ip: e.target.value })} fullWidth />
