@@ -9,7 +9,7 @@ import {
   CircularProgress, Button, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Select, MenuItem, FormControl, InputLabel,
   Alert, Tabs, Tab, Grid2 as Grid, alpha, useTheme, LinearProgress, Autocomplete, Checkbox,
-  InputAdornment,
+  InputAdornment, FormControlLabel,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -846,6 +846,12 @@ export default function AdminInfra() {
                         </Select>
                       </FormControl>
                     )}
+                    {editNode.provider === 'ionos' && (
+                      <FormControlLabel
+                        control={<Checkbox checked={(editNode as any)._fixedIp || false} onChange={(e) => setEditNode({ ...editNode, _fixedIp: e.target.checked } as any)} />}
+                        label="Fixed IP (+5,00 €/mo)"
+                      />
+                    )}
                     {editNode.provider === 'ionos' && ionosImages.length > 0 && (
                       <FormControl size="small">
                         <InputLabel>Image</InputLabel>
@@ -877,6 +883,35 @@ export default function AdminInfra() {
             </>
           )}
 
+          {/* Summary: selected config */}
+          {!editNode.id && (editNode.cpu > 0 || (editNode as any)._server_type) && (
+            <Card variant="outlined" sx={{ bgcolor: 'action.hover' }}>
+              <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Zusammenfassung</Typography>
+                <Typography variant="body2">
+                  {editNode.cpu} vCPU · {editNode.ram >= 1024 ? `${Math.round(editNode.ram / 1024)} GB` : `${editNode.ram} MB`} RAM · {editNode.disk} GB SSD
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {editNode.provider?.toUpperCase()} · {(editNode as any)._location || editNode.region || '—'}
+                  {(editNode as any)._image ? ` · ${ionosImages.find((i) => i.id === (editNode as any)._image)?.name || 'Ubuntu'}` : ''}
+                </Typography>
+                {(() => {
+                  const prov = editNode.provider || '';
+                  const profs = prov === 'hetzner' ? hetznerProfiles : prov === 'ionos' ? ionosProfiles : [];
+                  const sel = profs.find((p) => p.id === (editNode as any)._server_type);
+                  const fixedIpExtra = (editNode as any)._fixedIp ? 5 : 0;
+                  const totalPrice = sel?.price_monthly ? sel.price_monthly + fixedIpExtra : fixedIpExtra;
+                  return totalPrice ? (
+                    <Typography variant="h6" color="primary" sx={{ mt: 0.5 }}>
+                      €{totalPrice.toFixed(2)}/mo
+                      {fixedIpExtra > 0 && <Typography component="span" variant="caption" color="text.secondary"> (inkl. Fixed IP)</Typography>}
+                    </Typography>
+                  ) : null;
+                })()}
+              </CardContent>
+            </Card>
+          )}
+
           <TextField size="small" label="Max Containers" type="number" value={editNode.max_containers || 30} onChange={(e) => setEditNode({ ...editNode, max_containers: Number(e.target.value) })} />
 
           {!!editNode.id && (
@@ -894,17 +929,22 @@ export default function AdminInfra() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setNodeDialog(false)}>{t('button.cancel')}</Button>
-          {/* Hetzner: create VM via API */}
-          {editNode.provider === 'hetzner' && !editNode.id && (editNode._server_type as string) && (
+          {/* Cloud provider: create VM via API (universal for Hetzner + IONOS) */}
+          {(editNode.provider === 'hetzner' || editNode.provider === 'ionos') && !editNode.id && ((editNode as any)._server_type as string) && (
             <Button variant="contained" color="success" disabled={creating} onClick={async () => {
               setCreating(true);
               try {
-                const res = await api.post('/admin/infra/nodes/create-from-provider', {
-                  name: editNode.name || 'node-hetzner',
-                  server_type: editNode._server_type,
-                  location: editNode._location || 'nbg1',
-                });
-                setToast({ open: true, message: `VM erstellt! IP: ${res.data.ip}${res.data.root_password ? ` Passwort: ${res.data.root_password}` : ''}`, severity: 'success' });
+                const payload: Record<string, unknown> = {
+                  name: editNode.name || `node-${editNode.provider}`,
+                  provider: editNode.provider,
+                  server_type: (editNode as any)._server_type,
+                  location: (editNode as any)._location || '',
+                };
+                if (editNode.provider === 'ionos' && (editNode as any)._image) {
+                  payload.image = (editNode as any)._image;
+                }
+                const res = await api.post('/admin/infra/nodes/create-from-provider', payload);
+                setToast({ open: true, message: `VM erstellt! IP: ${res.data.ip || 'wird zugewiesen...'}`, severity: 'success' });
                 if (res.data.root_password) {
                   alert(`Server erstellt!\n\nIP: ${res.data.ip}\nRoot Passwort: ${res.data.root_password}\n\nBitte speichern!`);
                 }
