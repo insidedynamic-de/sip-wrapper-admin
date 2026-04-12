@@ -81,6 +81,7 @@ export default function AdminInfra() {
   // Provider profiles
   const [hetznerProfiles, setHetznerProfiles] = useState<{ id: string; name: string; cpu: number; ram: number; disk: number; price_monthly: number; type: string }[]>([]);
   const [hetznerLocations, setHetznerLocations] = useState<{ id: string; name: string; city: string }[]>([]);
+  const [hetznerImages, setHetznerImages] = useState<{ id: string; name: string; location: string }[]>([]);
   const [ionosProfiles, setIonosProfiles] = useState<{ id: string; name: string; cpu: number; ram: number; disk: number; price_monthly: number }[]>([]);
   const [ionosLocations, setIonosLocations] = useState<{ id: string; name: string; city: string }[]>([]);
   const [ionosImages, setIonosImages] = useState<{ id: string; name: string; location: string }[]>([]);
@@ -578,6 +579,7 @@ export default function AdminInfra() {
                                   if (block.category === 'hetzner') {
                                     setHetznerProfiles(res.data.profiles || []);
                                     setHetznerLocations(res.data.locations || []);
+                                    setHetznerImages(res.data.images || []);
                                   } else if (block.category === 'ionos') {
                                     setIonosProfiles(res.data.profiles || []);
                                     setIonosLocations(res.data.locations || []);
@@ -830,16 +832,9 @@ export default function AdminInfra() {
                         </Select>
                       </FormControl>
                     )}
-                    {/* Image select — universal */}
+                    {/* Image select — universal from API */}
                     {(() => {
-                      const imgs = prov === 'ionos' ? ionosImages : [];
-                      // Hetzner uses string image names, IONOS uses UUIDs
-                      const hetznerImages = [
-                        { id: 'ubuntu-24.04', name: 'Ubuntu 24.04', location: '' },
-                        { id: 'ubuntu-22.04', name: 'Ubuntu 22.04', location: '' },
-                        { id: 'debian-12', name: 'Debian 12', location: '' },
-                      ];
-                      const allImages = prov === 'hetzner' ? hetznerImages : imgs;
+                      const allImages = prov === 'hetzner' ? hetznerImages : prov === 'ionos' ? ionosImages : [];
                       return allImages.length > 0 ? (
                         <FormControl size="small">
                           <InputLabel>Image</InputLabel>
