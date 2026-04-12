@@ -197,6 +197,7 @@ export default function Gateways() {
         columnOrderKey="gateways-columns"
         searchable
         getStatus={(gw) => {
+          if (gw.type === 'ai') return { label: 'AI', color: 'info' as const };
           const st = gwStatuses.find((s) => s.name === gw.name || s.name === `external::${gw.name}` || s.name.endsWith(`::${gw.name}`));
           const label = st?.state || st?.status || '';
           return st

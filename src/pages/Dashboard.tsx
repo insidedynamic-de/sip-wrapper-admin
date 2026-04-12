@@ -337,22 +337,20 @@ export default function Dashboard() {
       if (settRes.data) setSysSettings(settRes.data);
       if (routeRes.data) {
         const rd = routeRes.data;
-        // Count enabled routes — VAPI internal routes (gateway=vapi + matching user route) count as 1
-        const inbRoutes = (rd.inbound || []).filter((r: { enabled?: boolean }) => r.enabled !== false);
-        const usrRoutes = (rd.user_routes || []).filter((r: { enabled?: boolean }) => r.enabled !== false);
-        // VAPI bundles: each unique extension with vapi inbound = 1 connection
-        const vapiExts = new Set(
-          inbRoutes.filter((r: { gateway?: string }) => r.gateway === 'vapi').map((r: { extension?: string }) => r.extension)
-        );
-        // Non-VAPI inbound routes (exclude those pointing to a VAPI extension)
-        const realInbound = inbRoutes.filter((r: { gateway?: string; extension?: string }) =>
-          r.gateway !== 'vapi' && !vapiExts.has(r.extension)
-        );
-        // Non-VAPI user routes
-        const realUser = usrRoutes.filter((r: { description?: string }) =>
-          !(r.description || '').includes('VAPI OUT')
-        );
-        setRoutingCount(realInbound.length + vapiExts.size + realUser.length);
+        // License counts unique enabled extensions with at least one route
+        const routedExts = new Set<string>();
+        for (const r of (rd.inbound || [])) {
+          if (r.enabled !== false && r.extension) routedExts.add(r.extension);
+        }
+        for (const r of (rd.user_routes || [])) {
+          if (r.enabled === false) continue;
+          // Find extension for this user
+          const sipU = (usersRes.data || []).find((u: { username: string }) => u.username === r.username);
+          const aclU = (aclRes.data || []).find((u: { username: string }) => u.username === r.username);
+          const ext = sipU?.extension || aclU?.extension;
+          if (ext) routedExts.add(ext);
+        }
+        setRoutingCount(routedExts.size);
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -372,7 +370,8 @@ export default function Dashboard() {
     const gw = allGateways.find((g) => g.name === name);
     return gw ? gw.enabled !== false : true;
   };
-  const gwRegistered = gateways.filter((g) => g.state === 'REGED' && isGwEnabled(g.name)).length;
+  const aiGwCount = allGateways.filter((g) => g.type === 'ai' && g.enabled !== false).length;
+  const gwRegistered = gateways.filter((g) => g.state === 'REGED' && isGwEnabled(g.name)).length + aiGwCount;
   const extActive = extensions.filter((e) => e.enabled !== false).length;
   const failedCallsBase = callLogs.filter((c) => c.result === 'failed' || c.result === 'missed').length;
   const liveTotalCalls = callLogs.length + demoTotalToday;
@@ -532,7 +531,7 @@ export default function Dashboard() {
                 <PersonIcon color="primary" sx={{ fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">
-                    {liveRegCount}
+                    {liveRegCount + aclUserList.length}
                     <Typography component="span" variant="h5" color="text.secondary">/{userList.length + aclUserList.length}</Typography>
                   </Typography>
                   <Typography color="text.secondary" variant="body2">{t('dashboard.users_online')}</Typography>
@@ -676,8 +675,9 @@ export default function Dashboard() {
             <CardContent sx={{ px: 4, py: 3 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>{t('dashboard.gateway_status')}</Typography>
               {(() => {
-                const regedGateways = gateways.filter((gw) => gw.state === 'REGED' && isGwEnabled(gw.name));
-                return regedGateways.length === 0 ? (
+                const enabledGws = gateways.filter((gw) => isGwEnabled(gw.name));
+                const gwInfo = allGateways; // full gateway data with type
+                return enabledGws.length === 0 ? (
                   <Typography color="text.secondary">{t('dashboard.no_gateways')}</Typography>
                 ) : (
                   <TableContainer>
@@ -685,18 +685,24 @@ export default function Dashboard() {
                       <TableHead>
                         <TableRow>
                           <TableCell>{t('field.name')}</TableCell>
-                          <TableCell>{t('status.online')}</TableCell>
+                          <TableCell>{t('field.status')}</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {regedGateways.map((gw) => (
-                          <TableRow key={gw.name}>
-                            <TableCell>{gw.name}</TableCell>
-                            <TableCell>
-                              <Chip size="small" label="REGED" color="success" />
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                        {enabledGws.map((gw) => {
+                          const full = gwInfo.find((g) => g.name === gw.name);
+                          const isAi = full?.type === 'ai';
+                          const label = isAi ? 'AI' : gw.state === 'REGED' ? 'REGED' : gw.state || 'NOREG';
+                          const color = isAi ? 'info' : gw.state === 'REGED' ? 'success' : 'error';
+                          return (
+                            <TableRow key={gw.name}>
+                              <TableCell>{full?.description || gw.name}</TableCell>
+                              <TableCell>
+                                <Chip size="small" label={label} color={color as 'info' | 'success' | 'error'} />
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </TableContainer>
