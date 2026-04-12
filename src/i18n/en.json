@@ -602,5 +602,9 @@
     "empty_desc": "Create a CallWidget to let visitors call directly from your website.",
     "create_first": "Create first widget",
     "code_hint": "Add this code before the closing </body> tag on your website."
+  },
+  "instance": {
+    "license_suspended": "License suspended",
+    "license_suspended_desc": "The license for this instance has been deactivated. Please contact your administrator."
   }
 }

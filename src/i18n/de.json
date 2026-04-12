@@ -602,5 +602,9 @@
     "empty_desc": "Erstellen Sie ein CallWidget, das Besucher Ihrer Website direkt anrufen lässt.",
     "create_first": "Erstes Widget erstellen",
     "code_hint": "Fügen Sie diesen Code vor dem schließenden </body> Tag Ihrer Website ein."
+  },
+  "instance": {
+    "license_suspended": "Lizenz deaktiviert",
+    "license_suspended_desc": "Die Lizenz f\u00fcr diese Instanz wurde deaktiviert. Bitte kontaktieren Sie Ihren Administrator."
   }
 }

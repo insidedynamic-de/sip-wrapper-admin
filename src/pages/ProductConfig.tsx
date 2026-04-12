@@ -67,7 +67,7 @@ export default function ProductConfig() {
         const healthRes = await api.get('/health').catch(() => null);
         if (!healthRes) {
           setLiveStatus('offline');
-          setLicenseBlocked(true);
+          setLicenseBlocked(false);
         } else {
           const licRes = await api.get('/license').catch(() => null);
           if (licRes?.data && !licRes.data.active) {
@@ -96,7 +96,7 @@ export default function ProductConfig() {
         const healthRes = await api.get('/health').catch(() => null);
         if (!healthRes) {
           setLiveStatus('offline');
-          setLicenseBlocked(true);
+          setLicenseBlocked(false);
         } else {
           const licRes = await api.get('/license').catch(() => null);
           if (licRes?.data && !licRes.data.active) {
@@ -175,7 +175,7 @@ export default function ProductConfig() {
         <Chip label={instance.name} size="small" variant="outlined" />
         <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>{instance.domain}</Typography>
         <Chip
-          label={liveStatus === 'loading' ? 'Wird geprüft...' : liveStatus === 'offline' ? 'Offline' : liveStatus === 'suspended' ? 'Lizenz deaktiviert' : 'Online'}
+          label={liveStatus === 'loading' ? t('status.checking') : liveStatus === 'offline' ? t('status.offline') : liveStatus === 'suspended' ? t('instance.license_suspended') : t('status.online')}
           size="small"
           color={liveStatus === 'online' ? 'success' : liveStatus === 'suspended' ? 'warning' : liveStatus === 'loading' ? 'default' : 'error'}
         />
@@ -215,10 +215,10 @@ export default function ProductConfig() {
             borderRadius: 2, minHeight: 400,
           }}>
             <Typography variant="h4" sx={{ fontWeight: 700, color: 'error.main', mb: 2 }}>
-              Lizenz deaktiviert
+              {t('instance.license_suspended')}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center', maxWidth: 500 }}>
-              Die Lizenz für diese Instanz wurde deaktiviert. Bitte kontaktieren Sie Ihren Administrator.
+              {t('instance.license_suspended_desc')}
             </Typography>
             <Button variant="contained" onClick={async () => {
               try {
