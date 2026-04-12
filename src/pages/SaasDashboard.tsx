@@ -104,7 +104,9 @@ export default function SaasDashboard() {
                       <Typography variant="caption" color="text.secondary">{inst.name}</Typography>
                     </Box>
                     <Chip label={inst.status} size="small"
-                      color={inst.status === 'online' ? 'success' : inst.status === 'provisioning' ? 'warning' : 'default'} />
+                      color={inst.status === 'online' ? 'success' : inst.status === 'provisioning' ? 'warning' : 'default'}
+                      onClick={inst.status === 'online' ? () => navigate(`/products/talkhub/${inst.id}`) : undefined}
+                      sx={inst.status === 'online' ? { cursor: 'pointer' } : undefined} />
                   </Box>
 
                   <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 12, color: 'text.secondary', mb: 1 }}>
@@ -112,7 +114,7 @@ export default function SaasDashboard() {
                   </Typography>
 
                   {inst.max_connections > 0 && (
-                    <Chip label={`${inst.max_connections} Verbindungen`} size="small" sx={{ mb: 1.5 }} />
+                    <Chip label={`max. ${inst.max_connections} Nebenstellen`} size="small" sx={{ mb: 1.5 }} />
                   )}
 
                   <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>

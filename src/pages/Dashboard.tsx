@@ -403,13 +403,10 @@ export default function Dashboard() {
   const allCards = [
     { id: 'server_info', label: t('dashboard.server_info') },
     { id: 'gateways', label: t('dashboard.gateways_registered') },
-    { id: 'users', label: t('dashboard.users_online') },
-    { id: 'extensions', label: t('dashboard.extensions_active') },
-    { id: 'ext_routes', label: t('section.extension_routes') },
+    { id: 'ext_routes', label: t('dashboard.extensions_active') },
     { id: 'active_calls', label: t('dashboard.active_calls') },
     { id: 'total_calls', label: t('dashboard.total_calls') },
     { id: 'blocked_ips', label: t('dashboard.blocked_ips') },
-    { id: 'license', label: t('dashboard.license_status') },
     { id: 'gateway_status', label: t('dashboard.gateway_status') },
     { id: 'registrations', label: t('dashboard.user_registrations') },
     { id: 'live_calls', label: t('dashboard.active_calls') + ' (Live)' },
@@ -506,11 +503,11 @@ export default function Dashboard() {
       )}
 
       <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap', mb: 3 }}>
-        {/* Gateways: registered / total */}
+        {/* 1. Gateways: registered / total + breakdown */}
         {isVisible('gateways') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('gateways')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 200 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <RouterIcon color="primary" sx={{ fontSize: 40 }} />
                 <Box>
@@ -519,57 +516,22 @@ export default function Dashboard() {
                     <Typography component="span" variant="h5" color="text.secondary">/{allGateways.filter((g) => g.enabled !== false).length}</Typography>
                   </Typography>
                   <Typography color="text.secondary" variant="body2">{t('dashboard.gateways_registered')}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        {/* Users: online / total */}
-        {isVisible('users') && (
-          <Box sx={hoverWrapSx}>
-            <IconButton className="dash-x" size="small" onClick={() => hideCard('users')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PersonIcon color="primary" sx={{ fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h4">
-                    {liveRegCount + aclUserList.length}
-                    <Typography component="span" variant="h5" color="text.secondary">/{userList.length + aclUserList.length}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    SIP: {gateways.filter((g) => g.state === 'REGED').length}, AI: {aiGwCount}
                   </Typography>
-                  <Typography color="text.secondary" variant="body2">{t('dashboard.users_online')}</Typography>
                 </Box>
               </CardContent>
             </Card>
           </Box>
         )}
 
-        {/* Extensions: active / total */}
-        {isVisible('extensions') && (
-          <Box sx={hoverWrapSx}>
-            <IconButton className="dash-x" size="small" onClick={() => hideCard('extensions')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <DialpadIcon color="primary" sx={{ fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h4">
-                    {extActive}
-                    <Typography component="span" variant="h5" color="text.secondary">/{extensions.length}</Typography>
-                  </Typography>
-                  <Typography color="text.secondary" variant="body2">{t('dashboard.extensions_active')}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        {/* Extension Routes: used / licensed */}
+        {/* 2. Nebenstellen: used / licensed + breakdown */}
         {isVisible('ext_routes') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('ext_routes')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 200 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <AltRouteIcon color={routingCount > licenseInfo.max_connections ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
+                <DialpadIcon color={routingCount > licenseInfo.max_connections ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">
                     {routingCount}
@@ -577,18 +539,22 @@ export default function Dashboard() {
                       /{licenseInfo.max_connections}
                     </Typography>
                   </Typography>
-                  <Typography color="text.secondary" variant="body2">{t('section.extension_routes')}</Typography>
+                  <Typography color="text.secondary" variant="body2">{t('dashboard.extensions_active')}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    SIP: {liveRegCount}, ACL: {aclUserList.length}
+                    {licenseInfo.trial && <Chip size="small" label="Trial" color="warning" sx={{ height: 16, fontSize: 10, ml: 1 }} />}
+                  </Typography>
                 </Box>
               </CardContent>
             </Card>
           </Box>
         )}
 
-        {/* Active Calls */}
+        {/* 3. Aktive Anrufe */}
         {isVisible('active_calls') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('active_calls')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 200 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <PhoneIcon color={liveCalls.length > 0 ? 'success' : 'primary'} sx={{ fontSize: 40 }} />
                 <Box>
@@ -600,11 +566,11 @@ export default function Dashboard() {
           </Box>
         )}
 
-        {/* Total Calls / Failed */}
+        {/* 4. Anrufe heute: total / failed */}
         {isVisible('total_calls') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('total_calls')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 200 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <PhoneMissedIcon color={liveFailedCalls > 0 ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
                 <Box>
@@ -623,46 +589,16 @@ export default function Dashboard() {
           </Box>
         )}
 
-        {/* Blocked IPs */}
+        {/* 5. Sicherheit: blocked IPs */}
         {isVisible('blocked_ips') && (
           <Box sx={hoverWrapSx}>
             <IconButton className="dash-x" size="small" onClick={() => hideCard('blocked_ips')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180 }}>
+            <Card sx={{ minWidth: 200 }}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <ShieldIcon color={blockedCount > 0 ? 'error' : 'primary'} sx={{ fontSize: 40 }} />
                 <Box>
                   <Typography variant="h4">{blockedCount}</Typography>
                   <Typography color="text.secondary" variant="body2">{t('dashboard.blocked_ips')}</Typography>
-                </Box>
-              </CardContent>
-            </Card>
-          </Box>
-        )}
-
-        {/* License */}
-        {isVisible('license') && (
-          <Box sx={hoverWrapSx}>
-            <IconButton className="dash-x" size="small" onClick={() => hideCard('license')} sx={dismissSx}><CloseIcon sx={{ fontSize: 16 }} /></IconButton>
-            <Card sx={{ minWidth: 180, cursor: 'pointer' }} onClick={async () => {
-              try {
-                await api.post('/license/refresh');
-                refresh();
-              } catch { /* ignore */ }
-            }}>
-              <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <BadgeIcon color={licenseInfo.licensed ? 'primary' : 'error'} sx={{ fontSize: 40 }} />
-                <Box>
-                  <Typography variant="h4">
-                    {routingCount}
-                    <Typography component="span" variant="h5" color={routingCount > licenseInfo.max_connections ? 'error.main' : 'text.secondary'}>
-                      /{licenseInfo.max_connections}
-                    </Typography>
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography color="text.secondary" variant="body2">{t('dashboard.license_status')}</Typography>
-                    {licenseInfo.trial && <Chip size="small" label={t('license.trial_mode')} color="warning" sx={{ height: 18, fontSize: 11 }} />}
-                    {licenseInfo.nfr && <Chip size="small" label="NFR" color="info" sx={{ height: 18, fontSize: 11 }} />}
-                  </Box>
                 </Box>
               </CardContent>
             </Card>
