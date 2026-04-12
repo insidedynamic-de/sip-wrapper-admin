@@ -596,7 +596,13 @@ export default function AdminInfra() {
                                       <MenuItem value="">— {tier.label} —</MenuItem>
                                       {blockProfiles.map((p) => (
                                         <MenuItem key={p.id} value={p.id}>
-                                          {p.name}{p.price_monthly ? ` — €${p.price_monthly}/mo` : ''}
+                                          <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: 2 }}>
+                                            <span><b>{p.name}</b></span>
+                                            <Typography variant="caption" color="text.secondary">
+                                              {p.cpu} vCPU, {(p as any).ram_gb || Math.round(p.ram / 1024)} GB, {p.disk} GB
+                                              {p.price_monthly ? ` · €${p.price_monthly}/mo` : ''}
+                                            </Typography>
+                                          </Box>
                                         </MenuItem>
                                       ))}
                                     </Select>
