@@ -113,11 +113,19 @@ export default function SaasDashboard() {
                     {inst.domain}
                   </Typography>
 
-                  {inst.max_connections > 0 && (
-                    <Chip label={`max. ${inst.max_connections} Nebenstellen`} size="small" sx={{ mb: 1.5 }} />
-                  )}
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
+                    {inst.max_connections > 0 && (
+                      <Chip label={`max. ${inst.max_connections} Nebenstellen`} size="small" />
+                    )}
+                    {(inst as any).version && (
+                      <Chip label={`v${(inst as any).version}`} size="small" variant="outlined" sx={{ fontSize: 10 }} />
+                    )}
+                    {(inst as any).update_available && (
+                      <Chip label={`Update: v${(inst as any).latest_version}`} size="small" color="warning" />
+                    )}
+                  </Box>
 
-                  <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider' }}>
+                  <Box sx={{ pt: 1, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                     {inst.status === 'online' ? (
                       <Button size="small" variant="contained" fullWidth
                         onClick={() => navigate(`/products/talkhub/${inst.id}`)}
@@ -131,10 +139,26 @@ export default function SaasDashboard() {
                         Wird bereitgestellt...
                       </Button>
                     ) : (
-                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block' }}>
+                      <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center', display: 'block', mb: 0.5 }}>
                         Offline
                       </Typography>
                     )}
+                    <Box sx={{ display: 'flex', gap: 0.5 }}>
+                      <Button size="small" variant="outlined" sx={{ flex: 1, textTransform: 'none', fontSize: 11 }}
+                        onClick={async () => {
+                          try {
+                            await api.post(`/admin/infra/instances/${inst.id}/update`);
+                            fetchData();
+                          } catch { /* ignore */ }
+                        }}>Update</Button>
+                      <Button size="small" variant="outlined" color="warning" sx={{ flex: 1, textTransform: 'none', fontSize: 11 }}
+                        onClick={async () => {
+                          try {
+                            await api.post(`/admin/infra/instances/${inst.id}/restart`);
+                            fetchData();
+                          } catch { /* ignore */ }
+                        }}>Restart</Button>
+                    </Box>
                   </Box>
                 </CardContent>
               </Card>

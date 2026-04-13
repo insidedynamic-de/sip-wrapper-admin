@@ -376,6 +376,27 @@ export default function AdminInfra() {
                             setToast({ open: true, message: 'Firewall aktualisiert', severity: 'success' });
                           } catch { setToast({ open: true, message: 'Firewall failed', severity: 'error' }); }
                         }}>Firewall</Button>
+                        <Button size="small" color="primary" variant="outlined" onClick={async () => {
+                          if (!confirm(`Instanz "${i.name}" auf neueste Version updaten?`)) return;
+                          setToast({ open: true, message: `Update ${i.name}...`, severity: 'success' });
+                          try {
+                            await api.post(`/admin/infra/instances/${i.id}/update`);
+                            setToast({ open: true, message: `${i.name} aktualisiert!`, severity: 'success' });
+                            fetchAll();
+                          } catch (err: unknown) {
+                            const e = err as { response?: { data?: { detail?: string } } };
+                            setToast({ open: true, message: e?.response?.data?.detail || 'Update failed', severity: 'error' });
+                          }
+                        }}>Update</Button>
+                        <Button size="small" color="warning" onClick={async () => {
+                          if (!confirm(`Instanz "${i.name}" neustarten?`)) return;
+                          setToast({ open: true, message: `Restart ${i.name}...`, severity: 'success' });
+                          try {
+                            await api.post(`/admin/infra/instances/${i.id}/restart`);
+                            setToast({ open: true, message: `${i.name} neugestartet`, severity: 'success' });
+                            fetchAll();
+                          } catch { setToast({ open: true, message: 'Restart failed', severity: 'error' }); }
+                        }}>Restart</Button>
                         <Box sx={{ flex: 1 }} />
                         <IconButton size="small" onClick={() => { setEditInstance({ ...i }); setInstanceDialog(true); }}><EditIcon fontSize="small" /></IconButton>
                         {i.status === 'deleted' ? (

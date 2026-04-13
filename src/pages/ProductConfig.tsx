@@ -183,6 +183,18 @@ export default function ProductConfig() {
           sx={{ fontSize: 11 }}
         />
         <Box sx={{ flex: 1 }} />
+        <Button size="small" variant="outlined" sx={{ mr: 1 }}
+          onClick={async () => {
+            try {
+              await api.post(`/admin/infra/instances/${instanceId}/update`);
+            } catch { /* ignore */ }
+          }}>Update</Button>
+        <Button size="small" variant="outlined" color="warning" sx={{ mr: 1 }}
+          onClick={async () => {
+            try {
+              await api.post(`/admin/infra/instances/${instanceId}/restart`);
+            } catch { /* ignore */ }
+          }}>Restart</Button>
         <Button
           size="small"
           variant="outlined"
