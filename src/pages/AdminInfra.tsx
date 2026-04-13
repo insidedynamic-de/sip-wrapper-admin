@@ -487,6 +487,7 @@ export default function AdminInfra() {
             { category: 'coolify', title: 'Coolify', icon: '🔧', fields: [
               { key: 'url', description: 'Coolify URL', placeholder: 'https://cp.flxo.cloud' },
               { key: 'api_token', description: 'API Token', placeholder: '' },
+              { key: 'master_ip', description: 'Master IP (SSH)', placeholder: '217.160.65.176' },
             ], profiles: false },
             { category: 'cloudflare', title: 'Cloudflare', icon: '☁️', fields: [
               { key: 'email', description: 'Email', placeholder: 'admin@example.com' },
