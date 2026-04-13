@@ -107,6 +107,10 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
   // Load features from backend — single source of truth
   const [hasLogs, setHasLogs] = useState(false);
   const [talkHubInstanceId, setTalkHubInstanceId] = useState<number | null>(null);
+  const [versionInfo, setVersionInfo] = useState<{ ui: string; api: string; lic: string }>({
+    ui: __APP_VERSION__ || '',
+    api: '', lic: '',
+  });
 
   useEffect(() => {
     setHasLicense(true);
@@ -124,6 +128,16 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
         i.product.includes('TalkHub') && i.status === 'online');
       if (thInst) setTalkHubInstanceId(thInst.id);
     });
+
+    // Load version info
+    api.get('/version').then((res) => {
+      const d = res.data || {};
+      setVersionInfo((prev) => ({
+        ...prev,
+        api: d.git_commit ? `${d.git_commit.substring(0, 7)} (${d.build_date || ''})` : d.version || '',
+        lic: d.lic_version || '',
+      }));
+    }).catch(() => {});
   }, []);
 
   const drawerWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
@@ -398,8 +412,10 @@ export default function Sidebar({ themeMode, setThemeMode, collapsed, onToggleCo
 
       <Divider sx={{ borderColor: 'rgba(255,255,255,0.1)' }} />
       {!collapsed && (
-        <Box sx={{ p: 1.5, color: 'rgba(255,255,255,0.4)', fontSize: 12, textAlign: 'center' }}>
-          v2.0.0
+        <Box sx={{ p: 1.5, color: 'rgba(255,255,255,0.3)', fontSize: 10, textAlign: 'center', lineHeight: 1.6 }}>
+          <Box>UI: {versionInfo.ui || '—'}</Box>
+          <Box>API: {versionInfo.api || '—'}</Box>
+          <Box>LicServer: {versionInfo.lic || '—'}</Box>
         </Box>
       )}
       {collapsed && <Box sx={{ py: 1 }} />}
